@@ -12,7 +12,8 @@
     "start": "next start",
     "lint": "oxlint src scripts",
     "typecheck": "tsc --noEmit",
-    "check": "npm run content && npm run verify && npm run lint && npm run typecheck"
+    "check": "npm run content && npm run verify && npm run lint && npm run typecheck",
+    "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.0.0",
@@ -29,6 +30,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "oxlint": "^0.15.0",
+    "playwright": "^1.49.0",
     "shiki": "^1.24.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",

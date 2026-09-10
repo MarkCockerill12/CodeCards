@@ -61,6 +61,7 @@ npm run dev        # builds content, then starts Next.js on :3000
 | `npm run lint` | oxlint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run check` | All of the above |
+| `npm run e2e` | Real-browser journey test (needs `npx serve out -l 4173` running) |
 | `npm run build` | Static export to `out/` |
 
 Deploy `out/` anywhere that serves files — Vercel, Cloudflare Pages, S3, a USB stick.

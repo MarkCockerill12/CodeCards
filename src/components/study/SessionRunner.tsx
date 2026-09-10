@@ -45,6 +45,7 @@ export function SessionRunner({
   const passCheckpoint = useStore((s) => s.passCheckpoint);
   const flagCard = useStore((s) => s.flagCard);
   const flipAnimation = useStore((s) => s.equipped.flipAnimation);
+  const rewardOpen = useStore((s) => s.rewardQueue.length > 0);
 
   const [cards, setCards] = useState<Card[]>(queue);
   const [position, setPosition] = useState(0);
@@ -178,6 +179,10 @@ export function SessionRunner({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (done) return;
+      // A level-up or module-complete overlay owns the keyboard while it is open —
+      // otherwise Space would dismiss it *and* flip the card underneath, and 1-4 would
+      // grade a card the learner cannot currently see.
+      if (rewardOpen) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         flip();
@@ -195,7 +200,7 @@ export function SessionRunner({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [answer, card, done, flagCard, flip, flipped]);
+  }, [answer, card, done, flagCard, flip, flipped, rewardOpen]);
 
   if (done) {
     return (
