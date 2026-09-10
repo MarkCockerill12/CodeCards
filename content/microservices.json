@@ -1,0 +1,147 @@
+{
+  "id": "microservices",
+  "name": "Microservices",
+  "icon": "🧬",
+  "category": "Architecture",
+  "color": "#F59E0B",
+  "description": "Service boundaries, communication, data ownership, and honest accounting of what distribution costs.",
+  "modules": [
+    {
+      "id": "ms-boundaries",
+      "name": "Boundaries & Ownership",
+      "description": "Where to cut, who owns what data, and when not to split at all.",
+      "cards": [
+        {
+          "id": "ms-when-not",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["architecture.microservices", "architecture.decisions"],
+          "prompt": "A five-person team wants to split their app into twelve microservices. What do you say?",
+          "answer": "Don't. Start with a well-modularised monolith. Microservices solve organisational scaling — independent deploy cadence across many teams — and they cost you distributed transactions, network failure, versioning, and twelve pipelines to maintain.",
+          "explanation": "Conway's Law is the real driver: service boundaries end up mirroring team boundaries. With one team you get all the distribution costs and none of the independence benefit. Extract a service when a module has a genuinely different scaling, deploy or ownership profile.",
+          "resources": [
+            { "title": "Martin Fowler — MonolithFirst", "url": "https://martinfowler.com/bliki/MonolithFirst.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-bounded-context",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["architecture.ddd", "architecture.microservices"],
+          "prompt": "What is a bounded context, and why is it the right unit for a service?",
+          "answer": "A boundary within which a domain model and its language are consistent. 'Customer' means something different in billing, support and shipping — a bounded context lets each keep its own model instead of forcing one bloated shared one.",
+          "explanation": "Boundaries drawn by technical layer (a 'database service') produce chatty, coupled services. Boundaries drawn by business capability produce services that can change independently — which was the entire point of splitting.",
+          "prerequisites": ["ms-when-not"],
+          "resources": [
+            { "title": "Martin Fowler — BoundedContext", "url": "https://martinfowler.com/bliki/BoundedContext.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-shared-database",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["architecture.microservices", "db.design"],
+          "prompt": "What is wrong with this architecture?",
+          "code": "orders-service   ─┐\npayments-service ─┼──►  shared_production_db  (all services read/write all tables)\nusers-service    ─┘",
+          "lang": "text",
+          "answer": "A shared database is a shared, invisible contract. No service can change its schema without breaking others, and you have a distributed monolith — all the deployment coupling, plus network calls.",
+          "explanation": "Database-per-service is the rule: each owns its data and exposes it only through its API or events. The cost is that joins across services become API calls or read models, which is exactly the trade-off you accepted when you split.",
+          "prerequisites": ["ms-bounded-context"],
+          "resources": [
+            { "title": "microservices.io — Database per service", "url": "https://microservices.io/patterns/data/database-per-service.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-monolith-modular",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["architecture.microservices", "architecture.monolith"],
+          "prompt": "Modular monolith vs microservices",
+          "answer": "Both enforce boundaries; only microservices pay the network to do it.",
+          "columns": {
+            "left": { "title": "Modular monolith", "points": ["In-process calls — fast and transactional", "One deploy, one place to debug", "Boundaries enforced by discipline and tooling", "Scales as one unit"] },
+            "right": { "title": "Microservices", "points": ["Independent deploy and scaling per service", "Team autonomy, polyglot possible", "Network failure, latency, versioning", "Needs real platform investment"] }
+          },
+          "explanation": "A modular monolith with clean module boundaries is the best preparation for extraction: when a module genuinely needs its own lifecycle, the seam already exists. Going the other way — merging distributed services — is much harder.",
+          "resources": [
+            { "title": "Shopify — Deconstructing the monolith", "url": "https://shopify.engineering/deconstructing-monolith-designing-software-maximizes-developer-productivity", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ms-comms",
+      "name": "Communication & Operations",
+      "description": "Sync vs async, gateways, service discovery and running a fleet.",
+      "cards": [
+        {
+          "id": "ms-sync-async",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["architecture.microservices", "architecture.async"],
+          "prompt": "Synchronous request/response vs asynchronous events",
+          "answer": "Synchronous is simple and immediate but couples availability; asynchronous decouples but gives up immediate consistency.",
+          "columns": {
+            "left": { "title": "Sync (REST/gRPC)", "points": ["Immediate answer, easy to reason about", "Caller is down if callee is down", "Latency accumulates through chains", "Needs timeouts, retries, breakers"] },
+            "right": { "title": "Async (events/queues)", "points": ["Producer and consumer availability decoupled", "Natural buffering and replay", "Eventual consistency by construction", "Harder to trace and debug"] }
+          },
+          "explanation": "Use sync when the caller genuinely needs the answer to continue; async for notifications, fan-out and anything that can complete later. A chain of five synchronous calls multiplies failure probability and adds every hop's latency.",
+          "resources": [
+            { "title": "microservices.io — Communication patterns", "url": "https://microservices.io/patterns/communication-style/messaging.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-api-gateway",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["architecture.microservices", "api.design"],
+          "prompt": "What does an API gateway do?",
+          "answer": "It gives clients one entry point and handles cross-cutting concerns: routing, authentication, rate limiting, TLS termination, request aggregation and protocol translation.",
+          "explanation": "Without one, every client must know every service address and re-implement auth. The risk is the gateway becoming a monolith of business logic — keep it to cross-cutting concerns. The BFF pattern (a gateway per client type) avoids one gateway serving contradictory needs.",
+          "resources": [
+            { "title": "microservices.io — API gateway", "url": "https://microservices.io/patterns/apigateway.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-service-mesh",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["architecture.microservices", "kubernetes"],
+          "prompt": "When does a service mesh earn its complexity?",
+          "answer": "When you have enough services that mTLS, retries, timeouts, traffic splitting and golden metrics should be uniform and out of application code — typically dozens of services across several teams and languages.",
+          "explanation": "A mesh moves those concerns into sidecars, so a Python service and a Go service behave identically. Below that scale, libraries and a gateway are simpler. The cost is real: extra hops, sidecar resources, and a new control plane to debug.",
+          "prerequisites": ["ms-api-gateway"],
+          "resources": [
+            { "title": "Istio — What is a service mesh?", "url": "https://istio.io/latest/about/service-mesh/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ms-versioning",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["architecture.microservices", "api.compatibility"],
+          "prompt": "How do you change a service's API without coordinating a big-bang deploy?",
+          "answer": "Make every change backwards compatible and deploy in two steps: add the new field or endpoint and support both, migrate consumers, then remove the old. Consumer-driven contract tests catch breakage before release.",
+          "explanation": "In a distributed system, old and new versions always run simultaneously — during rolling deploys if nothing else. Any change that requires services to deploy in a specific order has recreated the monolith's coupling without its safety.",
+          "prerequisites": ["ms-sync-async"],
+          "resources": [
+            { "title": "Pact — Consumer-driven contract testing", "url": "https://docs.pact.io/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ms-distributed-monolith",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["architecture.microservices", "anti-patterns"],
+          "prompt": "What is a distributed monolith, and how do you recognise one?",
+          "answer": "Services that must be deployed together, share a database, break when one changes, or require a specific release order. You pay every cost of distribution and get none of the independence.",
+          "explanation": "Diagnostic questions: can you deploy one service on a Friday without checking with anyone? Can it run when its neighbours are down? If either answer is no, the boundary is wrong — and merging back is a legitimate fix.",
+          "prerequisites": ["ms-shared-database"],
+          "resources": [
+            { "title": "microservices.io — Antipatterns", "url": "https://microservices.io/microservices/antipatterns/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

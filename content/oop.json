@@ -1,0 +1,174 @@
+{
+  "id": "oop",
+  "name": "Object-Oriented Programming",
+  "icon": "🧩",
+  "category": "Computer Science",
+  "color": "#8B5CF6",
+  "description": "Encapsulation, polymorphism, SOLID, composition over inheritance and the failure modes of each.",
+  "modules": [
+    {
+      "id": "oop-pillars",
+      "name": "Pillars & Principles",
+      "description": "The four pillars, SOLID, and what each principle is actually protecting you from.",
+      "cards": [
+        {
+          "id": "oop-four-pillars",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["oop.fundamentals"],
+          "prompt": "Name the four pillars of OOP and what each buys you.",
+          "answer": "Encapsulation (hide state behind an interface so invariants hold), abstraction (expose the what, not the how), inheritance (reuse and specialise a type), polymorphism (one interface, many implementations).",
+          "explanation": "Encapsulation is the load-bearing one: if callers can put an object into an invalid state, none of the others save you. Inheritance is the most abused — it couples subclasses to the base's implementation forever.",
+          "resources": [
+            { "title": "Wikipedia — Object-oriented programming", "url": "https://en.wikipedia.org/wiki/Object-oriented_programming", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-solid",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["oop.solid", "design.principles"],
+          "prompt": "What does SOLID stand for?",
+          "answer": "Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion.",
+          "explanation": "They are heuristics against specific pains: SRP against change ripple, OCP against modifying tested code, LSP against broken polymorphism, ISP against fat interfaces forcing empty implementations, DIP against high-level policy depending on low-level detail.",
+          "resources": [
+            { "title": "Wikipedia — SOLID", "url": "https://en.wikipedia.org/wiki/SOLID", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-liskov-violation",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["oop.solid", "oop.inheritance"],
+          "prompt": "Why is this the textbook Liskov violation?",
+          "code": "class Rectangle {\n  setWidth(w) { this.w = w; }\n  setHeight(h) { this.h = h; }\n  area() { return this.w * this.h; }\n}\n\nclass Square extends Rectangle {\n  setWidth(w)  { this.w = w; this.h = w; }\n  setHeight(h) { this.w = h; this.h = h; }\n}",
+          "lang": "javascript",
+          "answer": "Code written against Rectangle assumes setting width leaves height alone. Square breaks that assumption, so a Square is not substitutable for a Rectangle even though 'a square is a rectangle' is true in geometry.",
+          "explanation": "LSP is about behavioural contracts, not taxonomy. Subtypes may weaken preconditions and strengthen postconditions, never the reverse. The fix here is composition or immutable shapes — mutability is what creates the contract in the first place.",
+          "prerequisites": ["oop-solid"],
+          "resources": [
+            { "title": "Wikipedia — Liskov substitution principle", "url": "https://en.wikipedia.org/wiki/Liskov_substitution_principle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-composition-inheritance",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["oop.design", "design.principles"],
+          "prompt": "Composition vs inheritance",
+          "answer": "Inheritance is a compile-time 'is-a' that inherits implementation; composition is a runtime 'has-a' that delegates behaviour.",
+          "columns": {
+            "left": { "title": "Inheritance", "points": ["Reuses implementation automatically", "Fixed at compile time", "Fragile base class: base changes break subclasses", "Deep hierarchies get impossible to reason about"] },
+            "right": { "title": "Composition", "points": ["Behaviour assembled at runtime, swappable", "Explicit delegation — more typing, more clarity", "Testable: inject a fake collaborator", "No hierarchy to fight"] }
+          },
+          "explanation": "'Favour composition over inheritance' exists because inheritance couples you to a base class's implementation details permanently. Use inheritance for genuine subtyping with a stable contract; use composition — or interfaces plus delegation — for reuse.",
+          "resources": [
+            { "title": "Wikipedia — Composition over inheritance", "url": "https://en.wikipedia.org/wiki/Composition_over_inheritance", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-dependency-inversion",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["oop.solid", "architecture.layering"],
+          "prompt": "Your business logic imports a concrete Postgres client. Why is that a problem, and what does dependency inversion do about it?",
+          "answer": "High-level policy now depends on a low-level detail — you cannot test it without a database, or change stores without editing the logic. Invert it: the domain declares a repository interface, and the Postgres adapter implements it.",
+          "explanation": "The interface belongs with the consumer, not the implementation — that is the actual inversion. This is the core of hexagonal/ports-and-adapters and clean architecture: dependencies point inward, toward policy.",
+          "prerequisites": ["oop-solid"],
+          "resources": [
+            { "title": "Wikipedia — Dependency inversion principle", "url": "https://en.wikipedia.org/wiki/Dependency_inversion_principle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-encapsulation-leak",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["oop.encapsulation"],
+          "prompt": "What is wrong with this getter?",
+          "code": "class Order {\n  private final List<Item> items = new ArrayList<>();\n  public List<Item> getItems() { return items; }\n}",
+          "lang": "java",
+          "answer": "It returns the internal mutable list, so any caller can add or clear items behind the class's back — every invariant Order maintains is now unenforceable. Return an unmodifiable view or a copy.",
+          "explanation": "Encapsulation is about controlling *mutation*, not about writing getters. `Collections.unmodifiableList(items)`, `List.copyOf(items)` or exposing intent-revealing methods (`addItem`, `total()`) all restore the boundary.",
+          "resources": [
+            { "title": "Java SE — List.copyOf", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection)", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oop-mechanics",
+      "name": "Mechanics & Alternatives",
+      "description": "Dispatch, abstract types, interfaces and where OOP gives way to other models.",
+      "cards": [
+        {
+          "id": "oop-static-dynamic-dispatch",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["oop.polymorphism", "runtime.dispatch"],
+          "prompt": "Static vs dynamic dispatch",
+          "answer": "Static dispatch resolves the target at compile time; dynamic dispatch resolves at runtime through a vtable or method table.",
+          "columns": {
+            "left": { "title": "Static", "points": ["Resolved at compile time", "Inlinable — big optimisation win", "Templates/generics, non-virtual methods", "Code bloat from monomorphisation"] },
+            "right": { "title": "Dynamic", "points": ["Resolved by the object's runtime type", "Indirect call, usually not inlined", "Virtual methods, interfaces, `dyn Trait`", "One implementation, smaller binary"] }
+          },
+          "explanation": "Overloading is static (chosen by declared argument types); overriding is dynamic (chosen by runtime type). Mixing them up produces the classic surprise where an overload is selected on the base type you declared, not the object you passed.",
+          "resources": [
+            { "title": "Wikipedia — Dynamic dispatch", "url": "https://en.wikipedia.org/wiki/Dynamic_dispatch", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-abstract-vs-interface",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["oop.types", "oop.design"],
+          "prompt": "Abstract class vs interface",
+          "answer": "An abstract class can hold state and partial implementation but only one may be inherited; an interface is a contract that many can be implemented.",
+          "columns": {
+            "left": { "title": "Abstract class", "points": ["Fields, constructors, shared implementation", "Single inheritance only", "Template-method style reuse", "Versioning: adding a method is safe"] },
+            "right": { "title": "Interface", "points": ["Capability contract, no state", "A type can implement many", "Default methods soften versioning (Java 8+, C# 8+)", "Enables mocking and multiple roles"] }
+          },
+          "explanation": "Rule of thumb: interfaces express *what a thing can do* and should be small; abstract classes express *what a family of things shares*. If you find yourself faking multiple inheritance with abstract classes, you wanted composition.",
+          "resources": [
+            { "title": "Microsoft Learn — Abstract and sealed classes", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/abstract-and-sealed-classes-and-class-members", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "oop-law-of-demeter",
+          "type": "cloze",
+          "difficulty": 3,
+          "tags": ["oop.design", "design.principles"],
+          "prompt": "The Law of Demeter says a method should only talk to its immediate collaborators — avoid chains like `a.getB().getC().___()`.",
+          "answer": "doThing",
+          "explanation": "Every link in a train wreck is a dependency you did not declare and cannot refactor around. Ask the collaborator to do the work (`a.doThing()`) rather than reaching through it. Fluent builders are the deliberate exception — they return `this`.",
+          "resources": [
+            { "title": "Wikipedia — Law of Demeter", "url": "https://en.wikipedia.org/wiki/Law_of_Demeter", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-anemic-model",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["oop.design", "architecture.domain"],
+          "prompt": "What is an anaemic domain model, and why is it considered an anti-pattern?",
+          "answer": "Domain objects that are pure data bags with getters and setters, while all behaviour lives in separate 'service' classes. It is OO in syntax only — the data and the rules that govern it are separated, so invariants cannot be enforced.",
+          "explanation": "The practical symptom is validation logic duplicated across services and objects that can be constructed in invalid states. The counter-argument: in simple CRUD systems the extra ceremony buys nothing. Judge by how many rules actually govern the data.",
+          "resources": [
+            { "title": "Martin Fowler — AnemicDomainModel", "url": "https://martinfowler.com/bliki/AnemicDomainModel.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-vs-functional",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["oop.design", "fp.concepts"],
+          "prompt": "When does a functional style beat an object-oriented one, and vice versa?",
+          "answer": "Functional wins for data transformation pipelines, concurrency and anything where immutability removes whole bug classes. OO wins where you have long-lived entities with identity, state transitions and invariants to protect.",
+          "explanation": "The expression problem frames it: OO makes adding new *types* easy and new *operations* hard; FP makes adding operations easy and types hard. Most modern codebases mix both — immutable values and pure transforms inside, objects at the boundaries.",
+          "resources": [
+            { "title": "Wikipedia — Expression problem", "url": "https://en.wikipedia.org/wiki/Expression_problem", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

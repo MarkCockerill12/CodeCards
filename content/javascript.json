@@ -1,0 +1,272 @@
+{
+  "id": "javascript",
+  "name": "JavaScript",
+  "icon": "🟨",
+  "category": "Languages",
+  "color": "#F7DF1E",
+  "description": "Coercion, closures, the event loop, prototypes and the modern language features that replaced the old workarounds.",
+  "modules": [
+    {
+      "id": "js-semantics",
+      "name": "Semantics & Coercion",
+      "description": "Types, equality, scoping and the behaviours JavaScript is famous for.",
+      "cards": [
+        {
+          "id": "js-eq-vs-strict",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["js.coercion", "js.operators"],
+          "prompt": "`==` vs `===`",
+          "answer": "`==` coerces operands to a common type before comparing; `===` compares type and value with no coercion.",
+          "columns": {
+            "left": { "title": "== (loose)", "points": ["Applies the abstract equality algorithm", "`'' == 0` and `'1' == 1` are true", "`null == undefined` is true (the one useful case)", "Non-transitive in places — hard to reason about"] },
+            "right": { "title": "=== (strict)", "points": ["Different types are never equal", "`NaN === NaN` is still false", "`0 === -0` is true", "The default choice in every style guide"] }
+          },
+          "explanation": "Use `===` everywhere except the idiom `x == null`, which tests for null or undefined in one go. For NaN use `Number.isNaN`; for the SameValue semantics that distinguish -0 use `Object.is`.",
+          "resources": [
+            { "title": "MDN — Equality comparisons and sameness", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-hoisting-tdz",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["js.scope", "js.gotchas"],
+          "prompt": "What does this print?",
+          "code": "console.log(typeof a);\nvar a = 1;\ntry {\n  console.log(b);\n  let b = 2;\n} catch (e) {\n  console.log(e.constructor.name);\n}",
+          "lang": "javascript",
+          "answer": "undefined\nReferenceError",
+          "explanation": "`var` declarations are hoisted and initialised to `undefined`. `let`/`const` are hoisted too, but sit in the temporal dead zone until the declaration executes — touching them first throws a ReferenceError. That is a feature: it turns a silent bug into a loud one.",
+          "resources": [
+            { "title": "MDN — Temporal dead zone", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let#temporal_dead_zone_tdz", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "undefined\nReferenceError" }
+        },
+        {
+          "id": "js-this-binding",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["js.this", "js.functions"],
+          "prompt": "What determines the value of `this` in a JavaScript function?",
+          "answer": "The call site, in this precedence: `new` binding → explicit `call`/`apply`/`bind` → method call (the object before the dot) → default (undefined in strict mode, globalThis otherwise). Arrow functions ignore all of it and inherit `this` lexically.",
+          "explanation": "`this` is not the defining scope — it is decided when the function is invoked. `const f = obj.method; f()` loses the receiver. Arrow functions have no `this` of their own, which is exactly why they are the right choice for callbacks inside methods.",
+          "resources": [
+            { "title": "MDN — this", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-closure-counter",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["js.closures", "js.scope"],
+          "prompt": "What does this print?",
+          "code": "const fns = [];\nfor (var i = 0; i < 3; i++) fns.push(() => i);\nconsole.log(fns.map(f => f()).join(','));\n\nconst fns2 = [];\nfor (let j = 0; j < 3; j++) fns2.push(() => j);\nconsole.log(fns2.map(f => f()).join(','));",
+          "lang": "javascript",
+          "answer": "3,3,3\n0,1,2",
+          "explanation": "`var` is function-scoped, so all three closures share one binding that ends at 3. `let` creates a fresh binding per iteration — the loop head is re-bound each pass — so each closure captures its own value.",
+          "prerequisites": ["js-hoisting-tdz"],
+          "resources": [
+            { "title": "MDN — Closures", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Closures", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "3,3,3\n0,1,2" }
+        },
+        {
+          "id": "js-prototype-chain",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["js.prototypes", "js.oop"],
+          "prompt": "How does property lookup work on a JavaScript object?",
+          "answer": "The engine checks the object's own properties, then walks `[[Prototype]]` (`Object.getPrototypeOf`) link by link until it finds the key or reaches null.",
+          "explanation": "`class` is syntax over this: methods live on `Ctor.prototype`, and every instance links to it. This is why adding a method to a prototype affects existing instances, and why shadowing a prototype property with an own property hides it rather than overwriting it.",
+          "resources": [
+            { "title": "MDN — Inheritance and the prototype chain", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-spread-shallow",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["js.objects", "js.gotchas"],
+          "prompt": "Why does mutating the copy still change the original?",
+          "code": "const original = { name: 'a', tags: ['x'] };\nconst copy = { ...original };\ncopy.tags.push('y');\nconsole.log(original.tags); // ['x','y']",
+          "lang": "javascript",
+          "answer": "Spread is a **shallow** copy — `copy.tags` is the same array reference. Deep-clone with `structuredClone(original)` or copy nested values explicitly.",
+          "explanation": "`{...o}` and `Object.assign({}, o)` copy one level of own enumerable properties. Any nested object or array is shared. `structuredClone` handles most structures (not functions or DOM nodes) and is built into modern runtimes.",
+          "resources": [
+            { "title": "MDN — structuredClone", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-optional-chaining",
+          "type": "cloze",
+          "difficulty": 1,
+          "tags": ["js.syntax"],
+          "prompt": "`a?.b` returns undefined instead of throwing when `a` is null or ___.",
+          "answer": "undefined",
+          "explanation": "Optional chaining short-circuits on exactly two values: `null` and `undefined`. It pairs with `??` (nullish coalescing), which falls back only on those same two values — unlike `||`, which also fires on `0`, `''` and `false`.",
+          "resources": [
+            { "title": "MDN — Optional chaining", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "js-async",
+      "name": "The Event Loop & Async",
+      "description": "Tasks, microtasks, promises and the ordering rules that decide when your code runs.",
+      "cards": [
+        {
+          "id": "js-microtask-order",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["js.eventloop", "js.async"],
+          "prompt": "What does this print, and why in that order?",
+          "code": "console.log('1');\nsetTimeout(() => console.log('2'), 0);\nPromise.resolve().then(() => console.log('3'));\nconsole.log('4');",
+          "lang": "javascript",
+          "answer": "1\n4\n3\n2",
+          "explanation": "Synchronous code runs first (1, 4). Then the **microtask** queue drains completely — promise callbacks (3). Only then does the event loop take the next **macrotask**, the timer callback (2). Microtasks always beat timers, no matter the delay.",
+          "resources": [
+            { "title": "MDN — The event loop", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Event_loop", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "1\n4\n3\n2" }
+        },
+        {
+          "id": "js-await-in-loop",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["js.async", "js.performance"],
+          "prompt": "This takes 10 seconds instead of 1. Why, and how do you fix it?",
+          "code": "const results = [];\nfor (const url of urls) {           // 10 urls, ~1s each\n  results.push(await fetch(url));\n}",
+          "lang": "javascript",
+          "answer": "`await` inside the loop serialises the requests. Start them all first and await together: `await Promise.all(urls.map(u => fetch(u)))`.",
+          "explanation": "Sequential await is correct when each request depends on the previous one, and wasteful otherwise. Use `Promise.all` for fail-fast parallelism, `Promise.allSettled` when partial failure is acceptable, and a concurrency limiter when the target has rate limits.",
+          "prerequisites": ["js-microtask-order"],
+          "resources": [
+            { "title": "MDN — Promise.all", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-promise-states",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["js.async", "js.promises"],
+          "prompt": "What are the states of a Promise, and which transitions are legal?",
+          "answer": "Pending → fulfilled (with a value) or rejected (with a reason). Settlement is permanent — a promise can never change state again or settle twice.",
+          "explanation": "That immutability is what makes promises composable: attaching `.then` after settlement still fires, and the value cannot be retracted. An unhandled rejection is a warning in browsers and, by default, a fatal error in modern Node.",
+          "resources": [
+            { "title": "MDN — Using promises", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-async-error-swallow",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["js.async", "js.errors"],
+          "prompt": "The try/catch never fires. Why?",
+          "code": "try {\n  items.forEach(async (item) => {\n    await process(item);   // throws\n  });\n} catch (e) {\n  console.error('caught', e);\n}",
+          "lang": "javascript",
+          "answer": "`forEach` ignores the returned promises, so the async callbacks run detached — their rejections become unhandled rejections outside the try block. Use `for...of` with `await`, or `await Promise.all(items.map(...))`.",
+          "explanation": "`try/catch` only catches synchronous throws in its own frame. An async callback returns a promise immediately; the throw happens later, on a different tick, with nobody listening. Array methods other than `map` have no idea what a promise is.",
+          "prerequisites": ["js-promise-states"],
+          "resources": [
+            { "title": "MDN — for await...of", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-debounce-throttle",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["js.performance", "js.patterns"],
+          "prompt": "Debounce vs throttle",
+          "answer": "Debounce waits for silence before firing once; throttle fires at most once per interval during activity.",
+          "columns": {
+            "left": { "title": "Debounce", "points": ["Resets a timer on every event", "Fires only after activity stops", "Search-as-you-type, resize-complete, autosave", "Can starve forever under constant input"] },
+            "right": { "title": "Throttle", "points": ["Fires at a fixed maximum rate", "Emits during continuous activity", "Scroll handlers, mouse-move, progress updates", "Guarantees regular feedback"] }
+          },
+          "explanation": "Ask what the user should see: nothing until they pause (debounce) or steady updates while they act (throttle). Getting this backwards is a common source of janky or unresponsive UI.",
+          "resources": [
+            { "title": "MDN — requestAnimationFrame", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "js-modern",
+      "name": "Modern JavaScript & Runtime",
+      "description": "Modules, iteration protocols, memory and the runtime facts behind everyday code.",
+      "cards": [
+        {
+          "id": "js-esm-vs-cjs",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["js.modules", "node.runtime"],
+          "prompt": "ES Modules vs CommonJS",
+          "answer": "ESM is static, asynchronous and live-bound; CommonJS is dynamic, synchronous and value-copied.",
+          "columns": {
+            "left": { "title": "ESM (import/export)", "points": ["Statically analysable → tree shaking", "Live bindings: importer sees later mutations", "Top-level await allowed", "Always strict mode"] },
+            "right": { "title": "CJS (require/module.exports)", "points": ["Resolved at runtime, can be conditional", "Copies the value at require time", "Synchronous loading", "Node's historical default"] }
+          },
+          "explanation": "The static structure is the whole point: bundlers can only tree-shake and split what they can see without running your code. Mixing them (`require` of ESM) is where most Node packaging pain comes from.",
+          "resources": [
+            { "title": "MDN — JavaScript modules", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-iterable-protocol",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["js.iteration", "js.protocols"],
+          "prompt": "What makes an object usable with `for...of` and spread?",
+          "answer": "A `[Symbol.iterator]()` method returning an iterator — an object with `next()` that yields `{ value, done }`. Generator functions produce one for free.",
+          "explanation": "`for...of`, spread, destructuring, `Array.from`, `Promise.all` and `yield*` all speak this protocol. Implementing it makes a custom collection behave like a built-in. `for...in`, by contrast, walks enumerable string keys including inherited ones — rarely what you want.",
+          "resources": [
+            { "title": "MDN — Iteration protocols", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-map-vs-object",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["js.collections"],
+          "prompt": "`Map` vs plain object as a dictionary",
+          "answer": "Map takes any key type, preserves insertion order, has `size`, and has no prototype keys to collide with.",
+          "columns": {
+            "left": { "title": "Map", "points": ["Keys of any type, including objects", "Guaranteed insertion order", "`map.size`, directly iterable", "No inherited keys — no `__proto__` hazard"] },
+            "right": { "title": "Object", "points": ["Keys coerced to strings (or symbols)", "Integer-like keys sort first", "JSON-serialisable for free", "Better for fixed, known-shape records"] }
+          },
+          "explanation": "Use a Map for a real keyed collection that grows at runtime, an object for a struct with known fields. `Object.create(null)` removes the prototype hazard if you must use an object as a dictionary.",
+          "resources": [
+            { "title": "MDN — Map", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-number-precision",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["js.numbers", "numeric.float"],
+          "prompt": "What does this print?",
+          "code": "console.log(0.1 + 0.2);\nconsole.log(0.1 + 0.2 === 0.3);\nconsole.log(Number.MAX_SAFE_INTEGER + 2);",
+          "lang": "javascript",
+          "answer": "0.30000000000000004\nfalse\n9007199254740992",
+          "explanation": "Every JS number is an IEEE-754 double. 0.1 and 0.2 are not exactly representable in binary, so their sum is not exactly 0.3. Past 2^53 the gap between representable integers is 2, so `MAX_SAFE_INTEGER + 2` rounds back to 9007199254740992 — the same value as `MAX_SAFE_INTEGER + 1`. Use `BigInt` for exact large integers and integer cents for money.",
+          "resources": [
+            { "title": "MDN — Number.MAX_SAFE_INTEGER", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "0.30000000000000004\nfalse\n9007199254740992" }
+        },
+        {
+          "id": "js-memory-leak-listener",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["js.memory", "js.performance"],
+          "prompt": "A single-page app grows to 2 GB after an hour of navigation. What are the usual suspects?",
+          "answer": "Listeners and timers never removed, detached DOM nodes still referenced by JS, unbounded caches/arrays, and closures capturing large objects.",
+          "explanation": "GC frees only unreachable objects. An `addEventListener` on `window`, an `setInterval`, or a module-level array holds references forever. Fix by removing listeners on teardown (AbortController signals make this one line), clearing timers, and bounding caches — `WeakMap`/`WeakRef` where the key's lifetime should drive the entry's.",
+          "resources": [
+            { "title": "MDN — Memory management", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_management", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

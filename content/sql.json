@@ -1,0 +1,197 @@
+{
+  "id": "sql",
+  "name": "SQL & Relational Databases",
+  "icon": "🗃️",
+  "category": "Data & Databases",
+  "color": "#336791",
+  "description": "Joins, indexes, normalisation, transactions and the query patterns that separate fast schemas from slow ones.",
+  "modules": [
+    {
+      "id": "sql-query",
+      "name": "Querying",
+      "description": "Joins, grouping, NULL semantics and the order the engine actually evaluates your query in.",
+      "cards": [
+        {
+          "id": "sql-logical-order",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["sql.query", "sql.semantics"],
+          "prompt": "In what logical order are the clauses of a SELECT evaluated?",
+          "answer": "FROM and JOIN → WHERE → GROUP BY → HAVING → SELECT (including window functions) → DISTINCT → ORDER BY → LIMIT.",
+          "explanation": "This explains two everyday puzzles: you cannot use a SELECT alias in WHERE (it does not exist yet) but you can in ORDER BY; and HAVING filters groups while WHERE filters rows — so row-level conditions belong in WHERE, where they cut work earlier.",
+          "resources": [
+            { "title": "PostgreSQL docs — SELECT", "url": "https://www.postgresql.org/docs/current/sql-select.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-join-types",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["sql.joins"],
+          "prompt": "INNER JOIN vs LEFT JOIN",
+          "answer": "INNER keeps only rows with a match on both sides; LEFT keeps every left row, filling the right side with NULLs when there is no match.",
+          "columns": {
+            "left": { "title": "INNER JOIN", "points": ["Intersection of both sides", "Row count can shrink", "No NULL padding", "The default when both sides are required"] },
+            "right": { "title": "LEFT JOIN", "points": ["All left rows preserved", "Unmatched right columns are NULL", "A WHERE on the right table silently turns it into an inner join", "Use IS NULL on the right key to find non-matches"] }
+          },
+          "explanation": "The classic bug: `LEFT JOIN orders o ... WHERE o.status = 'paid'` discards the very rows the LEFT JOIN was preserving, because NULL fails the predicate. Put that condition in the ON clause instead.",
+          "resources": [
+            { "title": "PostgreSQL docs — Joined tables", "url": "https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-null-semantics",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["sql.null", "sql.gotchas"],
+          "prompt": "The table `t` has 3 rows and `col` is NULL in one of them. What does this return?",
+          "code": "SELECT\n  COUNT(*)                                          AS a,\n  COUNT(col)                                        AS b,\n  SUM(CASE WHEN col = NULL THEN 1 ELSE 0 END)       AS c\nFROM t;",
+          "lang": "sql",
+          "answer": "3, 2, 0 — COUNT(*) counts rows, COUNT(col) skips NULLs, and `col = NULL` is never true (it is UNKNOWN), so the CASE never fires.",
+          "explanation": "NULL is 'unknown', not a value, and comparisons with it yield UNKNOWN rather than TRUE or FALSE. Test with `IS NULL` / `IS NOT NULL`. It also means `NOT IN (subquery)` returns nothing at all if the subquery contains a single NULL.",
+          "resources": [
+            { "title": "PostgreSQL docs — Comparison operators", "url": "https://www.postgresql.org/docs/current/functions-comparison.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-window-functions",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sql.window", "sql.query"],
+          "prompt": "You need each employee's salary alongside their department average, without collapsing the rows. How?",
+          "answer": "A window function: `AVG(salary) OVER (PARTITION BY department)`. It computes per partition but keeps every row, unlike GROUP BY.",
+          "explanation": "Windows also give ranking (`ROW_NUMBER`, `RANK`, `DENSE_RANK`), offsets (`LAG`, `LEAD`) and running totals with frame clauses. `ROW_NUMBER() OVER (PARTITION BY x ORDER BY y)` filtered to 1 is the standard 'latest row per group' idiom.",
+          "prerequisites": ["sql-logical-order"],
+          "resources": [
+            { "title": "PostgreSQL docs — Window functions", "url": "https://www.postgresql.org/docs/current/tutorial-window.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-n-plus-one",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["sql.performance", "db.orm"],
+          "prompt": "What performance anti-pattern is this, and what fixes it?",
+          "code": "orders = db.query(\"SELECT * FROM orders LIMIT 100\")\nfor o in orders:\n    o.customer = db.query(\"SELECT * FROM customers WHERE id = ?\", o.customer_id)",
+          "lang": "python",
+          "answer": "The N+1 query problem — 1 query plus 100 more. Fix with a JOIN, an eager-load/`IN (...)` batch, or a dataloader that batches per request.",
+          "explanation": "Each round trip costs network latency, so 101 queries at 1 ms is 100 ms of pure waiting. ORMs cause this silently through lazy relations; log query counts per request and alert when they scale with result size.",
+          "resources": [
+            { "title": "Use The Index, Luke — N+1 selects", "url": "https://use-the-index-luke.com/sql/join/nested-loops-join-n1-problem", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-cte-vs-subquery",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["sql.query", "sql.readability"],
+          "prompt": "CTE (`WITH`) vs subquery",
+          "answer": "They are usually equivalent to the planner; CTEs win on readability and enable recursion.",
+          "columns": {
+            "left": { "title": "CTE", "points": ["Named steps read top to bottom", "Can be referenced several times", "`WITH RECURSIVE` walks trees and graphs", "Historically an optimisation fence in Postgres < 12"] },
+            "right": { "title": "Subquery", "points": ["Inline, no extra name", "Correlated subqueries can be per-row expensive", "Fine for one-off filters and EXISTS", "Nesting deeply becomes unreadable"] }
+          },
+          "explanation": "Modern Postgres inlines non-recursive CTEs unless you write `MATERIALIZED`, so prefer whichever reads better. `EXISTS` usually beats `IN` for correlated existence checks, and avoids the NULL trap of `NOT IN`.",
+          "resources": [
+            { "title": "PostgreSQL docs — WITH queries", "url": "https://www.postgresql.org/docs/current/queries-with.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sql-design",
+      "name": "Schema, Indexes & Transactions",
+      "description": "Normalisation, index design, ACID and isolation levels.",
+      "cards": [
+        {
+          "id": "sql-normal-forms",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["sql.schema", "db.normalisation"],
+          "prompt": "What do 1NF, 2NF and 3NF require?",
+          "answer": "1NF: atomic values, no repeating groups. 2NF: 1NF plus no partial dependency on part of a composite key. 3NF: 2NF plus no transitive dependency — non-key columns depend on the key, the whole key and nothing but the key.",
+          "explanation": "Normalisation removes update anomalies by storing each fact once. Denormalise deliberately and later, for measured read performance, accepting that you now own the consistency problem — usually with triggers, materialised views or an async pipeline.",
+          "resources": [
+            { "title": "Wikipedia — Database normalization", "url": "https://en.wikipedia.org/wiki/Database_normalization", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-index-leftmost",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sql.index", "sql.performance"],
+          "prompt": "You have an index on `(a, b, c)`. Which of these can use it: `WHERE a = 1`, `WHERE b = 2`, `WHERE a = 1 AND b = 2`, `WHERE a = 1 AND c = 3`?",
+          "answer": "The first, third and fourth can use it (the fourth only for the `a` prefix, then filters on c). `WHERE b = 2` alone cannot — a composite index is only usable from its leftmost column.",
+          "explanation": "The index is sorted by a, then b within a, then c. Without a, the b values are scattered. This 'leftmost prefix' rule decides how many indexes you actually need — one on (a,b,c) also serves queries on (a) and (a,b).",
+          "resources": [
+            { "title": "Use The Index, Luke — Concatenated indexes", "url": "https://use-the-index-luke.com/sql/where-clause/the-equals-operator/concatenated-keys", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-index-cost",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["sql.index", "sql.performance"],
+          "prompt": "What does an index cost you?",
+          "answer": "Storage, and write amplification — every INSERT, UPDATE of an indexed column and DELETE must maintain every index. It can also be ignored by the planner if it is not selective enough.",
+          "explanation": "A table with ten indexes writes eleven structures per insert. Drop unused indexes (`pg_stat_user_indexes` shows scans), and remember that a low-selectivity index — a boolean on a huge table — is often slower than a sequential scan.",
+          "prerequisites": ["sql-index-leftmost"],
+          "resources": [
+            { "title": "PostgreSQL docs — Indexes", "url": "https://www.postgresql.org/docs/current/indexes.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-explain",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sql.performance", "debugging"],
+          "prompt": "A query is slow in production. What is your first move?",
+          "answer": "`EXPLAIN (ANALYZE, BUFFERS)` it. Look for sequential scans on large tables, row-estimate errors, nested loops over big inputs, and sorts or hashes spilling to disk.",
+          "explanation": "EXPLAIN shows the plan; ANALYZE runs it and shows actual rows and timing. A large gap between estimated and actual rows means stale statistics — run ANALYZE or raise the statistics target before blaming the query.",
+          "resources": [
+            { "title": "PostgreSQL docs — Using EXPLAIN", "url": "https://www.postgresql.org/docs/current/using-explain.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-acid",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["db.transactions", "db.acid"],
+          "prompt": "What does ACID stand for?",
+          "answer": "Atomicity (all or nothing), Consistency (constraints hold before and after), Isolation (concurrent transactions do not see each other's intermediate state), Durability (committed data survives a crash).",
+          "explanation": "Atomicity comes from write-ahead logging and undo, durability from fsync-ed WAL, isolation from locking or MVCC. Consistency is the one the database only partly owns — your constraints and application invariants define it.",
+          "resources": [
+            { "title": "Wikipedia — ACID", "url": "https://en.wikipedia.org/wiki/ACID", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-isolation-levels",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["db.transactions", "db.isolation"],
+          "prompt": "Name the four isolation levels and the anomaly each prevents.",
+          "answer": "Read uncommitted (allows dirty reads), read committed (prevents dirty reads), repeatable read (also prevents non-repeatable reads), serializable (also prevents phantoms — equivalent to some serial order).",
+          "explanation": "Defaults differ: Postgres and Oracle use read committed, MySQL InnoDB uses repeatable read. Postgres's repeatable read is snapshot isolation, which still permits write skew — the reason `SERIALIZABLE` or explicit `SELECT ... FOR UPDATE` exists.",
+          "prerequisites": ["sql-acid"],
+          "resources": [
+            { "title": "PostgreSQL docs — Transaction isolation", "url": "https://www.postgresql.org/docs/current/transaction-iso.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-injection",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["security.injection", "sql.safety"],
+          "prompt": "What is wrong here, and what is the only correct fix?",
+          "code": "query = f\"SELECT * FROM users WHERE email = '{email}'\"\ndb.execute(query)",
+          "lang": "python",
+          "answer": "SQL injection. The only reliable fix is a parameterised query — `db.execute(\"SELECT * FROM users WHERE email = ?\", (email,))` — so the value can never be parsed as SQL.",
+          "explanation": "Escaping by hand fails against encoding tricks and multi-byte charsets. Parameterisation separates code from data at the protocol level. Where identifiers must be dynamic (table or column names), validate against a strict allowlist — those cannot be parameterised.",
+          "resources": [
+            { "title": "OWASP — SQL Injection Prevention Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

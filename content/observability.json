@@ -1,0 +1,150 @@
+{
+  "id": "observability",
+  "name": "Observability & SRE",
+  "icon": "📈",
+  "category": "Cloud & DevOps",
+  "color": "#F43F5E",
+  "description": "Logs, metrics, traces, SLIs and SLOs, alerting that works, and debugging production without guessing.",
+  "modules": [
+    {
+      "id": "obs-signals",
+      "name": "The Signals",
+      "description": "What to emit, in what shape, and how the three pillars fit together.",
+      "cards": [
+        {
+          "id": "obs-three-pillars",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["observability.fundamentals"],
+          "prompt": "What are logs, metrics and traces each good at?",
+          "answer": "Metrics: cheap aggregates over time — is something wrong? Logs: discrete events with detail — what exactly happened? Traces: the path of one request across services — where did the time go?",
+          "explanation": "The workflow is metrics alert, traces localise, logs explain. Storage cost runs the other way: metrics are cheap and bounded by cardinality, traces need sampling, logs are the most expensive per unit of insight.",
+          "resources": [
+            { "title": "OpenTelemetry — Observability primer", "url": "https://opentelemetry.io/docs/concepts/observability-primer/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-structured-logging",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["observability.logging", "craft"],
+          "prompt": "Why is the first line hard to work with and the second easy?",
+          "code": "log.info(f\"User {user.email} failed login from {ip} at {ts}\")\n\nlog.info(\"login_failed\", extra={\n    \"event\": \"login_failed\",\n    \"user_id\": user.id,\n    \"source_ip\": ip,\n    \"trace_id\": trace_id,\n})",
+          "lang": "python",
+          "answer": "The first is unstructured prose you can only grep, with PII baked into the message. The second is a structured event you can filter, aggregate and join on trace id — and it logs an id rather than an email address.",
+          "explanation": "Structured logs turn your log store into a queryable dataset. Include a trace/correlation id on every line so a single user report becomes one query. Log identifiers, not personal data — logs are widely readable and long-lived.",
+          "resources": [
+            { "title": "OpenTelemetry — Logs", "url": "https://opentelemetry.io/docs/concepts/signals/logs/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-cardinality",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["observability.metrics", "cost"],
+          "prompt": "Someone adds `user_id` as a Prometheus label and the metrics backend falls over. Why?",
+          "answer": "Every distinct label value creates a separate time series. High-cardinality labels (user id, request id, URL with parameters) multiply series into the millions, exploding memory and query cost.",
+          "explanation": "Labels belong to bounded dimensions: status code, method, route template, region. Per-request identity belongs in traces and logs, which are designed for high cardinality. Exemplars link a metric bucket to a representative trace when you need both.",
+          "prerequisites": ["obs-three-pillars"],
+          "resources": [
+            { "title": "Prometheus — Naming and labels", "url": "https://prometheus.io/docs/practices/naming/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-percentiles",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["observability.metrics", "performance"],
+          "prompt": "Why do you look at p50, p95 and p99 instead of the average latency?",
+          "answer": "Averages hide the tail. A service can average 100 ms while 1% of requests take 10 seconds — and those are the users who leave. Percentiles show the distribution's shape; the mean shows none of it.",
+          "explanation": "Tail latency compounds across services: if a page makes 20 calls, a p99 of 1 s means most page loads hit at least one slow call. Also beware averaging percentiles across instances — that is mathematically meaningless; aggregate from histograms instead.",
+          "resources": [
+            { "title": "Google SRE Book — Monitoring distributed systems", "url": "https://sre.google/sre-book/monitoring-distributed-systems/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-tracing",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["observability.tracing"],
+          "prompt": "How does distributed tracing work?",
+          "answer": "Each request gets a trace id; each unit of work is a span with a parent, propagated between services in headers (W3C `traceparent`). The backend reassembles spans into a tree showing where the latency went.",
+          "explanation": "Propagation is where it breaks: any hop that drops the header orphans everything downstream — thread pools, queues and background jobs are the usual offenders. Sample head-based for cost, or tail-based to guarantee slow and failed traces are kept.",
+          "prerequisites": ["obs-three-pillars"],
+          "resources": [
+            { "title": "W3C — Trace Context", "url": "https://www.w3.org/TR/trace-context/", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "obs-sre",
+      "name": "SLOs & Operations",
+      "description": "Defining reliability, alerting on it, and running incidents.",
+      "cards": [
+        {
+          "id": "obs-sli-slo-sla",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["sre.slo"],
+          "prompt": "Distinguish SLI, SLO and SLA, and explain the error budget.",
+          "answer": "An SLI is a measurement (fraction of requests under 300 ms). An SLO is the internal target for it (99.9% over 30 days). An SLA is an external contract with penalties. The error budget is 100% minus the SLO — the failure you are allowed to spend.",
+          "explanation": "The budget turns reliability into a decision rule: budget remaining means ship faster; budget exhausted means stop feature work and fix reliability. It replaces arguing about whether 'the site is reliable' with a number both sides agreed to in advance.",
+          "resources": [
+            { "title": "Google SRE Workbook — Implementing SLOs", "url": "https://sre.google/workbook/implementing-slos/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-alert-quality",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sre.alerting", "operations"],
+          "prompt": "Your team ignores alerts. How do you fix it?",
+          "answer": "Alert on symptoms users feel (error rate, latency, budget burn), not on causes (CPU at 80%). Every page must be urgent, actionable and novel — anything else becomes a ticket or a dashboard. Then delete the rest.",
+          "explanation": "Multi-window burn-rate alerts on the error budget catch both fast catastrophes and slow leaks with far fewer pages. Alert fatigue is a reliability risk in itself: the outage you miss is the one buried under noise.",
+          "prerequisites": ["obs-sli-slo-sla"],
+          "resources": [
+            { "title": "Google SRE Workbook — Alerting on SLOs", "url": "https://sre.google/workbook/alerting-on-slos/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-four-golden-signals",
+          "type": "cloze",
+          "difficulty": 3,
+          "tags": ["sre.monitoring"],
+          "prompt": "The four golden signals are latency, traffic, errors and ___.",
+          "answer": "saturation",
+          "explanation": "Saturation is how full the most constrained resource is — the leading indicator that predicts the other three degrading. If you instrument only four things in a new service, instrument these.",
+          "resources": [
+            { "title": "Google SRE Book — The four golden signals", "url": "https://sre.google/sre-book/monitoring-distributed-systems/#xref_monitoring_golden-signals", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-postmortem",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["sre.incident", "process"],
+          "prompt": "What makes a post-mortem blameless and useful?",
+          "answer": "It assumes everyone acted reasonably given what they knew, focuses on the system and its conditions, and produces owned, dated action items. Timeline, impact, detection, contributing factors, what went well, what to change.",
+          "explanation": "Blame drives information underground — and the information is the entire value. 'Human error' is never a root cause; it is a prompt to ask what made the error easy and the recovery slow. Track the actions or the same incident recurs.",
+          "resources": [
+            { "title": "Google SRE Book — Postmortem culture", "url": "https://sre.google/sre-book/postmortem-culture/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-debug-production",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["observability.practice", "debugging"],
+          "prompt": "Latency spiked at 14:05 with no deploy. How do you investigate?",
+          "answer": "Correlate the timestamp across signals: what else changed at 14:05 — traffic, a dependency's latency, a config or feature-flag change, a cron or batch job, a cache expiry, a database plan flip? Use traces to find which span grew, then logs for that span.",
+          "explanation": "'No deploy' rarely means 'no change'. Config pushes, flag flips, certificate rotations, scheduled jobs, autoscaling events and upstream incidents all qualify. A change log spanning deploys, flags and infrastructure is the single most useful incident artefact.",
+          "prerequisites": ["obs-tracing"],
+          "resources": [
+            { "title": "Google SRE Book — Effective troubleshooting", "url": "https://sre.google/sre-book/effective-troubleshooting/", "kind": "book" }
+          ]
+        }
+      ]
+    }
+  ]
+}

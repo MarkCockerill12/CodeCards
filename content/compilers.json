@@ -1,0 +1,111 @@
+{
+  "id": "compilers",
+  "name": "Compilers & Runtimes",
+  "icon": "🏗️",
+  "category": "Computer Science",
+  "color": "#A3E635",
+  "description": "Lexing, parsing, IR, optimisation, JIT vs AOT and what actually happens between your source and the CPU.",
+  "modules": [
+    {
+      "id": "comp-pipeline",
+      "name": "The Compilation Pipeline",
+      "description": "From characters to machine code, stage by stage.",
+      "cards": [
+        {
+          "id": "comp-stages",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.pipeline"],
+          "prompt": "What are the stages of a typical compiler?",
+          "answer": "Lexing (characters → tokens), parsing (tokens → AST), semantic analysis (types, scopes, symbol tables), IR generation, optimisation passes, then code generation and register allocation.",
+          "explanation": "The front end is language-specific, the back end is target-specific, and a shared IR in the middle is what lets LLVM serve dozens of languages and architectures. Errors are reported at the earliest stage that can detect them — which is why type errors come after syntax errors.",
+          "resources": [
+            { "title": "Crafting Interpreters — A map of the territory", "url": "https://craftinginterpreters.com/a-map-of-the-territory.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "comp-ast",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["compilers.parsing"],
+          "prompt": "What is an AST, and how does it differ from a parse tree?",
+          "answer": "An abstract syntax tree keeps the meaningful structure of the program and discards syntactic noise — parentheses, semicolons, precedence scaffolding. A concrete parse tree contains every grammar production.",
+          "explanation": "ASTs are what linters, formatters, transpilers, codemods and IDE refactorings operate on. Tools such as `ast-grep` or Babel let you pattern-match structure instead of text, which is why they can rewrite code that regex cannot safely touch.",
+          "resources": [
+            { "title": "Wikipedia — Abstract syntax tree", "url": "https://en.wikipedia.org/wiki/Abstract_syntax_tree", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-jit-vs-aot",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["compilers.jit", "runtime.performance"],
+          "prompt": "JIT vs AOT compilation",
+          "answer": "AOT compiles before execution with no runtime knowledge; JIT compiles at runtime and can specialise on observed behaviour.",
+          "columns": {
+            "left": { "title": "AOT", "points": ["Fast startup, predictable performance", "No warm-up, no compilation pauses", "Smaller runtime, easier to ship", "Cannot exploit runtime type feedback"] },
+            "right": { "title": "JIT", "points": ["Profiles then optimises hot paths", "Inline caches, speculative devirtualisation", "Slow start; needs warm-up", "Can deoptimise when assumptions break"] }
+          },
+          "explanation": "The JVM and V8 tier up: interpret, then lightly optimise, then aggressively optimise hot code with guards that bail out if assumptions fail. That is why microbenchmarks must warm up, and why AOT (GraalVM native image, .NET AOT) wins for short-lived serverless processes.",
+          "resources": [
+            { "title": "V8 — Ignition and TurboFan", "url": "https://v8.dev/blog/launching-ignition-and-turbofan", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-static-dynamic-typing",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["compilers.types", "languages.design"],
+          "prompt": "Static vs dynamic typing",
+          "answer": "Static typing checks types before execution; dynamic typing checks them at runtime when an operation is performed.",
+          "columns": {
+            "left": { "title": "Static", "points": ["Whole classes of errors caught at compile time", "Enables optimisation and better tooling", "Requires annotations or inference", "Type system can obstruct valid programs"] },
+            "right": { "title": "Dynamic", "points": ["Fast to write, flexible at runtime", "Errors surface only on execution", "Duck typing and metaprogramming", "Needs more tests to reach the same confidence"] }
+          },
+          "explanation": "Orthogonal to strong vs weak typing, which is about implicit coercion: Python is dynamic but strong (`'1' + 1` errors), JavaScript is dynamic and weak (`'1' + 1` is `'11'`). Gradual typing (TypeScript, mypy) tries to buy the static benefits incrementally.",
+          "resources": [
+            { "title": "Wikipedia — Type system", "url": "https://en.wikipedia.org/wiki/Type_system", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-undefined-optimisation",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["compilers.optimisation", "cpp.ub"],
+          "prompt": "Why might the optimiser delete this null check entirely?",
+          "code": "void f(int *p) {\n    int x = *p;          // dereference\n    if (p == NULL) return;   // check afterwards\n    use(x);\n}",
+          "lang": "c",
+          "answer": "Dereferencing `p` is undefined behaviour if it is null, so the compiler may assume `p` is non-null from that line on — making the check provably false and removable.",
+          "explanation": "Optimisers reason from the assumption that UB never happens. This is the root of many 'the compiler broke my code' reports and of real kernel CVEs where a null check vanished. Check before you dereference, and build with sanitisers.",
+          "resources": [
+            { "title": "LLVM Blog — What every C programmer should know about undefined behavior", "url": "https://blog.llvm.org/2011/05/what-every-c-programmer-should-know.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-linking",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.linking", "build"],
+          "prompt": "What does a linker do, and what is the difference between static and dynamic linking?",
+          "answer": "It resolves symbol references across object files and libraries and lays out the final image. Static linking copies the library into the binary; dynamic linking records a dependency resolved at load time.",
+          "explanation": "Static gives a self-contained binary and no version skew, at the cost of size and no shared security patching. Dynamic gives smaller binaries and system-wide updates, at the cost of dependency hell — which is exactly what containers were invented to contain.",
+          "resources": [
+            { "title": "Wikipedia — Linker (computing)", "url": "https://en.wikipedia.org/wiki/Linker_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-interpreter-vs-compiler",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["compilers.pipeline", "runtime"],
+          "prompt": "CPython compiles source to ___ , which the virtual machine then interprets.",
+          "answer": "bytecode",
+          "explanation": "The `.pyc` files in `__pycache__` are cached bytecode, not machine code. Java does the same with class files on the JVM. The distinction 'compiled vs interpreted' is about implementation, not language — there are C interpreters and Python compilers.",
+          "resources": [
+            { "title": "Python docs — dis module", "url": "https://docs.python.org/3/library/dis.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

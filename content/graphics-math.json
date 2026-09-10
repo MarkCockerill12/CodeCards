@@ -1,0 +1,143 @@
+{
+  "id": "graphics-math",
+  "name": "Graphics & Math",
+  "icon": "📐",
+  "category": "Game Development",
+  "color": "#0D9488",
+  "description": "Vectors, matrices, transforms, quaternions, the rendering pipeline and shader fundamentals.",
+  "modules": [
+    {
+      "id": "gm-math",
+      "name": "Vector & Matrix Math",
+      "description": "The linear algebra you use every day in graphics and games.",
+      "cards": [
+        {
+          "id": "gm-dot-product",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["math.vectors", "gamedev.math"],
+          "prompt": "What does the dot product tell you, and what is it used for?",
+          "answer": "`a · b = |a||b|cos θ`. With normalised vectors it is the cosine of the angle: 1 same direction, 0 perpendicular, −1 opposite. Used for lighting (surface normal vs light direction), field-of-view checks, and projecting one vector onto another.",
+          "explanation": "'Is the enemy in front of me?' is `dot(forward, toEnemy) > 0`. Lambert diffuse lighting is `max(0, dot(N, L))`. Cheap and everywhere — one multiply-add per component.",
+          "resources": [
+            { "title": "Khan Academy — Dot products", "url": "https://www.khanacademy.org/math/linear-algebra/vectors-and-spaces/dot-cross-products/v/vector-dot-product-and-vector-length", "kind": "video" }
+          ]
+        },
+        {
+          "id": "gm-cross-product",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["math.vectors", "gamedev.math"],
+          "prompt": "What does the cross product produce?",
+          "answer": "A vector perpendicular to both inputs, with magnitude `|a||b|sin θ` — the area of the parallelogram they span. Direction follows the right-hand rule (in a right-handed coordinate system).",
+          "explanation": "Used to compute surface normals from triangle edges, to build orthonormal bases, and to determine turn direction — the sign of the 2D cross product tells you whether a point is left or right of a line.",
+          "prerequisites": ["gm-dot-product"],
+          "resources": [
+            { "title": "Wikipedia — Cross product", "url": "https://en.wikipedia.org/wiki/Cross_product", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-transform-order",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["math.matrices", "gamedev.transforms"],
+          "prompt": "Why does the object end up in the wrong place?",
+          "code": "// intended: rotate the object, then move it 10 units right\nmat4 model = rotate(radians(45.0)) * translate(vec3(10, 0, 0));",
+          "lang": "glsl",
+          "answer": "Matrix multiplication is not commutative and applies right-to-left: this translates first, then rotates that translation about the origin — swinging the object around. Write `translate * rotate` for rotate-then-move.",
+          "explanation": "The standard order for a model matrix is translate × rotate × scale, so scaling happens first and translation last. Getting this wrong produces objects that orbit the origin or shear when scaled — the classic first-week graphics bug.",
+          "resources": [
+            { "title": "LearnOpenGL — Transformations", "url": "https://learnopengl.com/Getting-started/Transformations", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-quaternions",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["math.rotation", "gamedev.math"],
+          "prompt": "Why do games use quaternions instead of Euler angles for rotation?",
+          "answer": "Euler angles suffer gimbal lock — at certain orientations two axes align and a degree of freedom is lost — and they interpolate badly. Quaternions have no gimbal lock, compose cheaply, and interpolate smoothly with slerp.",
+          "explanation": "A unit quaternion encodes an axis and an angle in four numbers. Keep them normalised (floating-point drift accumulates), and remember q and −q represent the same rotation — which matters when interpolating, since slerp should take the short path.",
+          "prerequisites": ["gm-transform-order"],
+          "resources": [
+            { "title": "3Blue1Brown — Quaternions", "url": "https://eater.net/quaternions", "kind": "video" }
+          ]
+        },
+        {
+          "id": "gm-spaces",
+          "type": "cloze",
+          "difficulty": 4,
+          "tags": ["gamedev.transforms", "graphics.pipeline"],
+          "prompt": "A vertex travels model → world → view → ___ → NDC → screen space.",
+          "answer": "clip",
+          "explanation": "Model matrix places the object in the world, view matrix moves the world into camera space, projection produces clip space, the perspective divide gives normalised device coordinates, and the viewport transform maps to pixels. Debugging a 'nothing renders' bug usually means finding which of these is wrong.",
+          "prerequisites": ["gm-transform-order"],
+          "resources": [
+            { "title": "LearnOpenGL — Coordinate systems", "url": "https://learnopengl.com/Getting-started/Coordinate-Systems", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gm-rendering",
+      "name": "Rendering & Shaders",
+      "description": "The pipeline, shader stages and what actually costs frame time.",
+      "cards": [
+        {
+          "id": "gm-pipeline",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["graphics.pipeline"],
+          "prompt": "What are the stages of the rasterisation pipeline?",
+          "answer": "Vertex shader → (optional tessellation and geometry) → primitive assembly and clipping → rasterisation → fragment/pixel shader → per-fragment tests (depth, stencil, blending) → framebuffer.",
+          "explanation": "Vertex shaders run per vertex, fragment shaders per covered pixel — so a full-screen effect can run millions of fragment invocations. That asymmetry is why moving work from the fragment stage to the vertex stage, or to a lower resolution pass, is such a common optimisation.",
+          "resources": [
+            { "title": "LearnOpenGL — Hello triangle", "url": "https://learnopengl.com/Getting-started/Hello-Triangle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-draw-calls",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["graphics.performance", "gamedev.performance"],
+          "prompt": "A scene with 5,000 small objects runs badly despite a low triangle count. Why?",
+          "answer": "Draw-call overhead: each one costs CPU work and a state change. Fix with batching, instancing for repeated meshes, texture atlases and shared materials so the renderer can group them.",
+          "explanation": "Modern GPUs eat triangles happily; the bottleneck is usually the CPU submitting work. Instancing draws thousands of copies with one call. Note that different materials break batching — which is why an atlas often outperforms 'cleaner' per-object textures.",
+          "prerequisites": ["gm-pipeline"],
+          "resources": [
+            { "title": "Unity — Draw call batching", "url": "https://docs.unity3d.com/Manual/DrawCallBatching.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "gm-shader-types",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["graphics.shaders"],
+          "prompt": "Vertex shader vs fragment shader",
+          "answer": "Vertex shaders transform vertices and output per-vertex data; fragment shaders compute the colour of each covered pixel using interpolated inputs.",
+          "columns": {
+            "left": { "title": "Vertex", "points": ["Runs once per vertex", "Applies MVP transforms, skinning, displacement", "Outputs are interpolated across the triangle", "Cheap relative to fragment work"] },
+            "right": { "title": "Fragment", "points": ["Runs per covered pixel — often millions", "Lighting, texturing, post effects", "Where overdraw hurts most", "Branching can be costly on GPUs"] }
+          },
+          "explanation": "GPUs execute in lockstep groups (warps/wavefronts), so a branch taken by only some threads makes both paths execute. Prefer arithmetic and `mix`/`step` over conditionals in hot fragment code.",
+          "prerequisites": ["gm-pipeline"],
+          "resources": [
+            { "title": "The Book of Shaders", "url": "https://thebookofshaders.com/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gm-color-space",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["graphics.color"],
+          "prompt": "Why does blending colours in sRGB produce muddy results?",
+          "answer": "sRGB values are gamma-encoded, not linear in light intensity. Averaging encoded values is not averaging light. Convert to linear space, do the maths, then convert back for display.",
+          "explanation": "This is why naive alpha blending and mipmaps can look wrong — dark fringes on transparent edges, grey halos. Modern engines work in linear space internally and apply the transfer function at the very end, along with tone mapping for HDR.",
+          "resources": [
+            { "title": "Wikipedia — sRGB", "url": "https://en.wikipedia.org/wiki/SRGB", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

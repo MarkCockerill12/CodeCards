@@ -1,0 +1,193 @@
+{
+  "id": "data-structures",
+  "name": "Data Structures",
+  "icon": "🧱",
+  "category": "Computer Science",
+  "color": "#22C55E",
+  "description": "Arrays, hash tables, trees, heaps, graphs and tries — how they are built, what they cost, and when to pick which.",
+  "modules": [
+    {
+      "id": "ds-linear",
+      "name": "Linear Structures",
+      "description": "Arrays, lists, stacks, queues and the cache behaviour that decides real performance.",
+      "cards": [
+        {
+          "id": "ds-array-vs-linked",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["ds.array", "ds.linked-list"],
+          "prompt": "Dynamic array vs linked list",
+          "answer": "Arrays give O(1) indexing and cache locality; linked lists give O(1) splice at a known node and stable references.",
+          "columns": {
+            "left": { "title": "Dynamic array", "points": ["O(1) random access", "Contiguous — prefetcher-friendly", "O(n) insert/delete in the middle", "Amortised O(1) append, occasional reallocation"] },
+            "right": { "title": "Linked list", "points": ["O(n) to reach an index", "Pointer chasing — a cache miss per node", "O(1) insert/delete given the node", "Extra pointer per element"] }
+          },
+          "explanation": "In practice arrays win far more often than the asymptotics suggest, because a cache miss costs ~100x an L1 hit. Linked lists earn their place when you hold stable node references, splice frequently, or need intrusive lists in kernels and allocators.",
+          "resources": [
+            { "title": "Wikipedia — Dynamic array", "url": "https://en.wikipedia.org/wiki/Dynamic_array", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-amortized-growth",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ds.array", "algo.amortized"],
+          "prompt": "Why is appending to a dynamic array amortised O(1) even though resizing is O(n)?",
+          "answer": "Because capacity grows geometrically. Doubling means the total copy work across n appends is n + n/2 + n/4 + … < 2n, so the average per append is constant.",
+          "explanation": "Growing by a constant amount instead would make n appends O(n²). The growth factor trades memory for copies: 2x wastes up to half the buffer, 1.5x reuses freed blocks better — which is why several implementations chose it.",
+          "resources": [
+            { "title": "Wikipedia — Amortized analysis", "url": "https://en.wikipedia.org/wiki/Amortized_analysis", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-stack-queue",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["ds.stack", "ds.queue"],
+          "prompt": "You are parsing nested brackets and separately scheduling jobs fairly. Which structure for each, and why?",
+          "answer": "A stack (LIFO) for the brackets — the most recent opener must close first. A queue (FIFO) for the jobs — fairness means first submitted, first served.",
+          "explanation": "Recursion is a stack; breadth-first traversal is a queue; depth-first is a stack. Recognising which discipline a problem needs usually solves half of it. A deque supports both ends and is the base for sliding-window algorithms.",
+          "resources": [
+            { "title": "Wikipedia — Stack (abstract data type)", "url": "https://en.wikipedia.org/wiki/Stack_(abstract_data_type)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-hash-collision",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ds.hashtable"],
+          "prompt": "How do hash tables resolve collisions, and what is the load factor?",
+          "answer": "Separate chaining stores colliding entries in a per-bucket list or tree; open addressing probes for another slot (linear, quadratic or double hashing). Load factor = entries / buckets, and it drives the resize.",
+          "explanation": "Open addressing is cache-friendlier but degrades sharply past ~0.7 load and needs tombstones on delete. Chaining tolerates higher load and simpler deletion. Java upgrades long chains to red-black trees to bound the worst case at O(log n).",
+          "resources": [
+            { "title": "Wikipedia — Hash table", "url": "https://en.wikipedia.org/wiki/Hash_table", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-hash-complexity",
+          "type": "complexity",
+          "difficulty": 2,
+          "tags": ["ds.hashtable", "algo.complexity"],
+          "prompt": "Hash table insert, lookup and delete complexity?",
+          "answer": "O(1) average, O(n) worst case; O(n) space.",
+          "complexity": { "time": "O(1) average, O(n) worst", "space": "O(n)" },
+          "explanation": "The worst case needs every key in one bucket — possible with adversarial input, which is why languages randomise string hashing per process (hash-flooding DoS). Ordering is not guaranteed; use a tree map or an insertion-ordered map when it matters.",
+          "prerequisites": ["ds-hash-collision"],
+          "resources": [
+            { "title": "Wikipedia — Hash table", "url": "https://en.wikipedia.org/wiki/Hash_table", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ds-trees",
+      "name": "Trees, Heaps & Tries",
+      "description": "Balanced search trees, priority queues, prefix trees and the structures databases are built on.",
+      "cards": [
+        {
+          "id": "ds-bst-balance",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ds.tree", "ds.bst"],
+          "prompt": "Why does an unbalanced BST matter, and how do balanced trees fix it?",
+          "answer": "Inserting sorted data into a plain BST produces a linked list — O(n) operations. Self-balancing trees (AVL, red-black) rotate on insert/delete to keep height O(log n).",
+          "explanation": "AVL is more strictly balanced (faster lookups, more rotations); red-black tolerates more imbalance (faster writes) and is what most standard libraries use for ordered maps. B-trees generalise the idea to high fan-out for disk and page-based storage.",
+          "resources": [
+            { "title": "Wikipedia — Self-balancing binary search tree", "url": "https://en.wikipedia.org/wiki/Self-balancing_binary_search_tree", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-btree-why",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ds.btree", "db.index"],
+          "prompt": "Why do databases index with B+ trees rather than red-black trees?",
+          "answer": "Because the cost unit is a disk or page read, not a comparison. A B+ tree node holds hundreds of keys in one page, so tree height is tiny — three or four page reads for millions of rows — and leaves are linked for range scans.",
+          "explanation": "A red-black tree with a million rows is ~20 levels, meaning up to 20 random reads. A B+ tree with fan-out 500 is 3 levels. Storing all values in the leaves and chaining them also makes `BETWEEN` and `ORDER BY` scans sequential.",
+          "prerequisites": ["ds-bst-balance"],
+          "resources": [
+            { "title": "Use The Index, Luke — Anatomy of an index", "url": "https://use-the-index-luke.com/sql/anatomy", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-heap",
+          "type": "complexity",
+          "difficulty": 3,
+          "tags": ["ds.heap", "ds.priority-queue"],
+          "prompt": "Binary heap: push, pop-min and peek complexity? And building a heap from n items?",
+          "answer": "Push O(log n), pop O(log n), peek O(1). Heapify from an array is O(n), not O(n log n).",
+          "complexity": { "time": "push/pop O(log n), peek O(1), build O(n)", "space": "O(n) in place" },
+          "explanation": "A binary heap is a complete tree stored in an array: children of i are 2i+1 and 2i+2, so no pointers. The O(n) build works bottom-up — most nodes are near the leaves and sift down only a level or two. It backs Dijkstra, A*, schedulers and top-k.",
+          "resources": [
+            { "title": "Wikipedia — Binary heap", "url": "https://en.wikipedia.org/wiki/Binary_heap", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-trie",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ds.trie", "ds.strings"],
+          "prompt": "You need autocomplete over millions of terms with prefix matching. Which structure, and what is the trade-off?",
+          "answer": "A trie (prefix tree): lookup and prefix enumeration cost O(k) in the key length, independent of the number of stored keys. The cost is memory — one node per character unless compressed.",
+          "explanation": "A radix/PATRICIA trie collapses single-child chains and cuts memory dramatically. For static dictionaries, a DAWG or an FST (as used by Lucene) compresses shared suffixes too. A hash map cannot answer prefix queries at all.",
+          "resources": [
+            { "title": "Wikipedia — Trie", "url": "https://en.wikipedia.org/wiki/Trie", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-graph-representation",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["ds.graph"],
+          "prompt": "Adjacency list vs adjacency matrix",
+          "answer": "List is O(V+E) space and fast to iterate neighbours; matrix is O(V²) space and O(1) edge lookup.",
+          "columns": {
+            "left": { "title": "Adjacency list", "points": ["O(V + E) space", "Neighbour iteration is O(deg(v))", "Edge existence check is O(deg(v))", "Right for sparse graphs — most real graphs"] },
+            "right": { "title": "Adjacency matrix", "points": ["O(V²) space regardless of edges", "O(1) edge existence check", "Cache-friendly, enables matrix algorithms", "Right for dense graphs and small V"] }
+          },
+          "explanation": "Real-world graphs (social, road, dependency) are sparse: E ≈ cV, so lists win by orders of magnitude. Matrices shine when V is small and bounded, or when you want bitset tricks or Floyd–Warshall.",
+          "resources": [
+            { "title": "Wikipedia — Graph (abstract data type)", "url": "https://en.wikipedia.org/wiki/Graph_(abstract_data_type)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-union-find",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ds.union-find", "algo.graph"],
+          "prompt": "What does a disjoint-set (union-find) structure do, and what makes it near-constant time?",
+          "answer": "It tracks a partition of elements into disjoint sets with `find` (which set?) and `union` (merge two). Path compression plus union by rank/size gives O(α(n)) amortised — inverse Ackermann, effectively constant.",
+          "explanation": "It powers Kruskal's MST, connected-component labelling, cycle detection in undirected graphs, and incremental connectivity. Path compression flattens the tree during every find, so repeated queries get cheaper as you use it.",
+          "resources": [
+            { "title": "Wikipedia — Disjoint-set data structure", "url": "https://en.wikipedia.org/wiki/Disjoint-set_data_structure", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-bloom-filter",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ds.probabilistic", "system.cache"],
+          "prompt": "You want to avoid a disk lookup for keys that are definitely absent, using very little memory. What do you use?",
+          "answer": "A Bloom filter: k hash functions over a bit array. It answers 'definitely not present' or 'possibly present' — false positives are possible, false negatives are not.",
+          "explanation": "About 10 bits per element gives ~1% false positives. Standard Bloom filters cannot delete (counting variants can) and cannot be resized. LevelDB, RocksDB, Cassandra and Chrome's safe-browsing all use them to skip expensive lookups.",
+          "resources": [
+            { "title": "Wikipedia — Bloom filter", "url": "https://en.wikipedia.org/wiki/Bloom_filter", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-lru-cache",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ds.cache", "ds.design"],
+          "prompt": "Design an LRU cache with O(1) get and put. Which two structures do you combine?",
+          "answer": "A hash map from key to node, plus a doubly linked list ordering nodes by recency. Get moves the node to the head; put evicts the tail when full.",
+          "explanation": "The hash map gives O(1) lookup, the linked list gives O(1) reordering and eviction — neither can do both alone. This is the canonical 'compose two structures' interview question, and it is exactly how real caches are built.",
+          "prerequisites": ["ds-array-vs-linked", "ds-hash-collision"],
+          "resources": [
+            { "title": "Wikipedia — Cache replacement policies", "url": "https://en.wikipedia.org/wiki/Cache_replacement_policies", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

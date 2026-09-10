@@ -1,0 +1,166 @@
+{
+  "id": "cybersecurity",
+  "name": "Cyber Security",
+  "icon": "🛡️",
+  "category": "Security",
+  "color": "#DC2626",
+  "description": "Threat modelling, authentication, common attacks, defence in depth and incident response.",
+  "modules": [
+    {
+      "id": "cs-principles",
+      "name": "Principles & Threat Modelling",
+      "description": "How to think about security before you think about tools.",
+      "cards": [
+        {
+          "id": "sec-cia-triad",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.fundamentals"],
+          "prompt": "What is the CIA triad?",
+          "answer": "Confidentiality (only authorised parties can read it), Integrity (data cannot be altered undetected), Availability (the system is usable when needed).",
+          "explanation": "Most controls trade between them: aggressive rate limiting protects integrity and availability but can deny legitimate users; heavy encryption protects confidentiality but complicates recovery. Naming which property you are protecting sharpens every design argument.",
+          "resources": [
+            { "title": "NIST — Glossary: CIA triad", "url": "https://csrc.nist.gov/glossary/term/confidentiality_integrity_availability", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "sec-threat-model",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.threat-modelling"],
+          "prompt": "What four questions does a threat model answer, and what does STRIDE add?",
+          "answer": "What are we building? What can go wrong? What are we going to do about it? Did we do a good job? STRIDE enumerates threat categories: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege.",
+          "explanation": "Threat modelling is a whiteboard activity, not a tool purchase. Draw the data flows, mark the trust boundaries, and walk STRIDE at each boundary. Most exploitable design flaws are visible at that diagram stage.",
+          "resources": [
+            { "title": "OWASP — Threat modeling", "url": "https://owasp.org/www-community/Threat_Modeling", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sec-defence-depth",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["security.principles"],
+          "prompt": "Name the core security design principles.",
+          "answer": "Least privilege, defence in depth, fail securely, complete mediation, separation of duties, minimise the attack surface, no security through obscurity, and secure defaults.",
+          "explanation": "Least privilege and secure defaults do most of the work in practice. 'Fail securely' is the one people get backwards: an auth service timing out must deny, not allow — that error path is where real breaches happen.",
+          "resources": [
+            { "title": "OWASP — Security by design principles", "url": "https://owasp.org/www-project-developer-guide/draft/foundations/security_principles/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sec-zero-trust",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["security.architecture"],
+          "prompt": "What does zero trust actually change compared with a perimeter model?",
+          "answer": "It stops treating network location as authorisation. Every request is authenticated and authorised on its own merits — strong identity for users *and* services, device posture checks, and per-request policy rather than 'inside the VPN is trusted'.",
+          "explanation": "The perimeter model fails on the first compromised laptop: the attacker inherits everything the network trusts. In practice zero trust means mTLS between services, short-lived credentials, and authorisation decisions at each hop.",
+          "prerequisites": ["sec-defence-depth"],
+          "resources": [
+            { "title": "NIST SP 800-207 — Zero Trust Architecture", "url": "https://csrc.nist.gov/pubs/sp/800/207/final", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cs-attacks",
+      "name": "Attacks & Defences",
+      "description": "The attacks you will actually meet, and the controls that stop them.",
+      "cards": [
+        {
+          "id": "sec-authn-authz",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["security.auth"],
+          "prompt": "Authentication vs authorisation",
+          "answer": "Authentication proves who you are; authorisation decides what you may do.",
+          "columns": {
+            "left": { "title": "Authentication (AuthN)", "points": ["Passwords, passkeys, MFA, certificates", "Happens once per session", "Failure → 401", "Answers: who is this?"] },
+            "right": { "title": "Authorisation (AuthZ)", "points": ["Roles, scopes, ownership, policies", "Checked on every request and object", "Failure → 403", "Answers: are they allowed?"] }
+          },
+          "explanation": "Broken access control is the number one item in the OWASP Top 10 — usually because authorisation was checked in the UI or at the route, but not on the object. Every handler must verify that *this* user may touch *this* record.",
+          "resources": [
+            { "title": "OWASP Top 10 — Broken access control", "url": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sec-password-storage",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["security.passwords", "security.crypto"],
+          "prompt": "What is wrong with this password storage?",
+          "code": "hashed = hashlib.sha256(password.encode()).hexdigest()\ndb.save(user, hashed)",
+          "lang": "python",
+          "answer": "SHA-256 is a fast general-purpose hash with no salt — perfect for GPU cracking at billions of guesses per second. Use a memory-hard password hash: Argon2id, scrypt or bcrypt, each of which salts automatically.",
+          "explanation": "Password hashing must be *deliberately slow and memory-hungry* so an attacker with the dump cannot brute-force it. Argon2id is the current recommendation; tune the parameters so verification takes tens of milliseconds on your hardware.",
+          "resources": [
+            { "title": "OWASP — Password storage cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-xss-types",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["security.xss", "web.security"],
+          "prompt": "What are the three kinds of XSS, and what actually stops them?",
+          "answer": "Stored (payload persisted server-side), reflected (payload echoed from the request) and DOM-based (client-side sink such as `innerHTML`). The defence is context-aware output encoding, plus avoiding dangerous sinks — with CSP as the backstop.",
+          "explanation": "Encoding must match the context: HTML body, attribute, JavaScript string and URL each escape differently. Modern frameworks escape by default, so most real XSS now comes from deliberately unsafe escapes (`dangerouslySetInnerHTML`, `v-html`) or from `href=\"javascript:\"`.",
+          "resources": [
+            { "title": "OWASP — Cross-site scripting prevention", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-csrf",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["security.csrf", "web.security"],
+          "prompt": "How does CSRF work, and what stops it today?",
+          "answer": "An attacker's page triggers a state-changing request to your site; the browser attaches the victim's cookies automatically. Defences: `SameSite=Lax/Strict` cookies, anti-CSRF tokens, and requiring a custom header that cross-origin forms cannot set.",
+          "explanation": "CSRF exploits ambient authority — the browser sending credentials without the page proving it meant to. Token-based auth in an `Authorization` header is naturally immune, because nothing attaches it automatically.",
+          "prerequisites": ["sec-authn-authz"],
+          "resources": [
+            { "title": "OWASP — CSRF prevention cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-ssrf",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["security.ssrf", "cloud.security"],
+          "prompt": "Why is this endpoint dangerous in a cloud environment?",
+          "code": "@app.get('/fetch')\ndef fetch(url: str):\n    return requests.get(url).text",
+          "lang": "python",
+          "answer": "Server-side request forgery. An attacker can point it at internal services or the cloud metadata endpoint (169.254.169.254) and retrieve credentials. Validate against an allowlist, block private and link-local ranges, and re-check after redirects.",
+          "explanation": "SSRF caused the Capital One breach. DNS rebinding and redirects defeat naive checks, so resolve the hostname, validate the resulting IP, and connect to that IP. Enforcing IMDSv2 removes the easiest credential-theft path on AWS.",
+          "resources": [
+            { "title": "OWASP — SSRF prevention cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-secrets",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["security.secrets", "devops"],
+          "prompt": "A secret was committed to a public repository. What do you do?",
+          "answer": "Rotate it immediately — assume it is compromised the moment it lands. Removing the commit is secondary: it was cloned, cached and scraped within minutes. Then add scanning to prevent recurrence.",
+          "explanation": "Git history rewriting does not un-publish anything. Prevention: pre-commit secret scanning, `.gitignore` for env files, and a secret manager (Vault, AWS Secrets Manager, SOPS) so secrets never sit in the repo or in plain environment files.",
+          "resources": [
+            { "title": "GitHub Docs — Removing sensitive data from a repository", "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-incident-response",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["security.operations"],
+          "prompt": "What are the phases of incident response?",
+          "answer": "Preparation, detection and analysis, containment, eradication, recovery, and post-incident review — with evidence preservation running through all of them.",
+          "explanation": "The instinct to 'clean up and move on' destroys the evidence needed to know what was taken. Snapshot before you wipe. The blameless post-mortem is where the actual value is: the same class of failure recurs until the system changes.",
+          "resources": [
+            { "title": "NIST SP 800-61 — Computer Security Incident Handling Guide", "url": "https://csrc.nist.gov/pubs/sp/800/61/r2/final", "kind": "spec" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "id": "testing",
+  "name": "Testing",
+  "icon": "🧪",
+  "category": "Process & Craft",
+  "color": "#059669",
+  "description": "The test pyramid, doubles, TDD, property-based testing and writing tests that survive refactoring.",
+  "modules": [
+    {
+      "id": "test-strategy",
+      "name": "Strategy & Structure",
+      "description": "What to test at which level, and what a good test looks like.",
+      "cards": [
+        {
+          "id": "test-pyramid",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["testing.strategy"],
+          "prompt": "What is the test pyramid, and what is the trade-off it encodes?",
+          "answer": "Many fast unit tests, fewer integration tests, a small number of end-to-end tests. Speed and determinism decrease as you go up; confidence that the whole system works increases.",
+          "explanation": "An inverted pyramid — mostly E2E — gives slow, flaky suites nobody trusts. All-unit gives fast green builds over a system that does not actually work. The 'testing trophy' argues for weighting integration tests most heavily, which is reasonable for typical web applications.",
+          "resources": [
+            { "title": "Martin Fowler — The practical test pyramid", "url": "https://martinfowler.com/articles/practical-test-pyramid.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-doubles",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["testing.doubles"],
+          "prompt": "Name the kinds of test double and what each is for.",
+          "answer": "Dummy (filler, never used), stub (returns canned answers), spy (records calls), mock (asserts on expected interactions), fake (a working lightweight implementation, such as an in-memory repository).",
+          "explanation": "Fakes usually age best — they exercise real behaviour without real infrastructure. Mocks that assert on every internal call couple the test to the implementation, so a refactor that changes nothing observable still breaks the suite.",
+          "resources": [
+            { "title": "Martin Fowler — Test double", "url": "https://martinfowler.com/bliki/TestDouble.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-brittle",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["testing.craft"],
+          "prompt": "Why will this test break during a harmless refactor?",
+          "code": "def test_checkout():\n    service.checkout(cart)\n    assert repo.save.call_count == 3\n    assert logger.info.called\n    assert mailer.send.call_args[0][0] == 'order.tpl'",
+          "lang": "python",
+          "answer": "It asserts on implementation details — how many saves, that logging happened, which template was used. Assert on observable behaviour instead: the order exists, is paid, and a confirmation was sent to the customer.",
+          "explanation": "A good test describes *what* the system does, so it fails only when behaviour changes. Tests coupled to internals actively discourage refactoring, which is the opposite of what they are for.",
+          "prerequisites": ["test-doubles"],
+          "resources": [
+            { "title": "Google Testing Blog — Test behaviour, not implementation", "url": "https://testing.googleblog.com/2013/08/testing-on-toilet-test-behavior-not.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-aaa",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["testing.craft"],
+          "prompt": "A well-structured test follows Arrange, Act, ___.",
+          "answer": "Assert",
+          "explanation": "One logical assertion per test keeps failures diagnostic — you learn what broke from the test name alone. If a test needs several acts, it is probably several tests. Name tests after the behaviour: `rejects_expired_coupon`, not `test_checkout_2`.",
+          "resources": [
+            { "title": "Martin Fowler — Given-When-Then", "url": "https://martinfowler.com/bliki/GivenWhenThen.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-practice",
+      "name": "Techniques",
+      "description": "TDD, coverage, property-based testing and testing the awkward parts.",
+      "cards": [
+        {
+          "id": "test-tdd",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["testing.tdd", "process"],
+          "prompt": "What is the TDD cycle, and what does it actually give you?",
+          "answer": "Red (write a failing test), green (make it pass simply), refactor (clean up with the test as a safety net). What it buys is testable design, an executable specification, and immediate feedback — not merely coverage.",
+          "explanation": "Writing the test first forces you to use your own API before you build it, which surfaces awkward dependencies early. It is a design tool as much as a verification one — and it is not a religion; exploratory spikes are fine, just throw them away.",
+          "resources": [
+            { "title": "Martin Fowler — Test-driven development", "url": "https://martinfowler.com/bliki/TestDrivenDevelopment.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-coverage-limits",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["testing.metrics"],
+          "prompt": "Your team hits 100% line coverage. What does that guarantee?",
+          "answer": "That every line executed during the tests — nothing more. It says nothing about assertions being meaningful, edge cases being covered, or branch and path combinations being exercised.",
+          "explanation": "Coverage is a good *negative* signal: 20% coverage tells you something real. As a target it invites gaming — tests that call code and assert nothing. Branch coverage is more informative than line coverage, and mutation testing measures whether your assertions actually catch changes.",
+          "resources": [
+            { "title": "Martin Fowler — Test coverage", "url": "https://martinfowler.com/bliki/TestCoverage.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-property-based",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["testing.property-based"],
+          "prompt": "What does property-based testing add over example-based tests?",
+          "answer": "Instead of fixed cases you state a property that must always hold — `decode(encode(x)) == x`, 'the result is always sorted' — and the framework generates hundreds of inputs, shrinking any failure to a minimal counterexample.",
+          "explanation": "It finds the edge cases you did not imagine: empty inputs, unicode, huge values, NaN, duplicates. Hypothesis (Python), fast-check (JS) and QuickCheck (Haskell) are the standard tools. Round-trip and invariant properties are the easiest to start with.",
+          "resources": [
+            { "title": "Hypothesis documentation", "url": "https://hypothesis.readthedocs.io/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-hard-things",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["testing.craft", "design"],
+          "prompt": "How do you test code that depends on time, randomness or the network?",
+          "answer": "Inject them. Pass a clock, a random source and an HTTP client as dependencies so tests can supply deterministic versions. Use fake timers, seeded RNGs, and recorded or stubbed HTTP responses.",
+          "explanation": "'This is hard to test' almost always means 'this has hidden dependencies'. Making them explicit improves the design regardless of testing. For third-party APIs, contract tests plus a recorded fixture beat either mocking blindly or hitting the real service in CI.",
+          "prerequisites": ["test-doubles"],
+          "resources": [
+            { "title": "Martin Fowler — Dependency injection", "url": "https://martinfowler.com/articles/injection.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-regression",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["testing.process", "debugging"],
+          "prompt": "What is the first thing to do when a bug is reported?",
+          "answer": "Write a failing test that reproduces it. Then fix it. The test proves the diagnosis, proves the fix, and stops the bug returning.",
+          "explanation": "Fixing without a reproducing test means you are guessing about both cause and cure. This habit also grows your suite where it matters most — around the code that has actually proven capable of being wrong.",
+          "resources": [
+            { "title": "Google Testing Blog", "url": "https://testing.googleblog.com/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

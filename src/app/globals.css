@@ -1,0 +1,481 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', 'SF Mono', Menlo, monospace;
+
+  --color-ink: #e2e8f0;
+  --color-ink-muted: #94a3b8;
+  --color-panel: rgba(15, 23, 42, 0.62);
+  --color-panel-border: rgba(148, 163, 184, 0.16);
+  --color-accent: #38bdf8;
+  --color-accent-2: #a855f7;
+  --color-good: #22c55e;
+  --color-warn: #f59e0b;
+  --color-bad: #ef4444;
+  --color-coin: #fbbf24;
+}
+
+:root {
+  /* Overwritten at runtime by CosmeticProvider */
+  --app-bg: radial-gradient(120% 90% at 50% -10%, #16233b 0%, #020617 60%);
+  --app-bg-size: auto;
+  --app-cursor: auto;
+  --fg: #e2e8f0;
+  --fg-muted: #94a3b8;
+  --panel: rgba(15, 23, 42, 0.62);
+  --panel-border: rgba(148, 163, 184, 0.16);
+
+  --card-bg: linear-gradient(145deg, #1e293b, #0f172a);
+  --card-bg-size: auto;
+  --card-border: rgba(148, 163, 184, 0.22);
+  --card-fg: #e2e8f0;
+  --card-accent: #38bdf8;
+  --card-font: var(--font-sans);
+  --card-glow: 0 24px 60px -20px rgba(2, 6, 23, 0.9);
+  --card-back-pattern: none;
+  --card-back-size: auto;
+  --card-back-tint: transparent;
+
+  --xp-fill: linear-gradient(90deg, #0ea5e9, #22d3ee);
+  --frame-ring: rgba(148, 163, 184, 0.35);
+  --frame-glow: none;
+  --name-fill: #e2e8f0;
+  --name-clip: border-box;
+  --name-shadow: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--app-bg) fixed;
+  background-size: var(--app-bg-size);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  cursor: var(--app-cursor);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.32);
+}
+
+/* Thin, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@utility panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+}
+
+@utility muted {
+  color: var(--fg-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Shiki multi-theme switching                                         */
+/* Build emits one --s-<theme> variable per token; the equipped theme   */
+/* is selected here with a single attribute on <html>.                  */
+/* ------------------------------------------------------------------ */
+.shiki {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  tab-size: 2;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.shiki code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+}
+
+.shiki .line {
+  display: block;
+  min-height: 1.6em;
+}
+
+html[data-syntax='nord'] .shiki,
+html[data-syntax='nord'] .shiki span {
+  color: var(--s-nord) !important;
+  background-color: var(--s-nord-bg) !important;
+}
+html[data-syntax='catppuccin'] .shiki,
+html[data-syntax='catppuccin'] .shiki span {
+  color: var(--s-catppuccin) !important;
+  background-color: var(--s-catppuccin-bg) !important;
+}
+html[data-syntax='dracula'] .shiki,
+html[data-syntax='dracula'] .shiki span {
+  color: var(--s-dracula) !important;
+  background-color: var(--s-dracula-bg) !important;
+}
+html[data-syntax='monokai'] .shiki,
+html[data-syntax='monokai'] .shiki span {
+  color: var(--s-monokai) !important;
+  background-color: var(--s-monokai-bg) !important;
+}
+html[data-syntax='onedark'] .shiki,
+html[data-syntax='onedark'] .shiki span {
+  color: var(--s-onedark) !important;
+  background-color: var(--s-onedark-bg) !important;
+}
+html[data-syntax='vitesse'] .shiki,
+html[data-syntax='vitesse'] .shiki span {
+  color: var(--s-vitesse) !important;
+  background-color: var(--s-vitesse-bg) !important;
+}
+html[data-syntax='tokyo'] .shiki,
+html[data-syntax='tokyo'] .shiki span {
+  color: var(--s-tokyo) !important;
+  background-color: var(--s-tokyo-bg) !important;
+}
+html[data-syntax='solarized'] .shiki,
+html[data-syntax='solarized'] .shiki span {
+  color: var(--s-solarized) !important;
+  background-color: var(--s-solarized-bg) !important;
+}
+html[data-syntax='gruvbox'] .shiki,
+html[data-syntax='gruvbox'] .shiki span {
+  color: var(--s-gruvbox) !important;
+  background-color: var(--s-gruvbox-bg) !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Flashcard shell                                                     */
+/* ------------------------------------------------------------------ */
+.flashcard {
+  background: var(--card-bg);
+  background-size: var(--card-bg-size);
+  border: 1px solid var(--card-border);
+  color: var(--card-fg);
+  font-family: var(--card-font);
+  box-shadow: var(--card-glow);
+  border-radius: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.flashcard-back-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--card-back-pattern);
+  background-size: var(--card-back-size);
+  background-color: var(--card-back-tint);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* Card skin flourishes */
+.skin-crt .flashcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    rgba(0, 0, 0, 0.22) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: multiply;
+}
+
+.skin-glass .flashcard {
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+.skin-sticky .flashcard {
+  transform: rotate(-0.6deg);
+  border-radius: 0.25rem;
+}
+
+.skin-holo .flashcard {
+  background-size: 300% 300%;
+  animation: holo-shift 9s ease-in-out infinite;
+}
+
+.skin-obsidian .flashcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 45%, rgba(249, 115, 22, 0.35) 50%, transparent 55%);
+  background-size: 250% 250%;
+  animation: holo-shift 7s linear infinite;
+}
+
+.back-binary .flashcard-face-back::after,
+.back-starfield .flashcard-face-back::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.6) 1px, transparent 1px);
+  background-size: 26px 26px;
+  animation: drift 24s linear infinite;
+}
+
+@keyframes holo-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 260px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Animated backgrounds                                                */
+/* ------------------------------------------------------------------ */
+.bg-anim-aurora body::before,
+.bg-anim-matrix body::before,
+.bg-anim-stars body::before,
+.bg-anim-grid body::before,
+.bg-anim-nebula body::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-anim-aurora body::before {
+  background: radial-gradient(40% 30% at 20% 20%, rgba(16, 185, 129, 0.22), transparent 70%),
+    radial-gradient(35% 28% at 75% 35%, rgba(99, 102, 241, 0.22), transparent 70%);
+  animation: aurora 22s ease-in-out infinite alternate;
+}
+
+.bg-anim-stars body::before {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.75) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+  background-size: 120px 120px, 60px 60px;
+  background-position: 0 0, 30px 30px;
+  animation: drift 90s linear infinite;
+  opacity: 0.6;
+}
+
+.bg-anim-matrix body::before {
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(34, 197, 94, 0.16) 0 2px,
+    transparent 2px 14px
+  );
+  background-size: 100% 220px;
+  animation: rain 6s linear infinite;
+  opacity: 0.35;
+}
+
+.bg-anim-grid body::before {
+  background-image: linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: perspective(400px) rotateX(58deg) translateY(20%);
+  transform-origin: bottom;
+  animation: grid-run 14s linear infinite;
+  opacity: 0.5;
+}
+
+.bg-anim-nebula body::before {
+  background: radial-gradient(35% 30% at 30% 40%, rgba(168, 85, 247, 0.25), transparent 70%),
+    radial-gradient(30% 25% at 70% 60%, rgba(34, 211, 238, 0.2), transparent 70%);
+  animation: aurora 30s ease-in-out infinite alternate;
+}
+
+@keyframes aurora {
+  from {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(4%, 3%, 0) scale(1.12);
+  }
+}
+
+@keyframes rain {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 220px;
+  }
+}
+
+@keyframes grid-run {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 60px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Cosmetic flourishes: frames, xp bars, names                         */
+/* ------------------------------------------------------------------ */
+.frame-ring {
+  box-shadow: 0 0 0 2px var(--frame-ring), var(--frame-glow);
+}
+
+.frame-pulse .frame-ring {
+  animation: pulse-ring 2.4s ease-in-out infinite;
+}
+
+.frame-prism .frame-ring {
+  animation: prism 4s linear infinite;
+}
+
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--frame-ring), 0 0 10px rgba(34, 211, 238, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--frame-ring), 0 0 26px rgba(34, 211, 238, 0.8);
+  }
+}
+
+@keyframes prism {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.xp-fill {
+  background: var(--xp-fill);
+  background-size: 200% 100%;
+}
+
+.xp-shimmer .xp-fill {
+  animation: shimmer 2.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+.display-name {
+  background: var(--name-fill);
+  background-clip: var(--name-clip);
+  -webkit-background-clip: var(--name-clip);
+  text-shadow: var(--name-shadow);
+}
+
+/* When the cosmetic asks for text clipping we need a transparent foreground. */
+html[data-nameclip='text'] .display-name {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+html:not([data-nameclip='text']) .display-name {
+  background: none;
+  color: var(--name-fill);
+}
+
+.name-holo .display-name {
+  background-size: 300% 100%;
+  animation: shimmer 5s linear infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* Misc                                                                */
+/* ------------------------------------------------------------------ */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-bottom-width: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-muted);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.answer-prose p {
+  margin: 0 0 0.6rem;
+}
+.answer-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+  background: rgba(148, 163, 184, 0.16);
+}
+.answer-prose ul {
+  margin: 0.2rem 0 0.6rem;
+  padding-left: 1.1rem;
+}
+.answer-prose li {
+  margin: 0.15rem 0;
+}

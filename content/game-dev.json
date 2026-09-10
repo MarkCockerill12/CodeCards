@@ -1,0 +1,146 @@
+{
+  "id": "game-dev",
+  "name": "Game Development",
+  "icon": "🎮",
+  "category": "Game Development",
+  "color": "#16A34A",
+  "description": "Game loops, delta time, ECS, physics, Unity/Unreal/Godot fundamentals and performance discipline.",
+  "modules": [
+    {
+      "id": "gd-core",
+      "name": "Engine Fundamentals",
+      "description": "The loop, time, and the architecture patterns games are built on.",
+      "cards": [
+        {
+          "id": "gd-game-loop",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["gamedev.loop", "gamedev.fundamentals"],
+          "prompt": "What does a game loop do, and why is physics usually on a fixed timestep?",
+          "answer": "Each frame: process input, update simulation, render. Physics runs on a fixed timestep accumulator so the simulation is deterministic and stable regardless of frame rate, with rendering interpolating between physics states.",
+          "explanation": "Variable-timestep physics behaves differently at 30 and 144 fps — collisions tunnel and integrators blow up. The standard structure accumulates real time and runs zero or more fixed steps per frame, which is Unity's FixedUpdate and Unreal's substepping.",
+          "resources": [
+            { "title": "Game Programming Patterns — Game loop", "url": "https://gameprogrammingpatterns.com/game-loop.html", "kind": "book" },
+            { "title": "Gaffer On Games — Fix your timestep", "url": "https://gafferongames.com/post/fix_your_timestep/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gd-delta-time",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["gamedev.loop", "gamedev.gotchas"],
+          "prompt": "Why does this player move faster on a 144 Hz monitor?",
+          "code": "void Update() {\n    transform.position += Vector3.forward * speed;\n}",
+          "lang": "csharp",
+          "answer": "The movement is per frame, not per second. Multiply by `Time.deltaTime` so speed is expressed in units per second and is frame-rate independent.",
+          "explanation": "Every per-frame change — movement, rotation, timers, lerps — needs delta time. The classic follow-up bug is `Lerp(a, b, deltaTime)`, which is frame-rate dependent smoothing; use `1 - exp(-k * dt)` when you need a stable exponential ease.",
+          "prerequisites": ["gd-game-loop"],
+          "resources": [
+            { "title": "Unity — Time.deltaTime", "url": "https://docs.unity3d.com/ScriptReference/Time-deltaTime.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "gd-ecs",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["gamedev.architecture", "performance"],
+          "prompt": "Object-oriented game objects vs entity-component-system",
+          "answer": "OO puts data and behaviour in deep inheritance hierarchies; ECS separates entities (ids), components (plain data) and systems (behaviour over component queries).",
+          "columns": {
+            "left": { "title": "GameObject / inheritance", "points": ["Intuitive: a Player is a Character is an Entity", "Deep hierarchies become rigid fast", "Scattered memory — poor cache use", "Fine for smaller projects"] },
+            "right": { "title": "ECS", "points": ["Composition instead of inheritance", "Components stored contiguously — cache friendly", "Systems parallelise naturally", "Steeper learning curve, more indirection"] }
+          },
+          "explanation": "ECS exists because of the memory wall: iterating 10,000 positions packed in an array is far faster than chasing 10,000 scattered objects. Unity DOTS, Bevy and most modern engines lean this way for simulation-heavy code.",
+          "resources": [
+            { "title": "Game Programming Patterns — Component", "url": "https://gameprogrammingpatterns.com/component.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-engines-compare",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["gamedev.engines", "architecture.decisions"],
+          "prompt": "Unity vs Unreal vs Godot",
+          "answer": "Unity: C#, huge asset ecosystem, strongest for mobile and mid-scale 3D/2D. Unreal: C++ and Blueprints, best-in-class rendering, AAA and cinematics. Godot: GDScript/C#, tiny, free and open source, excellent 2D.",
+          "columns": {
+            "left": { "title": "Unity / Unreal", "points": ["Unity: fastest iteration, biggest job market", "Unity: royalty-free tiers, licence history is a real risk factor", "Unreal: Nanite/Lumen, superb out-of-the-box fidelity", "Unreal: 5% royalty past a revenue threshold"] },
+            "right": { "title": "Godot", "points": ["MIT licensed — no fees, no rug pulls", "Very light, opens in seconds", "Best-in-class 2D workflow", "Smaller ecosystem, weaker high-end 3D"] }
+          },
+          "explanation": "Pick by project shape and team skills, not by engine loyalty. Prototype in whichever you can iterate fastest with — the engine matters far less to a finished game than scope control does.",
+          "resources": [
+            { "title": "Godot documentation", "url": "https://docs.godotengine.org/en/stable/", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gd-practice",
+      "name": "Systems & Performance",
+      "description": "Collision, state machines, memory discipline and shipping something playable.",
+      "cards": [
+        {
+          "id": "gd-collision-detection",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["gamedev.physics"],
+          "prompt": "How does collision detection avoid checking every pair of objects?",
+          "answer": "In two phases. Broad phase uses a spatial structure (uniform grid, quadtree/octree, BVH, sweep and prune) to find candidate pairs cheaply. Narrow phase does exact tests (SAT, GJK) only on those candidates.",
+          "explanation": "Naive all-pairs is O(n²) — 1,000 objects is 500,000 tests per frame. Broad phase cuts that to near-linear. The other classic issue is tunnelling: a fast object skipping through a thin wall, solved with continuous collision detection or swept tests.",
+          "resources": [
+            { "title": "Real-Time Collision Detection (Ericson)", "url": "https://realtimecollisiondetection.net/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-state-machine",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["gamedev.architecture", "design.patterns"],
+          "prompt": "Your player controller is a thicket of booleans: isJumping, isAttacking, isDashing. What is the fix?",
+          "answer": "A finite state machine: one explicit state at a time with defined transitions. Each state owns its enter, update and exit behaviour, and impossible combinations become unrepresentable.",
+          "explanation": "N booleans give 2^N combinations, most of them invalid — that is where 'attacking while dashing while dead' bugs come from. Hierarchical state machines handle shared behaviour (all airborne states), and behaviour trees scale better for complex AI.",
+          "resources": [
+            { "title": "Game Programming Patterns — State", "url": "https://gameprogrammingpatterns.com/state.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-object-pooling",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["gamedev.performance", "memory.gc"],
+          "prompt": "Your bullet-hell game stutters every few seconds. What is the likely cause?",
+          "answer": "Garbage collection pauses from allocating and destroying hundreds of objects per second. Pool them: pre-allocate a fixed set, deactivate instead of destroying, and reuse.",
+          "explanation": "In a 60 fps game the entire frame budget is 16.6 ms, so even a 10 ms GC pause is a visible hitch. Pooling also avoids fragmentation and instantiation cost. Watch for per-frame allocations hiding in string concatenation, LINQ and boxing.",
+          "prerequisites": ["gd-delta-time"],
+          "resources": [
+            { "title": "Game Programming Patterns — Object pool", "url": "https://gameprogrammingpatterns.com/object-pool.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-frame-budget",
+          "type": "complexity",
+          "difficulty": 3,
+          "tags": ["gamedev.performance"],
+          "prompt": "What is the per-frame time budget at 60 fps and at 144 fps?",
+          "answer": "16.7 ms at 60 fps, 6.9 ms at 144 fps — for everything: input, simulation, physics, rendering and presentation.",
+          "complexity": { "time": "16.7 ms/frame @ 60 fps", "space": "VRAM-bound for assets" },
+          "explanation": "That budget is the discipline of game programming. Profile before optimising — the culprit is usually draw calls, an unbatched material, an O(n²) loop over entities, or GC. Frame *consistency* matters more than average fps: a steady 60 beats a spiky 90.",
+          "resources": [
+            { "title": "Unity — Profiler overview", "url": "https://docs.unity3d.com/Manual/Profiler.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "gd-scope-control",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["gamedev.production", "process"],
+          "prompt": "Why do most hobby games never ship, and what actually helps?",
+          "answer": "Scope. The fix is brutal reduction: build the core loop first, make it fun with placeholder art, and cut everything that does not serve it. Ship something small and finished before something large and imagined.",
+          "explanation": "Vertical slice over horizontal features: one complete level beats twelve half-systems. Playtest early with someone who has never seen it — you cannot feel your own game's onboarding. And engine work is not progress unless it is on the critical path.",
+          "resources": [
+            { "title": "GDC vault — postmortems", "url": "https://gdcvault.com/", "kind": "video" }
+          ]
+        }
+      ]
+    }
+  ]
+}

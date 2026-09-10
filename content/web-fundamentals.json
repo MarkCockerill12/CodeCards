@@ -1,0 +1,146 @@
+{
+  "id": "web-fundamentals",
+  "name": "Web Fundamentals",
+  "icon": "🌐",
+  "category": "Web",
+  "color": "#2563EB",
+  "description": "How a page loads, the browser rendering pipeline, storage, the same-origin policy, CORS and Core Web Vitals.",
+  "modules": [
+    {
+      "id": "web-loading",
+      "name": "Loading & Rendering",
+      "description": "What happens between typing a URL and seeing pixels.",
+      "cards": [
+        {
+          "id": "web-url-to-pixels",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["web.rendering", "networking.http"],
+          "prompt": "Walk through what happens when you type a URL and press Enter.",
+          "answer": "DNS resolution → TCP (or QUIC) connection → TLS handshake → HTTP request → response → HTML parsed into the DOM, CSS into the CSSOM → render tree → layout → paint → composite. Subresources are fetched as the parser discovers them, and JavaScript may block parsing.",
+          "explanation": "This question is really about depth: any single step (DNS caching, TLS session resumption, HTTP/2 multiplexing, the preload scanner, critical rendering path) can be expanded. Knowing the shape tells you where a slow page is actually losing time.",
+          "resources": [
+            { "title": "MDN — Populating the page: how browsers work", "url": "https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-script-loading",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["web.performance", "html.scripts"],
+          "prompt": "`<script>` vs `defer` vs `async`",
+          "answer": "Plain scripts block parsing; `defer` downloads in parallel and runs after parsing in document order; `async` downloads in parallel and runs as soon as it lands, in any order.",
+          "columns": {
+            "left": { "title": "defer", "points": ["Parsing never blocked", "Executes before DOMContentLoaded", "Order preserved", "The right default for app code"] },
+            "right": { "title": "async", "points": ["Parsing never blocked", "Runs the moment it downloads", "Order not guaranteed", "For independent third-party scripts"] }
+          },
+          "explanation": "A blocking script in `<head>` stalls the parser, delaying first paint. `type=\"module\"` is deferred by default. Anything that must run before paint (theme flash prevention) is the rare legitimate blocking script — keep it inline and tiny.",
+          "resources": [
+            { "title": "MDN — The script element", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-core-web-vitals",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.performance", "web.metrics"],
+          "prompt": "What are the Core Web Vitals and their 'good' thresholds?",
+          "answer": "LCP (largest contentful paint) ≤ 2.5 s, INP (interaction to next paint) ≤ 200 ms, CLS (cumulative layout shift) ≤ 0.1.",
+          "explanation": "LCP is usually a slow hero image or a render-blocking resource; INP is long JavaScript tasks blocking the main thread; CLS is images and ads without reserved space. Fixes in order: set width/height on media, break up long tasks, preload the LCP resource.",
+          "resources": [
+            { "title": "web.dev — Core Web Vitals", "url": "https://web.dev/articles/vitals", "kind": "article" }
+          ]
+        },
+        {
+          "id": "web-ssr-csr",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["web.rendering", "architecture.frontend"],
+          "prompt": "Server-side rendering vs client-side rendering",
+          "answer": "SSR sends HTML the browser can paint immediately; CSR sends a shell plus JavaScript that builds the page in the browser.",
+          "columns": {
+            "left": { "title": "SSR / SSG", "points": ["Fast first paint and reliable SEO", "Works before JS loads", "Server cost per request (unless static)", "Hydration cost to make it interactive"] },
+            "right": { "title": "CSR", "points": ["Cheap static hosting", "Snappy in-app navigation after load", "Blank until JS parses and runs", "Weaker on slow devices and networks"] }
+          },
+          "explanation": "Modern frameworks blend them: static generation for stable pages, streaming SSR for dynamic ones, client components only where interaction lives. The deciding question is whether the first paint must be meaningful without JavaScript.",
+          "resources": [
+            { "title": "web.dev — Rendering on the web", "url": "https://web.dev/articles/rendering-on-the-web", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "web-platform",
+      "name": "Storage, Origins & Security",
+      "description": "Cookies, storage APIs, same-origin policy, CORS and CSP.",
+      "cards": [
+        {
+          "id": "web-storage-options",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["web.storage", "privacy"],
+          "prompt": "Cookies vs localStorage vs sessionStorage vs IndexedDB",
+          "answer": "Cookies are sent with every matching request; the storage APIs are client-only. localStorage persists, sessionStorage dies with the tab, IndexedDB stores large structured data asynchronously.",
+          "columns": {
+            "left": { "title": "Cookies", "points": ["Automatically attached to requests", "~4 KB, and they cost bandwidth", "HttpOnly + Secure + SameSite for auth", "The thing consent banners are about"] },
+            "right": { "title": "Web storage / IndexedDB", "points": ["Never sent to the server automatically", "localStorage ~5–10 MB, synchronous, strings only", "IndexedDB: large, async, structured", "Readable by any script on the origin — not for secrets"] }
+          },
+          "explanation": "Session tokens belong in HttpOnly cookies so XSS cannot read them. Anything in localStorage is exposed to every script you load — which is also why a privacy notice should mention local storage, not only cookies.",
+          "resources": [
+            { "title": "MDN — Client-side storage", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Client-side_APIs/Client-side_storage", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-same-origin",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.security", "security.browser"],
+          "prompt": "What is an origin, and what does the same-origin policy prevent?",
+          "answer": "An origin is the triple (scheme, host, port). The same-origin policy stops a document from reading data from another origin — its DOM, its responses, its storage — while still allowing embedding and navigation.",
+          "explanation": "It is the foundation of browser security: without it, any page could read your webmail in another tab. Note it blocks *reading*, not *sending* — which is exactly the gap CSRF exploits and SameSite cookies close.",
+          "resources": [
+            { "title": "MDN — Same-origin policy", "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-cors",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["web.cors", "web.security"],
+          "prompt": "Your fetch fails with a CORS error. What is actually happening, and where do you fix it?",
+          "answer": "The browser made the request but refused to expose the response because the server did not send an appropriate `Access-Control-Allow-Origin`. The fix belongs on the server, never in the browser.",
+          "explanation": "A preflight `OPTIONS` is sent first for non-simple requests (custom headers, methods beyond GET/POST/HEAD, JSON content type). Credentialed requests require an explicit origin — not `*` — plus `Access-Control-Allow-Credentials: true`. CORS relaxes the same-origin policy; it is not a security control on your data.",
+          "prerequisites": ["web-same-origin"],
+          "resources": [
+            { "title": "MDN — Cross-Origin Resource Sharing", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-csp",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["web.security", "security.xss"],
+          "prompt": "What does a Content Security Policy do, and what makes one actually effective?",
+          "answer": "It tells the browser which sources may load and execute — scripts, styles, frames, connections. An effective policy is nonce- or hash-based with `strict-dynamic`, avoids `unsafe-inline` and `unsafe-eval`, and sets `object-src 'none'` and `base-uri 'self'`.",
+          "explanation": "CSP is defence in depth: it turns many XSS bugs into blocked script loads. Host allowlists are weak — a single CDN with an open JSONP endpoint defeats them — which is why Google's guidance moved to nonces. Roll out with `Content-Security-Policy-Report-Only` first.",
+          "resources": [
+            { "title": "MDN — Content Security Policy", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-cookie-flags",
+          "type": "cloze",
+          "difficulty": 3,
+          "tags": ["web.security", "web.cookies"],
+          "prompt": "A session cookie should be `HttpOnly; Secure; SameSite=___` to block script access, plaintext transport and most cross-site sends.",
+          "answer": "Lax",
+          "explanation": "`SameSite=Lax` is the modern default: sent on top-level navigations but not on cross-site subrequests, which kills most CSRF. Use `Strict` for high-value actions, and `None; Secure` only when a cookie genuinely must cross sites — as in embedded third-party contexts.",
+          "prerequisites": ["web-storage-options"],
+          "resources": [
+            { "title": "MDN — Set-Cookie SameSite", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#samesitesamesite-value", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

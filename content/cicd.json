@@ -1,0 +1,138 @@
+{
+  "id": "cicd",
+  "name": "CI/CD & Pipelines",
+  "icon": "🔁",
+  "category": "Cloud & DevOps",
+  "color": "#10B981",
+  "description": "Continuous integration, deployment strategies, pipeline design, artefacts and release safety.",
+  "modules": [
+    {
+      "id": "cicd-core",
+      "name": "CI, CD and Pipeline Design",
+      "description": "What the terms mean, and what a good pipeline actually does.",
+      "cards": [
+        {
+          "id": "cicd-ci-cd-cd",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["devops.cicd"],
+          "prompt": "Distinguish continuous integration, continuous delivery and continuous deployment.",
+          "answer": "CI: everyone merges to trunk frequently and every merge is built and tested. Continuous delivery: every green build is *releasable* and deployment is a button. Continuous deployment: every green build ships to production automatically.",
+          "explanation": "CI is a team practice, not a tool — running Jenkins while sitting on week-old branches is not CI. The prerequisite for the last step is confidence: fast reliable tests, feature flags, monitoring, and a rollback that works.",
+          "resources": [
+            { "title": "Martin Fowler — Continuous integration", "url": "https://martinfowler.com/articles/continuousIntegration.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-pipeline-stages",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["devops.cicd", "devops.pipeline"],
+          "prompt": "What stages belong in a solid pipeline, and in what order?",
+          "answer": "Lint and type-check → unit tests → build once and produce an immutable artefact → integration tests → security scans (SCA/SAST) → deploy to staging → smoke and end-to-end tests → deploy to production → post-deploy verification.",
+          "explanation": "Two rules matter most: fail fast (cheapest checks first) and build once, promote the same artefact through every environment. Rebuilding per environment means the thing you tested is not the thing you shipped.",
+          "resources": [
+            { "title": "GitHub Docs — Understanding GitHub Actions", "url": "https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-artifact-promotion",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["devops.pipeline", "devops.release"],
+          "prompt": "Why should configuration differ per environment while the artefact does not?",
+          "answer": "So the binary or image tested in staging is byte-identical to the one in production. Environment differences live in injected configuration and secrets, never in a rebuild.",
+          "explanation": "This is why images are tagged by commit SHA rather than `latest`, and promoted by re-tagging. `latest` is unpinnable, unrollbackable and non-reproducible — the single most common source of 'it worked yesterday'.",
+          "prerequisites": ["cicd-pipeline-stages"],
+          "resources": [
+            { "title": "12 Factor — Config", "url": "https://12factor.net/config", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-flaky-tests",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["devops.cicd", "testing"],
+          "prompt": "Your pipeline fails randomly about 10% of the time. Why is that worse than it sounds?",
+          "answer": "Flaky tests destroy the signal: people re-run until green, so real failures get ignored too. Quarantine flaky tests immediately, track them as bugs, and fix the root cause — usually timing, shared state, ordering or real concurrency bugs.",
+          "explanation": "A 10% flake rate across 20 independent jobs means most runs fail somewhere. Automatic retries hide the symptom and let it spread. Note that a flaky test sometimes indicates a genuine race in the product — the test is right and the code is wrong.",
+          "resources": [
+            { "title": "Google Testing Blog — Flaky tests", "url": "https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-secrets-pipeline",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["devops.security", "security.secrets"],
+          "prompt": "How should a pipeline handle secrets and credentials?",
+          "answer": "Short-lived credentials via OIDC federation instead of stored long-lived keys; secrets scoped per environment; masked in logs; never exposed to workflows triggered by untrusted forks; and least-privilege tokens per job.",
+          "explanation": "CI is a high-value target — it can push to production and holds every credential. Pin third-party actions to a commit SHA, since a mutable tag lets a compromised action run in your pipeline with your secrets.",
+          "resources": [
+            { "title": "GitHub Docs — Security hardening for GitHub Actions", "url": "https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cicd-deploy",
+      "name": "Deployment Strategies",
+      "description": "Getting changes into production without taking it down.",
+      "cards": [
+        {
+          "id": "cicd-blue-green-canary",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["devops.deploy", "system.reliability"],
+          "prompt": "Blue-green vs canary deployment",
+          "answer": "Blue-green switches all traffic between two complete environments; canary shifts a small percentage first and increases it while watching metrics.",
+          "columns": {
+            "left": { "title": "Blue-green", "points": ["Instant cutover and instant rollback", "Two full environments — double cost", "All users hit the new version at once", "Database changes still need care"] },
+            "right": { "title": "Canary", "points": ["Blast radius limited to a few percent", "Automated rollback on metric regression", "Needs traffic routing and good telemetry", "Two versions coexist — compatibility required"] }
+          },
+          "explanation": "Rolling updates are the default in Kubernetes and sit between the two. Whichever you pick, the database is the hard part: schema changes must be backwards compatible so old and new code can run simultaneously.",
+          "resources": [
+            { "title": "Martin Fowler — Blue-green deployment", "url": "https://martinfowler.com/bliki/BlueGreenDeployment.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-feature-flags",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["devops.release", "craft"],
+          "prompt": "How do feature flags decouple deploy from release, and what is the cost?",
+          "answer": "Code ships dark and is enabled per user, percentage or environment — so a bad feature is switched off without a redeploy. The cost is complexity: every flag doubles the paths through your system, and stale flags rot.",
+          "explanation": "Treat flags as inventory with an owner and an expiry date. Test the on and off paths. Kill switches for risky dependencies are the highest-value flags; long-lived permanent flags usually mean a configuration option in disguise.",
+          "resources": [
+            { "title": "Martin Fowler — Feature toggles", "url": "https://martinfowler.com/articles/feature-toggles.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-rollback",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["devops.deploy", "incident"],
+          "prompt": "A deploy is causing errors. Roll back or fix forward?",
+          "answer": "Roll back first, diagnose after — unless the change included an irreversible migration, in which case fix forward. The decision must be made before the incident, and rollback must be practised.",
+          "explanation": "This is why migrations are expand/contract: never drop a column in the same release that stops writing it. An untested rollback is not a rollback; rehearse it in staging, and know how long it takes.",
+          "prerequisites": ["cicd-blue-green-canary"],
+          "resources": [
+            { "title": "Google SRE Book — Release engineering", "url": "https://sre.google/sre-book/release-engineering/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "cicd-gitops",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["devops.gitops", "kubernetes"],
+          "prompt": "What is GitOps?",
+          "answer": "Git holds the declarative desired state of the system, and an in-cluster agent (Argo CD, Flux) continuously reconciles the cluster toward it. Deployments happen by merging, not by running commands.",
+          "explanation": "The wins are a full audit trail, review on infrastructure changes, drift detection and revert-by-git. The trap is secrets — they cannot sit in plain git, so you need sealed secrets, SOPS or an external secrets operator.",
+          "resources": [
+            { "title": "Argo CD — What is GitOps?", "url": "https://argo-cd.readthedocs.io/en/stable/", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

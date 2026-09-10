@@ -1,0 +1,128 @@
+{
+  "id": "os-platforms",
+  "name": "Platforms & Architectures",
+  "icon": "📱",
+  "category": "Systems & OS",
+  "color": "#0F766E",
+  "description": "Windows, macOS, Android, iOS and the ARM vs x86 divide — what differs where, and why it matters to your code.",
+  "modules": [
+    {
+      "id": "plat-desktop",
+      "name": "Desktop & Architecture",
+      "description": "Windows and macOS internals, and the instruction sets underneath.",
+      "cards": [
+        {
+          "id": "plat-arm-vs-x86",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["hardware.cpu", "architecture.isa"],
+          "prompt": "ARM vs x86-64",
+          "answer": "ARM is a RISC design with fixed-width instructions and a weaker memory model; x86-64 is CISC with variable-length instructions and a strong (TSO) memory model.",
+          "columns": {
+            "left": { "title": "ARM (AArch64)", "points": ["Fixed 32-bit instructions, easy to decode", "Weak memory ordering — needs explicit barriers", "Excellent performance per watt", "Apple Silicon, mobile, Graviton"] },
+            "right": { "title": "x86-64", "points": ["Variable-length CISC, decoded to micro-ops", "Total store order — most reorderings forbidden", "Huge legacy compatibility", "Desktops and most servers"] }
+          },
+          "explanation": "The memory model difference is the practical trap: racy code that 'works' on x86 can fail on ARM because stores are reordered. Data races were always bugs; ARM just makes them visible. Always test on the architecture you deploy to.",
+          "resources": [
+            { "title": "Preshing — Weak vs strong memory models", "url": "https://preshing.com/20120930/weak-vs-strong-memory-models/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "plat-windows-vs-unix",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["windows", "unix", "cross-platform"],
+          "prompt": "Practical differences between Windows and Unix-like systems for developers",
+          "answer": "Path separators and case sensitivity, line endings, process creation, file locking and permissions models all differ.",
+          "columns": {
+            "left": { "title": "Windows", "points": ["`\\` paths, case-insensitive, drive letters", "CRLF line endings by convention", "CreateProcess — no fork", "Files locked while open; ACLs, not mode bits"] },
+            "right": { "title": "Unix-like", "points": ["`/` paths, case-sensitive", "LF line endings", "fork + exec", "Open files can be deleted; user/group/other mode bits"] }
+          },
+          "explanation": "The bugs this causes: a rename that fails because a handle is open, a git checkout where `README` and `readme` collide, and CRLF diffs. Use path libraries rather than string concatenation, and set `core.autocrlf` deliberately.",
+          "resources": [
+            { "title": "Microsoft Learn — Naming files, paths, and namespaces", "url": "https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-wsl",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["windows", "linux", "tooling"],
+          "prompt": "What is WSL2, and what is the main performance trap?",
+          "answer": "A real Linux kernel running in a lightweight VM with tight Windows integration. The trap is cross-filesystem I/O: working on `/mnt/c/...` from Linux (or on the Linux filesystem from Windows tools) goes through a 9p/plan9 bridge and is dramatically slower.",
+          "explanation": "Keep project files inside the Linux filesystem (`~/code`) when using Linux tooling. Node installs, git status and file watchers are the operations that feel this worst — often by an order of magnitude.",
+          "resources": [
+            { "title": "Microsoft Learn — WSL file system performance", "url": "https://learn.microsoft.com/en-us/windows/wsl/filesystems", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-macos-signing",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["macos", "distribution"],
+          "prompt": "Your macOS app downloads fine but users see 'cannot be opened because the developer cannot be verified'. What is missing?",
+          "answer": "Code signing with a Developer ID certificate and notarisation by Apple, with the ticket stapled to the artefact. Gatekeeper checks both on first launch.",
+          "explanation": "The quarantine attribute (`com.apple.quarantine`) is what triggers the check on downloaded files. The equivalent on Windows is Authenticode signing plus SmartScreen reputation; unsigned binaries are increasingly unusable on both platforms.",
+          "resources": [
+            { "title": "Apple — Notarizing macOS software before distribution", "url": "https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plat-mobile",
+      "name": "Mobile Platforms",
+      "description": "Android and iOS lifecycles, permissions and the constraints that shape mobile code.",
+      "cards": [
+        {
+          "id": "plat-mobile-lifecycle",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["mobile.android", "mobile.ios"],
+          "prompt": "Why does the app lifecycle dominate mobile development?",
+          "answer": "The OS can suspend or kill your process at any time to reclaim resources, and it recreates UI on configuration changes. Anything not saved to persistent state can vanish between one screen and the next.",
+          "explanation": "Android recreates activities on rotation, locale change and theme change; iOS suspends in the background and terminates under memory pressure. Hold state in a lifecycle-aware holder (ViewModel, SceneStorage) and treat 'the process may die here' as normal.",
+          "resources": [
+            { "title": "Android — Activity lifecycle", "url": "https://developer.android.com/guide/components/activities/activity-lifecycle", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-mobile-permissions",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["mobile.permissions", "privacy"],
+          "prompt": "How should an app request a sensitive permission such as location?",
+          "answer": "Ask in context, at the moment the feature needs it, after explaining why — and handle every outcome: granted, denied, denied permanently, and 'while using the app' or approximate-only.",
+          "explanation": "Both platforms let users grant reduced access (coarse location, one-time, limited photo selection), so a binary granted/denied assumption is wrong. A permission prompt fired on first launch with no context is the reliable way to get denied forever.",
+          "resources": [
+            { "title": "Android — Request app permissions", "url": "https://developer.android.com/training/permissions/requesting", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-mobile-battery",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["mobile.performance", "mobile.battery"],
+          "prompt": "What drains mobile battery most, and what is the standard mitigation?",
+          "answer": "Radio wakeups (each network request keeps the cellular radio powered for seconds afterwards), GPS, wake locks and background work. Mitigate by batching and deferring network calls, coalescing sync with system schedulers, and using push instead of polling.",
+          "explanation": "WorkManager on Android and BGTaskScheduler on iOS let the OS batch your work with everyone else's wakeups. Both platforms will simply refuse or throttle background work that ignores this — 'it works in debug' is not evidence.",
+          "resources": [
+            { "title": "Android — WorkManager", "url": "https://developer.android.com/topic/libraries/architecture/workmanager", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-native-vs-cross",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["mobile.architecture", "architecture.decisions"],
+          "prompt": "Native, React Native, Flutter or a web app — how do you decide?",
+          "answer": "By how much the product depends on platform-specific capability and feel. Deep hardware/OS integration and demanding UI push native; a mostly-forms app on a small team pushes cross-platform; content that needs no install pushes web or PWA.",
+          "explanation": "Cross-platform frameworks share business logic well and diverge on the last 10% — platform conventions, new OS features on day one, and specialised hardware. Budget for native modules; teams that assume 100% sharing rebuild twice.",
+          "resources": [
+            { "title": "Flutter — Architectural overview", "url": "https://docs.flutter.dev/resources/architectural-overview", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

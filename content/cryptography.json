@@ -1,0 +1,147 @@
+{
+  "id": "cryptography",
+  "name": "Cryptography",
+  "icon": "🔐",
+  "category": "Security",
+  "color": "#7C3AED",
+  "description": "Hashing vs encryption, symmetric and asymmetric primitives, signatures, PKI and the mistakes that break them.",
+  "modules": [
+    {
+      "id": "crypto-primitives",
+      "name": "Primitives",
+      "description": "The building blocks and what each one is actually for.",
+      "cards": [
+        {
+          "id": "crypto-hash-vs-encrypt",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["crypto.fundamentals"],
+          "prompt": "Hashing vs encryption vs encoding",
+          "answer": "Hashing is one-way and fixed-length; encryption is reversible with a key; encoding (base64) is reversible with no key and provides no security at all.",
+          "columns": {
+            "left": { "title": "Hash", "points": ["One way — no key, no recovery", "Fixed output size", "Integrity, fingerprints, passwords (slow hashes)", "SHA-256, BLAKE3, Argon2id"] },
+            "right": { "title": "Encryption", "points": ["Reversible with the right key", "Confidentiality", "Symmetric (AES) or asymmetric (RSA, ECC)", "Needs correct mode and a unique nonce"] }
+          },
+          "explanation": "Calling base64 'encryption' is the classic beginner error — it is a transport encoding. And 'encrypted' alone says nothing: AES-ECB is encryption and still leaks the structure of the plaintext.",
+          "resources": [
+            { "title": "Crypto 101", "url": "https://www.crypto101.io/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "crypto-symmetric-asymmetric",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["crypto.fundamentals"],
+          "prompt": "Symmetric vs asymmetric encryption",
+          "answer": "Symmetric uses one shared key and is fast; asymmetric uses a keypair, is far slower, and solves key distribution.",
+          "columns": {
+            "left": { "title": "Symmetric (AES, ChaCha20)", "points": ["Same key encrypts and decrypts", "Gigabytes per second with hardware support", "Key distribution is the hard problem", "Used for the bulk data"] },
+            "right": { "title": "Asymmetric (RSA, ECDH, Ed25519)", "points": ["Public key shared freely", "Orders of magnitude slower", "Enables key exchange and signatures", "Used to establish a symmetric key"] }
+          },
+          "explanation": "Real protocols are hybrid: TLS uses asymmetric crypto for the handshake and identity, then a symmetric key for the session. Asymmetric is a bootstrapping mechanism, not a bulk cipher.",
+          "resources": [
+            { "title": "Cloudflare — A primer on public key cryptography", "url": "https://blog.cloudflare.com/a-relatively-easy-to-understand-primer-on-elliptic-curve-cryptography/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "crypto-aead",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.modes"],
+          "prompt": "What is AEAD, and why should you never use raw AES-CBC?",
+          "answer": "Authenticated Encryption with Associated Data provides confidentiality *and* integrity in one primitive — AES-GCM, ChaCha20-Poly1305. Unauthenticated modes such as CBC let an attacker tamper with ciphertext undetected, enabling padding-oracle attacks.",
+          "explanation": "Encryption without authentication is a bug. AEAD also binds associated data (headers, IDs) so ciphertexts cannot be swapped between contexts. The one rule you must not break: never reuse a nonce with the same key — for GCM that leaks the authentication key.",
+          "prerequisites": ["crypto-symmetric-asymmetric"],
+          "resources": [
+            { "title": "RFC 5116 — An interface and algorithms for authenticated encryption", "url": "https://www.rfc-editor.org/rfc/rfc5116", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "crypto-signatures",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["crypto.signatures"],
+          "prompt": "What does a digital signature prove that a MAC does not?",
+          "answer": "A signature proves origin to anyone holding the public key and gives non-repudiation. A MAC (HMAC) proves integrity and authenticity only to parties who already share the secret key — either of whom could have produced it.",
+          "explanation": "Use HMAC for internal tokens and webhooks where both sides share a secret; use signatures for public verification — software releases, certificates, JWTs consumed by third parties. And always compare MACs in constant time.",
+          "resources": [
+            { "title": "NIST FIPS 186-5 — Digital Signature Standard", "url": "https://csrc.nist.gov/pubs/fips/186-5/final", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crypto-practice",
+      "name": "Practice & Pitfalls",
+      "description": "PKI, randomness, key management and the classic implementation mistakes.",
+      "cards": [
+        {
+          "id": "crypto-pki",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.pki", "networking.tls"],
+          "prompt": "How does a certificate chain establish trust?",
+          "answer": "A leaf certificate is signed by an intermediate CA, which is signed by a root CA already in the client's trust store. The client verifies each signature up the chain, plus validity dates, hostname match and revocation status.",
+          "explanation": "Trust ultimately rests on the preinstalled roots. Certificate Transparency logs make mis-issuance publicly detectable. The two failure modes you will meet in production: an expired certificate, and a server that fails to send the intermediate — which works in browsers with caching and fails in every other client.",
+          "resources": [
+            { "title": "Let's Encrypt — Chain of trust", "url": "https://letsencrypt.org/certificates/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-random",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["crypto.random", "security.tokens"],
+          "prompt": "Why is this token generation broken?",
+          "code": "import random\ntoken = ''.join(random.choice('abcdef0123456789') for _ in range(32))",
+          "lang": "python",
+          "answer": "`random` is a Mersenne Twister — deterministic and predictable from ~624 outputs. Use `secrets.token_urlsafe()` (or `crypto.randomBytes`, `/dev/urandom`) for anything security-relevant.",
+          "explanation": "The distinction is CSPRNG versus PRNG. Session tokens, password reset links, nonces, IVs and salts all need cryptographic randomness. Seeding a PRNG with the current time makes it worse, not better.",
+          "resources": [
+            { "title": "Python docs — secrets", "url": "https://docs.python.org/3/library/secrets.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-timing-attack",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["crypto.side-channels", "security.tokens"],
+          "prompt": "What is the vulnerability in this comparison?",
+          "code": "if provided_token == expected_token:\n    grant_access()",
+          "lang": "python",
+          "answer": "String equality short-circuits on the first differing byte, so response time leaks how many leading bytes are correct — a timing side channel that lets an attacker recover the token byte by byte. Use `hmac.compare_digest`.",
+          "explanation": "Constant-time comparison examines every byte regardless. Real timing attacks over a network are noisy but demonstrably practical. The same applies to comparing MACs, signatures and password hashes.",
+          "prerequisites": ["crypto-signatures"],
+          "resources": [
+            { "title": "Python docs — hmac.compare_digest", "url": "https://docs.python.org/3/library/hmac.html#hmac.compare_digest", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-dont-roll-own",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["crypto.practice", "security.principles"],
+          "prompt": "You need to encrypt some fields at rest. What should you actually do?",
+          "answer": "Use a high-level, misuse-resistant library — libsodium, Tink, `age`, or your cloud KMS envelope encryption — rather than assembling primitives yourself. Store keys in a KMS or HSM and plan rotation from day one.",
+          "explanation": "Nearly every real-world crypto break is an implementation or key-management failure, not a broken algorithm: reused nonces, missing authentication, keys checked into git, no rotation path. High-level APIs remove the sharp edges by not exposing them.",
+          "resources": [
+            { "title": "libsodium documentation", "url": "https://doc.libsodium.org/", "kind": "docs" },
+            { "title": "Google Tink", "url": "https://developers.google.com/tink", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "crypto-post-quantum",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.future"],
+          "prompt": "What does quantum computing threaten, and what is being done about it?",
+          "answer": "Shor's algorithm breaks RSA and elliptic-curve cryptography; Grover's roughly halves symmetric security, so AES-256 remains sound. NIST has standardised post-quantum algorithms — ML-KEM (Kyber) for key exchange and ML-DSA (Dilithium) for signatures.",
+          "explanation": "The urgency is 'harvest now, decrypt later': traffic captured today can be decrypted once large quantum computers exist. Browsers and TLS libraries already deploy hybrid key exchange combining X25519 with ML-KEM, so a break in either alone is not enough.",
+          "resources": [
+            { "title": "NIST — Post-quantum cryptography standards", "url": "https://csrc.nist.gov/projects/post-quantum-cryptography", "kind": "spec" }
+          ]
+        }
+      ]
+    }
+  ]
+}

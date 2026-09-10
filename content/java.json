@@ -1,0 +1,186 @@
+{
+  "id": "java",
+  "name": "Java",
+  "icon": "☕",
+  "category": "Languages",
+  "color": "#E76F00",
+  "description": "The JVM memory model, collections, generics erasure, equals/hashCode and the concurrency toolkit.",
+  "modules": [
+    {
+      "id": "java-core",
+      "name": "Language & Object Contracts",
+      "description": "References, equality, immutability and the contracts every Java object must honour.",
+      "cards": [
+        {
+          "id": "java-pass-by-value",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["java.core", "java.semantics"],
+          "prompt": "What does this print?",
+          "code": "static void mutate(StringBuilder sb, String s) {\n    sb.append(\" world\");\n    s = s + \" world\";\n}\n\npublic static void main(String[] args) {\n    StringBuilder sb = new StringBuilder(\"hello\");\n    String s = \"hello\";\n    mutate(sb, s);\n    System.out.println(sb + \" | \" + s);\n}",
+          "lang": "java",
+          "answer": "hello world | hello",
+          "explanation": "Java is always pass-by-value — the *reference* is copied. Mutating the object through the copied reference is visible to the caller; reassigning the parameter is not. `String` is immutable, so `s + \" world\"` creates a new object the caller never sees.",
+          "resources": [
+            { "title": "Oracle — Passing information to a method", "url": "https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-equals-hashcode",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["java.contracts", "java.collections"],
+          "prompt": "What is the equals/hashCode contract, and what breaks when you violate it?",
+          "answer": "Equal objects must return equal hash codes; hashCode must be stable while the object is in a hash-based collection. Break it and `HashMap`/`HashSet` lookups silently fail to find objects that are equal.",
+          "explanation": "A HashMap finds the bucket by hashCode, then compares with equals. Overriding one without the other, or mutating a field used in hashCode after insertion, strands the entry in a bucket nobody will look in again. Use immutable keys.",
+          "resources": [
+            { "title": "Java SE — Object.hashCode", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html#hashCode()", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-string-pool",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["java.strings", "java.memory"],
+          "prompt": "What does this print?",
+          "code": "String a = \"hi\";\nString b = \"hi\";\nString c = new String(\"hi\");\nSystem.out.println((a == b) + \" \" + (a == c) + \" \" + a.equals(c));",
+          "lang": "java",
+          "answer": "true false true",
+          "explanation": "String literals are interned in a shared pool, so `a` and `b` are the same object. `new String(...)` forces a fresh object on the heap. This is the canonical demonstration of why you compare strings with `equals`, never `==`.",
+          "resources": [
+            { "title": "Java SE — String.intern", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html#intern()", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-checked-unchecked",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["java.errors"],
+          "prompt": "Checked vs unchecked exceptions",
+          "answer": "Checked extend `Exception` and must be declared or handled; unchecked extend `RuntimeException` (or `Error`) and need neither.",
+          "columns": {
+            "left": { "title": "Checked", "points": ["Compiler-enforced handling", "Intended for recoverable, expected conditions", "Pollutes signatures up the call stack", "IOException, SQLException"] },
+            "right": { "title": "Unchecked", "points": ["No declaration required", "Intended for programming errors", "Can escape silently to the top", "NullPointerException, IllegalArgumentException"] }
+          },
+          "explanation": "Modern practice leans on unchecked exceptions plus explicit result types, because checked exceptions force every intermediate layer to either handle or re-declare — which in practice produces empty catch blocks.",
+          "resources": [
+            { "title": "Oracle — Unchecked exceptions, the controversy", "url": "https://docs.oracle.com/javase/tutorial/essential/exceptions/runtime.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-generics-erasure",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["java.generics", "java.runtime"],
+          "prompt": "Why will this not compile, and what does it tell you about Java generics?",
+          "code": "public <T> boolean isType(Object o) {\n    return o instanceof T;   // error\n}",
+          "lang": "java",
+          "answer": "Generics are erased at compile time — there is no `T` at runtime to test against. Pass a `Class<T>` and use `clazz.isInstance(o)` instead.",
+          "explanation": "Erasure means no `new T[]`, no `T.class`, and no overloads that differ only in type parameters. The compiler inserts casts for you; at runtime a `List<String>` is just a `List`. This is the price paid for backwards compatibility with pre-generics bytecode.",
+          "resources": [
+            { "title": "Oracle — Type erasure", "url": "https://docs.oracle.com/javase/tutorial/java/generics/erasure.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-record",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["java.syntax", "java.modern"],
+          "prompt": "What does a `record` give you?",
+          "answer": "An immutable, final data carrier with a canonical constructor, accessors, and generated `equals`, `hashCode` and `toString` derived from its components.",
+          "explanation": "Records remove the boilerplate that made value objects painful, and they work with pattern matching and sealed interfaces to give Java algebraic-data-type ergonomics. Components are shallowly immutable — a record holding a mutable list is still mutable through that list.",
+          "resources": [
+            { "title": "Oracle — Records", "url": "https://docs.oracle.com/en/java/javase/21/language/records.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "java-runtime",
+      "name": "JVM, Collections & Concurrency",
+      "description": "Garbage collection, collection choice and the concurrency utilities that replaced raw synchronized blocks.",
+      "cards": [
+        {
+          "id": "java-gc-generational",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["java.jvm", "memory.gc"],
+          "prompt": "What is the generational hypothesis, and how do JVM collectors exploit it?",
+          "answer": "Most objects die young. Collectors therefore split the heap into a young generation collected often and cheaply, and an old generation collected rarely and expensively; survivors are promoted between them.",
+          "explanation": "Young collection is a copying collector over live objects only, so its cost scales with survivors, not with garbage. G1 (default) divides the heap into regions and targets a pause goal; ZGC and Shenandoah trade throughput for sub-millisecond pauses.",
+          "resources": [
+            { "title": "Oracle — HotSpot garbage collection tuning", "url": "https://docs.oracle.com/en/java/javase/21/gctuning/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-collection-choice",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["java.collections", "ds.selection"],
+          "prompt": "You need a lookup by key, iteration in insertion order, and no duplicates. Which collection?",
+          "answer": "`LinkedHashMap` (or `LinkedHashSet` if the key is the whole value) — hash lookup plus a linked list maintaining insertion order.",
+          "explanation": "`HashMap` gives O(1) lookup and arbitrary order; `TreeMap` gives sorted order at O(log n); `LinkedHashMap` gives O(1) lookup with predictable iteration, and with `accessOrder=true` plus `removeEldestEntry` it becomes an LRU cache in ten lines.",
+          "resources": [
+            { "title": "Java SE — LinkedHashMap", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/LinkedHashMap.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-concurrent-modification",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["java.collections", "java.gotchas"],
+          "prompt": "Why does this throw ConcurrentModificationException?",
+          "code": "for (String s : list) {\n    if (s.isEmpty()) list.remove(s);\n}",
+          "lang": "java",
+          "answer": "The for-each loop uses an iterator, and structurally modifying the list behind its back invalidates it. Use `list.removeIf(String::isEmpty)` or an explicit `Iterator` with `it.remove()`.",
+          "explanation": "Fail-fast iterators compare a modCount snapshot on every `next()`. The exception is a best-effort bug detector, not a guarantee — the same pattern across threads can silently corrupt instead. `removeIf` is both correct and clearer.",
+          "resources": [
+            { "title": "Java SE — Collection.removeIf", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html#removeIf(java.util.function.Predicate)", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-volatile-vs-synchronized",
+          "type": "compare",
+          "difficulty": 5,
+          "tags": ["java.concurrency", "concurrency.memory-model"],
+          "prompt": "`volatile` vs `synchronized`",
+          "answer": "volatile guarantees visibility and ordering for a single variable; synchronized additionally provides mutual exclusion over a block.",
+          "columns": {
+            "left": { "title": "volatile", "points": ["Reads see the latest write (happens-before)", "No locking, no blocking", "Does not make `count++` atomic", "Right for a status flag or a published reference"] },
+            "right": { "title": "synchronized", "points": ["Mutual exclusion plus visibility", "Reentrant; can block and deadlock", "Makes compound actions atomic", "Right for invariants spanning several fields"] }
+          },
+          "explanation": "`count++` is read-modify-write: three operations. Volatile fixes visibility but not atomicity — use `AtomicInteger` or a lock. The Java Memory Model defines all of this in terms of happens-before edges, not in terms of caches.",
+          "resources": [
+            { "title": "JSR 133 — Java Memory Model FAQ", "url": "https://www.cs.umd.edu/~pugh/java/memoryModel/jsr-133-faq.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "java-executor",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["java.concurrency", "java.threads"],
+          "prompt": "Why is `new Thread(...).start()` per request a bad idea in a server, and what replaces it?",
+          "answer": "Unbounded platform threads exhaust memory and thrash the scheduler. Use an `ExecutorService` with a bounded pool and a bounded queue — or virtual threads (Project Loom) for blocking I/O workloads.",
+          "explanation": "A platform thread costs ~1 MB of stack. A bounded pool applies backpressure instead of collapsing. Virtual threads (Java 21) are cheap enough to have one per request, which makes plain blocking code scale like async code — as long as you avoid pinning inside `synchronized` blocks.",
+          "resources": [
+            { "title": "JEP 444 — Virtual Threads", "url": "https://openjdk.org/jeps/444", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "java-stream-lazy",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["java.streams"],
+          "prompt": "How many elements does `map` process here?",
+          "code": "List.of(1,2,3,4,5).stream()\n    .map(x -> { System.out.println(\"map \" + x); return x * 2; })\n    .filter(x -> x > 4)\n    .findFirst();",
+          "lang": "java",
+          "answer": "Three — the pipeline is lazy and short-circuits at the first match (1→2 filtered, 2→4 filtered, 3→6 matches).",
+          "explanation": "Intermediate operations build a pipeline; only a terminal operation runs it, pulling elements one at a time. Short-circuiting terminals (`findFirst`, `anyMatch`, `limit`) stop early, so ordering your operations matters for cost.",
+          "resources": [
+            { "title": "Java SE — java.util.stream", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/package-summary.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

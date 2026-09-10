@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": { "correctness": "error", "suspicious": "warn" },
+  "env": { "browser": true, "es2024": true, "node": true },
+  "rules": {
+    "no-unused-vars": "warn",
+    "eqeqeq": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/no-unknown-property": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off"
+  },
+  "ignorePatterns": ["node_modules", ".next", "out", "public/content"]
+}

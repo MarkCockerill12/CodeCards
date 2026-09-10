@@ -1,0 +1,163 @@
+{
+  "id": "system-design",
+  "name": "System Design",
+  "icon": "🏛️",
+  "category": "Architecture",
+  "color": "#0284C7",
+  "description": "Scaling, caching, queues, consistency, capacity estimation and the interview framework that structures all of it.",
+  "modules": [
+    {
+      "id": "sd-foundations",
+      "name": "Scaling Foundations",
+      "description": "How systems grow, and where they break when they do.",
+      "cards": [
+        {
+          "id": "sd-vertical-horizontal",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["system.scaling"],
+          "prompt": "Vertical vs horizontal scaling",
+          "answer": "Vertical means a bigger machine; horizontal means more machines behind a load balancer.",
+          "columns": {
+            "left": { "title": "Vertical (scale up)", "points": ["No architectural change needed", "Simple: one node, one source of truth", "Hard ceiling and superlinear cost", "Still a single point of failure"] },
+            "right": { "title": "Horizontal (scale out)", "points": ["Near-unbounded, commodity hardware", "Redundancy comes free", "Requires statelessness and coordination", "Distributed systems problems arrive with it"] }
+          },
+          "explanation": "Scale up first — it is astonishingly far. A single modern server handles tens of thousands of requests per second. Scale out when you need availability, not just throughput; that is usually the real driver.",
+          "resources": [
+            { "title": "Designing Data-Intensive Applications", "url": "https://dataintensive.net/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "sd-caching-layers",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["system.cache", "performance"],
+          "prompt": "Where can you cache, and what are the invalidation strategies?",
+          "answer": "Browser, CDN, reverse proxy, application memory, distributed cache (Redis), and the database's own buffer pool. Strategies: TTL expiry, write-through, write-behind, cache-aside, and explicit invalidation on write.",
+          "explanation": "Cache-aside is the default: read cache, miss, read database, populate. Watch for the three classic failures — stampede (many misses at once; use a lock or single-flight), penetration (repeated misses for a non-existent key; cache the negative), and avalanche (many keys expiring together; jitter the TTLs).",
+          "resources": [
+            { "title": "AWS — Caching best practices", "url": "https://aws.amazon.com/caching/best-practices/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-queue-decoupling",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["system.queues", "architecture.async"],
+          "prompt": "Image upload triggers a slow transcode. How do you keep the API fast?",
+          "answer": "Accept the upload, enqueue a job, return 202 with a status URL. Workers consume the queue and update status; the client polls or receives a webhook or push event.",
+          "explanation": "Queues buy you decoupling, load levelling and retries. They cost you eventual consistency and new failure modes: duplicate delivery (make consumers idempotent), poison messages (dead-letter queues), ordering (only per partition) and backlog growth (alert on queue age, not just depth).",
+          "resources": [
+            { "title": "AWS — Amazon SQS developer guide", "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sd-capacity-estimation",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["system.design", "interview"],
+          "prompt": "How do you do back-of-envelope capacity estimation in an interview?",
+          "answer": "Start from users and behaviour: DAU × actions per day ÷ 86,400 = average QPS; multiply by 2–10 for peak. Then storage: bytes per record × records per day × retention. Then bandwidth: QPS × payload size. State assumptions out loud and round aggressively.",
+          "explanation": "Useful anchors: 86,400 seconds in a day, 1 M requests/day ≈ 12 QPS, a modern server handles ~10k QPS of simple work, a disk seek is ~1 ms while a memory read is ~100 ns. The point is demonstrating the reasoning, not the arithmetic.",
+          "resources": [
+            { "title": "Latency numbers every programmer should know", "url": "https://colin-scott.github.io/personal_website/research/interactive_latency.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-interview-framework",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["system.design", "interview"],
+          "prompt": "What is a good structure for a system design interview?",
+          "answer": "Clarify requirements and scope → establish functional and non-functional requirements (scale, latency, consistency, availability) → capacity estimates → API sketch → data model → high-level diagram → deep dive on one or two components → discuss bottlenecks and trade-offs.",
+          "explanation": "The failure mode is jumping straight to boxes. Interviewers are grading how you handle ambiguity and trade-offs, so narrate the alternatives you rejected and why. There is no correct answer, only defended decisions.",
+          "resources": [
+            { "title": "System Design Primer", "url": "https://github.com/donnemartin/system-design-primer", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sd-distributed",
+      "name": "Distributed Systems",
+      "description": "Consistency, coordination, failure and the patterns that keep systems up.",
+      "cards": [
+        {
+          "id": "sd-fallacies",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["distributed.fundamentals"],
+          "prompt": "What are the fallacies of distributed computing?",
+          "answer": "The network is reliable; latency is zero; bandwidth is infinite; the network is secure; topology does not change; there is one administrator; transport cost is zero; the network is homogeneous.",
+          "explanation": "Every one of these shows up as a bug: a missing timeout, an N+1 across the network, a chatty protocol, an unencrypted internal hop. Assume each call can be slow, fail, or succeed without you hearing about it.",
+          "resources": [
+            { "title": "Wikipedia — Fallacies of distributed computing", "url": "https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-consensus",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["distributed.consensus"],
+          "prompt": "What problem do Raft and Paxos solve, and where do you meet them?",
+          "answer": "Getting a cluster to agree on a value (or a log order) despite crashes and network delays, with a majority quorum. You meet them inside etcd, ZooKeeper, Consul, Kafka's controller and most distributed databases.",
+          "explanation": "Quorum is why cluster sizes are odd: 3 nodes tolerate 1 failure, 5 tolerate 2. Consensus costs a round trip to a majority, so it is used for metadata and leadership, not for every data write. FLP says you cannot have consensus with guaranteed termination in a fully asynchronous system — hence timeouts and randomised elections.",
+          "prerequisites": ["sd-fallacies"],
+          "resources": [
+            { "title": "The Raft Consensus Algorithm", "url": "https://raft.github.io/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "sd-circuit-breaker",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["system.reliability", "architecture.patterns"],
+          "prompt": "A downstream dependency slows to 30 s per call and your service falls over. What patterns prevent that?",
+          "answer": "Timeouts (always), a circuit breaker that trips after repeated failures and fails fast, a bulkhead limiting concurrent calls to that dependency, and a graceful degradation path.",
+          "explanation": "Without a bulkhead, one slow dependency consumes every thread or connection and takes down endpoints that never touch it. The breaker's half-open state probes recovery without flooding a healing service. Load shedding under overload beats queueing requests nobody is still waiting for.",
+          "resources": [
+            { "title": "Martin Fowler — Circuit breaker", "url": "https://martinfowler.com/bliki/CircuitBreaker.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-consistent-hashing",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["distributed.partitioning", "ds.hashing"],
+          "prompt": "What problem does consistent hashing solve?",
+          "answer": "With `hash(key) % N`, changing N remaps almost every key. Consistent hashing places nodes and keys on a ring so adding or removing a node moves only ~1/N of the keys.",
+          "explanation": "Virtual nodes even out the distribution and reduce hotspots when a node leaves. It underpins cache clusters, Cassandra, DynamoDB partitioning and CDN request routing — anywhere membership changes while traffic continues.",
+          "prerequisites": ["sd-caching-layers"],
+          "resources": [
+            { "title": "Wikipedia — Consistent hashing", "url": "https://en.wikipedia.org/wiki/Consistent_hashing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-saga",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["distributed.transactions", "architecture.patterns"],
+          "prompt": "An order spans payment, inventory and shipping services. There is no distributed transaction. How do you keep it consistent?",
+          "answer": "A saga: a sequence of local transactions where each step publishes an event, and every step has a compensating action to undo it if a later step fails. Choreography (events) for simple flows, orchestration (a coordinator) for complex ones.",
+          "explanation": "Two-phase commit across services couples availability to the slowest participant, so sagas trade atomicity for availability. You get intermediate states users can observe — 'payment taken, order pending' — which must be designed for, not hidden.",
+          "prerequisites": ["sd-queue-decoupling"],
+          "resources": [
+            { "title": "microservices.io — Saga pattern", "url": "https://microservices.io/patterns/data/saga.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-idempotency-key",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["distributed.reliability", "api.design"],
+          "prompt": "Why is exactly-once delivery impossible, and what do you build instead?",
+          "answer": "A sender can never distinguish 'message lost' from 'acknowledgement lost', so it must retry — giving at-least-once. You build exactly-once *processing* on top: idempotent consumers plus deduplication by message id.",
+          "explanation": "Store the processed id in the same transaction as the effect; a repeat then becomes a no-op. Systems advertising exactly-once (Kafka transactions) provide it within their own boundary — the moment you call an external API, you are back to at-least-once.",
+          "resources": [
+            { "title": "Confluent — Exactly-once semantics", "url": "https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

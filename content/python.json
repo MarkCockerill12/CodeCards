@@ -1,0 +1,364 @@
+{
+  "id": "python",
+  "name": "Python",
+  "icon": "🐍",
+  "category": "Languages",
+  "color": "#3776AB",
+  "description": "Semantics, the data model, idioms and the gotchas that bite in interviews and production.",
+  "modules": [
+    {
+      "id": "python-core",
+      "name": "Core Semantics",
+      "description": "Names, binding, scope and the rules that explain most surprising Python behaviour.",
+      "cards": [
+        {
+          "id": "py-names-not-variables",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["python.model", "python.core"],
+          "prompt": "In Python, what does assignment (`x = y`) actually do?",
+          "answer": "It binds the **name** `x` to the same object `y` refers to. It never copies the object.",
+          "explanation": "Python has names and objects, not boxes holding values. Assignment rebinds a name in a namespace; the object is untouched. This single rule explains aliasing, mutable default arguments, and why `a = b` on a list means both names see the same list.",
+          "resources": [
+            { "title": "Python docs — Execution model: naming and binding", "url": "https://docs.python.org/3/reference/executionmodel.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-mutable-default",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.functions", "python.gotchas"],
+          "prompt": "What does this print?",
+          "code": "def add(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\nprint(add(1))\nprint(add(2))",
+          "lang": "python",
+          "answer": "[1]\n[1, 2]",
+          "explanation": "Default arguments are evaluated **once**, when the `def` statement executes — not per call. The same list object is reused on every call that omits the argument. The fix is `bucket=None` plus `if bucket is None: bucket = []`.",
+          "prerequisites": ["py-names-not-variables"],
+          "resources": [
+            { "title": "Python docs — Default argument values", "url": "https://docs.python.org/3/tutorial/controlflow.html#default-argument-values", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[1]\n[1, 2]" }
+        },
+        {
+          "id": "py-late-binding-closure",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["python.closures", "python.gotchas"],
+          "prompt": "What does this print?",
+          "code": "fns = [lambda: i for i in range(3)]\nprint([f() for f in fns])",
+          "lang": "python",
+          "answer": "[2, 2, 2]",
+          "explanation": "Closures capture the **variable**, not its value at creation time. By the time the lambdas run, the comprehension has finished and `i` is 2. Bind eagerly with a default argument — `lambda i=i: i` — to capture the current value.",
+          "prerequisites": ["py-names-not-variables"],
+          "resources": [
+            { "title": "Python FAQ — Why do lambdas defined in a loop with different values all return the same result?", "url": "https://docs.python.org/3/faq/programming.html#why-do-lambdas-defined-in-a-loop-with-different-values-all-return-the-same-result", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[2, 2, 2]" }
+        },
+        {
+          "id": "py-is-vs-eq",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["python.core", "python.operators"],
+          "prompt": "`is` vs `==`",
+          "answer": "`is` compares identity (same object); `==` compares value via `__eq__`.",
+          "columns": {
+            "left": { "title": "is", "points": ["Compares `id()` — same object in memory", "Never overridable", "Correct for `None`, `True`, `False`, sentinels", "Fast: a pointer comparison"] },
+            "right": { "title": "==", "points": ["Calls `__eq__`, falls back to identity", "Overridable by any class", "Correct for values: numbers, strings, containers", "Can be arbitrarily expensive"] }
+          },
+          "explanation": "Use `is` only for singletons. `x is 1000` may be False while `x == 1000` is True, because CPython interns only small integers (-5..256) and some strings. Never rely on interning for correctness.",
+          "resources": [
+            { "title": "Python docs — Comparisons", "url": "https://docs.python.org/3/reference/expressions.html#comparisons", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-scope-legb",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["python.scope", "python.core"],
+          "prompt": "Python resolves names in the order Local → ___ → Global → Builtins.",
+          "answer": "Enclosing",
+          "explanation": "The LEGB rule: Local (current function), Enclosing (any outer function), Global (module), Builtins. `global` rebinds at module level; `nonlocal` rebinds in the nearest enclosing function scope.",
+          "resources": [
+            { "title": "Python docs — Naming and binding", "url": "https://docs.python.org/3/reference/executionmodel.html#naming-and-binding", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-truthiness",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["python.core", "python.model"],
+          "prompt": "Which values are falsy in Python?",
+          "answer": "`False`, `None`, zero of any numeric type, and empty containers/strings — plus any object whose `__bool__` returns False or whose `__len__` returns 0.",
+          "explanation": "`if x:` calls `bool(x)`, which tries `__bool__` then `__len__`, defaulting to True. That is why `if my_list:` is idiomatic for 'not empty', but `if x is not None:` is required when 0 or an empty list are legitimate values.",
+          "resources": [
+            { "title": "Python docs — Truth value testing", "url": "https://docs.python.org/3/library/stdtypes.html#truth-value-testing", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-mutable-aliasing",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["python.model", "python.gotchas"],
+          "prompt": "What does this print?",
+          "code": "a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a, b, a is b)",
+          "lang": "python",
+          "answer": "[1, 2, 3, 4] [1, 2, 3, 4] True",
+          "explanation": "`b = a` binds a second name to the same list. Mutating through either name is visible through both. Copy explicitly with `a[:]`, `list(a)` or `copy.deepcopy` when you need independence.",
+          "prerequisites": ["py-names-not-variables"],
+          "resources": [
+            { "title": "Python docs — copy module", "url": "https://docs.python.org/3/library/copy.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[1, 2, 3, 4] [1, 2, 3, 4] True" }
+        },
+        {
+          "id": "py-args-kwargs",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["python.functions"],
+          "prompt": "What do `*args` and `**kwargs` mean in a signature, and what do `*` and `/` mean on their own?",
+          "answer": "`*args` collects extra positionals into a tuple, `**kwargs` collects extra keywords into a dict. A bare `*` forces everything after it to be keyword-only; a bare `/` forces everything before it to be positional-only.",
+          "explanation": "Positional-only (`/`, PEP 570) lets you rename parameters without breaking callers. Keyword-only (`*`, PEP 3102) stops callers passing booleans and flags as unlabelled positionals, which is the single cheapest readability win in an API.",
+          "resources": [
+            { "title": "PEP 570 — Positional-only parameters", "url": "https://peps.python.org/pep-0570/", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "python-datamodel",
+      "name": "Data Model & Objects",
+      "description": "Dunder methods, classes, descriptors and how Python objects really behave.",
+      "cards": [
+        {
+          "id": "py-dunder-protocol",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.model", "python.oop"],
+          "prompt": "What is the Python data model, and why do dunder methods matter?",
+          "answer": "It is the set of protocols (`__len__`, `__iter__`, `__getitem__`, `__eq__`, `__enter__`…) that built-in syntax and functions dispatch to. Implementing them makes your object work with `len()`, `for`, `in`, `with`, operators and unpacking.",
+          "explanation": "Python's syntax is a thin veneer over the data model: `len(x)` is `type(x).__len__(x)`, `a + b` is `type(a).__add__`, `with x:` is `__enter__`/`__exit__`. Building on those protocols is what makes a class feel native rather than bolted on.",
+          "resources": [
+            { "title": "Python docs — Data model", "url": "https://docs.python.org/3/reference/datamodel.html", "kind": "docs" },
+            { "title": "Fluent Python (Ramalho) — the Python data model", "url": "https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "py-mro",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["python.oop", "python.inheritance"],
+          "prompt": "What does this print?",
+          "code": "class A:\n    def who(self): return 'A'\n\nclass B(A):\n    def who(self): return 'B'\n\nclass C(A):\n    def who(self): return 'C'\n\nclass D(B, C):\n    pass\n\nprint(D().who())\nprint([c.__name__ for c in D.__mro__])",
+          "lang": "python",
+          "answer": "B\n['D', 'B', 'C', 'A', 'object']",
+          "explanation": "Python linearises multiple inheritance with C3: depth-first, left-to-right, but a class never precedes its subclasses. `D.__mro__` is the exact lookup order, and `super()` walks it — which is why cooperative `super()` calls in every class matter with diamonds.",
+          "resources": [
+            { "title": "Python docs — The Python 2.3 method resolution order", "url": "https://docs.python.org/3/howto/mro.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "B\n['D', 'B', 'C', 'A', 'object']" }
+        },
+        {
+          "id": "py-slots",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["python.oop", "python.memory"],
+          "prompt": "What does `__slots__` do?",
+          "answer": "It replaces the per-instance `__dict__` with a fixed array of descriptors — cutting memory per instance substantially and blocking new attributes at runtime.",
+          "explanation": "A normal instance carries a dict (tens of bytes of overhead plus hashing). `__slots__ = ('x', 'y')` stores attributes in a compact struct instead. The trade-offs: no dynamic attributes, no default `__weakref__` unless declared, and inheritance rules get fiddly.",
+          "prerequisites": ["py-dunder-protocol"],
+          "resources": [
+            { "title": "Python docs — __slots__", "url": "https://docs.python.org/3/reference/datamodel.html#slots", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-dataclass-vs-namedtuple",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["python.stdlib", "python.oop"],
+          "prompt": "`@dataclass` vs `NamedTuple`",
+          "answer": "Dataclasses are mutable, flexible classes; NamedTuples are immutable tuples with names.",
+          "columns": {
+            "left": { "title": "@dataclass", "points": ["Mutable by default (`frozen=True` opts out)", "Supports defaults, `__post_init__`, inheritance", "Generates `__init__`, `__repr__`, `__eq__`", "Not iterable or indexable"] },
+            "right": { "title": "NamedTuple", "points": ["Immutable and hashable", "Is a real tuple — unpacks and indexes", "Lower memory footprint", "Awkward to extend or add behaviour"] }
+          },
+          "explanation": "Reach for a NamedTuple for small immutable value records that flow through tuple-shaped APIs; a dataclass for anything with behaviour, defaults or mutation. `frozen=True, slots=True` dataclasses get you close to the best of both.",
+          "resources": [
+            { "title": "Python docs — dataclasses", "url": "https://docs.python.org/3/library/dataclasses.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-context-manager",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["python.stdlib", "python.model"],
+          "prompt": "You need a resource released even when the body raises. What is the idiomatic Python mechanism, and how do you write one?",
+          "answer": "A context manager: implement `__enter__`/`__exit__`, or decorate a generator with `@contextlib.contextmanager` and put the cleanup in a `finally`.",
+          "explanation": "`with` guarantees `__exit__` runs on normal exit, exception, `return` and `break`. Returning True from `__exit__` swallows the exception — almost always wrong unless you mean it. `contextlib.ExitStack` composes an unknown number of them at runtime.",
+          "resources": [
+            { "title": "Python docs — contextlib", "url": "https://docs.python.org/3/library/contextlib.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-generator-lazy",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.generators", "python.iteration"],
+          "prompt": "What does this print?",
+          "code": "def gen():\n    print('start')\n    yield 1\n    print('middle')\n    yield 2\n\ng = gen()\nprint('created')\nprint(next(g))\nprint(next(g))",
+          "lang": "python",
+          "answer": "created\nstart\n1\nmiddle\n2",
+          "explanation": "Calling a generator function runs **no** body code — it builds a generator object. The body advances only on each `next()`, up to and including the next `yield`. That laziness is what makes generators memory-flat over huge sequences.",
+          "resources": [
+            { "title": "Python docs — Generators", "url": "https://docs.python.org/3/tutorial/classes.html#generators", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "created\nstart\n1\nmiddle\n2" }
+        },
+        {
+          "id": "py-decorator",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["python.decorators", "python.functions"],
+          "prompt": "This decorator works, but something important is lost. What, and how do you fix it?",
+          "code": "def log(fn):\n    def wrapper(*args, **kwargs):\n        print(f'calling {fn.__name__}')\n        return fn(*args, **kwargs)\n    return wrapper\n\n@log\ndef add(a, b):\n    \"\"\"Adds two numbers.\"\"\"\n    return a + b\n\nprint(add.__name__, add.__doc__)",
+          "lang": "python",
+          "answer": "The wrapper replaces the function's metadata: `add.__name__` is now `'wrapper'` and the docstring is gone. Fix it with `@functools.wraps(fn)` on `wrapper`.",
+          "explanation": "`functools.wraps` copies `__name__`, `__doc__`, `__module__`, `__qualname__` and `__dict__`, and sets `__wrapped__` so `inspect.signature` can see through the decorator. Without it, introspection, docs tooling and debuggers all lie about your function.",
+          "resources": [
+            { "title": "Python docs — functools.wraps", "url": "https://docs.python.org/3/library/functools.html#functools.wraps", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-hash-eq-contract",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["python.oop", "python.hashing"],
+          "prompt": "If you define `__eq__` on a class, what happens to hashing, and what is the contract?",
+          "answer": "Defining `__eq__` sets `__hash__` to None, making instances unhashable. The contract: equal objects must have equal hashes, and a hash must not change while the object is in a container.",
+          "explanation": "Python removes the inherited identity hash because it would break the invariant. Either define `__hash__` over the same immutable fields you compare, or use `@dataclass(frozen=True)`, which generates a matching pair for you.",
+          "prerequisites": ["py-dunder-protocol"],
+          "resources": [
+            { "title": "Python docs — object.__hash__", "url": "https://docs.python.org/3/reference/datamodel.html#object.__hash__", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "python-runtime",
+      "name": "Runtime, Async & Performance",
+      "description": "The GIL, concurrency choices, memory behaviour and where Python time actually goes.",
+      "cards": [
+        {
+          "id": "py-gil",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["python.concurrency", "python.runtime"],
+          "prompt": "What is the GIL, and what does it actually prevent?",
+          "answer": "The Global Interpreter Lock lets only one thread execute Python bytecode at a time in a CPython process. It prevents CPU-bound parallelism across threads — not concurrency, and not parallel I/O.",
+          "explanation": "Threads still help for I/O: the GIL is released around blocking syscalls and in many C extensions (NumPy, compression, hashing). For CPU-bound work use `multiprocessing`, a C extension that releases the GIL, or the free-threaded build (PEP 703) where available.",
+          "resources": [
+            { "title": "Python docs — Global interpreter lock", "url": "https://docs.python.org/3/glossary.html#term-global-interpreter-lock", "kind": "docs" },
+            { "title": "PEP 703 — Making the GIL optional", "url": "https://peps.python.org/pep-0703/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "py-concurrency-choice",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["python.concurrency", "architecture.decisions"],
+          "prompt": "You must fetch 5,000 HTTP endpoints, then run an expensive pure-Python transform on each response. How do you structure the concurrency?",
+          "answer": "`asyncio` (or a thread pool) for the I/O fan-out, then hand the CPU-bound transform to a `ProcessPoolExecutor`.",
+          "explanation": "I/O waits release the GIL, so thousands of sockets are cheap with async or threads. The transform is bytecode-bound, so it needs separate processes to use more than one core. `loop.run_in_executor` with a process pool bridges the two halves cleanly.",
+          "prerequisites": ["py-gil"],
+          "resources": [
+            { "title": "Python docs — concurrent.futures", "url": "https://docs.python.org/3/library/concurrent.futures.html", "kind": "docs" },
+            { "title": "Python docs — asyncio", "url": "https://docs.python.org/3/library/asyncio.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-async-blocking-bug",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["python.async", "python.gotchas"],
+          "prompt": "This async handler serves one request at a time. Why?",
+          "code": "import asyncio, time\n\nasync def handle(n):\n    time.sleep(1)          # simulate work\n    return n * 2\n\nasync def main():\n    await asyncio.gather(*(handle(i) for i in range(10)))",
+          "lang": "python",
+          "answer": "`time.sleep` blocks the event loop thread, so nothing else can run. Use `await asyncio.sleep(1)`, or push genuinely blocking work to `asyncio.to_thread` / an executor.",
+          "explanation": "An event loop is cooperative: a coroutine holds the thread until it awaits. Any synchronous blocking call — `time.sleep`, `requests.get`, heavy CPU loops, blocking DB drivers — stalls every other task on that loop.",
+          "resources": [
+            { "title": "Python docs — asyncio.to_thread", "url": "https://docs.python.org/3/library/asyncio-task.html#asyncio.to_thread", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-list-vs-generator-memory",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["python.generators", "python.memory"],
+          "prompt": "List comprehension vs generator expression",
+          "answer": "`[...]` materialises every element; `(...)` yields them one at a time.",
+          "columns": {
+            "left": { "title": "[x for x in it]", "points": ["Allocates the whole list up front", "Re-iterable, indexable, has `len()`", "Faster when you need every element twice", "Memory grows with input size"] },
+            "right": { "title": "(x for x in it)", "points": ["Lazy — one element in flight", "Single-pass, no indexing or `len()`", "Constant memory over huge inputs", "Composes into pipelines with `itertools`"] }
+          },
+          "explanation": "`sum(x*x for x in range(10**8))` runs in constant memory; the list version tries to allocate gigabytes. Prefer generators for pipelines and single passes, lists when you need random access or multiple traversals.",
+          "resources": [
+            { "title": "Python docs — Generator expressions", "url": "https://docs.python.org/3/reference/expressions.html#generator-expressions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-dict-complexity",
+          "type": "complexity",
+          "difficulty": 2,
+          "tags": ["python.stdlib", "ds.hashtable"],
+          "prompt": "Average-case complexity of `d[key]`, `d[key] = v` and `key in d` on a Python dict?",
+          "answer": "All O(1) on average; O(n) in the pathological collision case.",
+          "complexity": { "time": "O(1) average, O(n) worst", "space": "O(n)" },
+          "explanation": "CPython dicts are open-addressed hash tables with a compact index array (PEP 509 / 3.6 layout) that also preserves insertion order. Worst case only appears with adversarial or degenerate hashes; string hashing is randomised per process to defend against that.",
+          "resources": [
+            { "title": "Python wiki — Time complexity", "url": "https://wiki.python.org/moin/TimeComplexity", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-string-concat-loop",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["python.performance", "python.strings"],
+          "prompt": "Why is this quadratic, and what is the fix?",
+          "code": "out = ''\nfor part in parts:\n    out += part + ','",
+          "lang": "python",
+          "answer": "Strings are immutable, so each `+=` allocates and copies the whole accumulated string — O(n²) total. Use `','.join(parts)` or accumulate into a list and join once.",
+          "explanation": "CPython has an in-place optimisation when a string has a refcount of one, so this sometimes looks fast — but it is not guaranteed and disappears the moment another name references `out`. `join` computes the final size once and copies each part exactly once.",
+          "resources": [
+            { "title": "Python docs — str.join", "url": "https://docs.python.org/3/library/stdtypes.html#str.join", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-except-broad",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["python.errors", "python.craft"],
+          "prompt": "Two things are wrong with this error handling. What are they?",
+          "code": "try:\n    result = risky()\nexcept:\n    print('failed')\n    result = None",
+          "lang": "python",
+          "answer": "A bare `except:` also swallows `KeyboardInterrupt` and `SystemExit`, and the original traceback is discarded. Catch `Exception` (or the specific type) and log with `logging.exception` or re-raise with `raise ... from err`.",
+          "explanation": "Bare except catches everything deriving from `BaseException`, so Ctrl-C stops working. Losing the traceback turns a five-minute debug into an afternoon. If you truly cannot handle it, do not catch it.",
+          "resources": [
+            { "title": "Python docs — Exception hierarchy", "url": "https://docs.python.org/3/library/exceptions.html#exception-hierarchy", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-typing-optional",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["python.typing"],
+          "prompt": "In modern Python, `Optional[int]` is written more plainly as `int | ___`.",
+          "answer": "None",
+          "explanation": "PEP 604 added the `X | Y` union syntax (Python 3.10+), so `Optional[int]` is `int | None` and `Union[str, bytes]` is `str | bytes`. Type hints are not enforced at runtime — they exist for readers, editors and static checkers such as mypy or pyright.",
+          "resources": [
+            { "title": "PEP 604 — Allow writing union types as X | Y", "url": "https://peps.python.org/pep-0604/", "kind": "spec" }
+          ]
+        }
+      ]
+    }
+  ]
+}

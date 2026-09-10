@@ -1,0 +1,151 @@
+{
+  "id": "linux",
+  "name": "Linux & Bash",
+  "icon": "🐧",
+  "category": "Systems & OS",
+  "color": "#FCC624",
+  "description": "The shell, permissions, processes, text pipelines and the scripting discipline that keeps automation safe.",
+  "modules": [
+    {
+      "id": "lx-shell",
+      "name": "Shell & Pipelines",
+      "description": "Redirection, pipes, quoting and the tools that compose into one-liners.",
+      "cards": [
+        {
+          "id": "bash-redirection",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["bash.redirection", "linux"],
+          "prompt": "What do `>`, `>>`, `2>`, `&>` and `2>&1` do?",
+          "answer": "`>` truncate-redirect stdout, `>>` append stdout, `2>` redirect stderr, `&>` redirect both, and `2>&1` point stderr at wherever stdout currently goes.",
+          "explanation": "Order matters: `cmd > file 2>&1` sends both to the file, while `cmd 2>&1 > file` sends stderr to the original stdout and only stdout to the file. Redirections are evaluated left to right.",
+          "resources": [
+            { "title": "GNU Bash manual — Redirections", "url": "https://www.gnu.org/software/bash/manual/html_node/Redirections.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "bash-quoting",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["bash.quoting", "bash.safety"],
+          "prompt": "Why does this break on a file called `my report.txt`?",
+          "code": "for f in $(ls); do\n  mv $f ${f}.bak\ndone",
+          "lang": "bash",
+          "answer": "Unquoted expansion word-splits on whitespace, so the name becomes two arguments. Also, parsing `ls` is unreliable. Use `for f in *; do mv -- \"$f\" \"$f.bak\"; done`.",
+          "explanation": "Quote every expansion unless you specifically want splitting. Add `--` before filename arguments so a file named `-rf` is not read as options. `shellcheck` catches both automatically.",
+          "resources": [
+            { "title": "ShellCheck", "url": "https://www.shellcheck.net/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "bash-strict-mode",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["bash.safety", "devops.scripting"],
+          "prompt": "What does `set -euo pipefail` do, and what is the catch?",
+          "answer": "`-e` exits on an unhandled error, `-u` errors on unset variables, `-o pipefail` makes a pipeline fail if any stage fails. The catch is that `-e` has many exceptions — conditions, `&&` chains, command substitutions — so it is a safety net, not a guarantee.",
+          "explanation": "Pair it with `trap 'echo failed at line $LINENO' ERR` for diagnosis, and handle expected failures explicitly with `|| true`. Without `pipefail`, `false | tee log` succeeds — a genuinely dangerous default in deployment scripts.",
+          "resources": [
+            { "title": "GNU Bash manual — The Set Builtin", "url": "https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "bash-text-tools",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["bash.tools", "linux"],
+          "prompt": "From a web log, find the top 10 IPs by request count. Which tools, in what order?",
+          "answer": "`awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -10` — extract the field, sort so duplicates are adjacent, count them, sort by count descending, take ten.",
+          "explanation": "`uniq` only collapses *adjacent* duplicates, which is why the first sort is mandatory. This cut/sort/uniq/sort pipeline answers a surprising share of ad-hoc log questions without any tooling at all.",
+          "resources": [
+            { "title": "man7 — uniq(1)", "url": "https://man7.org/linux/man-pages/man1/uniq.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "bash-exit-codes",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["bash.exit-codes"],
+          "prompt": "In the shell, an exit status of ___ means success and any other value means failure.",
+          "answer": "0",
+          "explanation": "`$?` holds the last status. 1 is generic failure, 2 usually misuse, 126 not executable, 127 command not found, and 128+N means killed by signal N — so 137 is SIGKILL (often the OOM killer) and 143 is SIGTERM.",
+          "resources": [
+            { "title": "GNU Bash manual — Exit status", "url": "https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lx-system",
+      "name": "System Administration",
+      "description": "Permissions, processes, services and diagnosing a sick machine.",
+      "cards": [
+        {
+          "id": "linux-permissions",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["linux.permissions", "security"],
+          "prompt": "What permissions does `chmod 640 file` grant?",
+          "code": "$ chmod 640 secrets.env\n$ ls -l secrets.env\n-rw-r----- 1 alice devs 128 Sep 10 14:02 secrets.env",
+          "lang": "bash",
+          "answer": "Owner read+write (6), group read (4), others nothing (0).",
+          "explanation": "Each digit is a bitmask: 4 read, 2 write, 1 execute. On directories, execute means 'may traverse' and read means 'may list'. 600 for private keys, 644 for public files, 755 for executables and directories — and `chmod 777` is essentially never the right answer.",
+          "resources": [
+            { "title": "man7 — chmod(1)", "url": "https://man7.org/linux/man-pages/man1/chmod.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "linux-diagnose-slow",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["linux.ops", "debugging"],
+          "prompt": "A server is slow. What do you check, in what order?",
+          "answer": "Load and CPU (`uptime`, `top`), memory and swap (`free -h`), disk I/O wait (`iostat`, `%wa` in top), disk space and inodes (`df -h`, `df -i`), network (`ss -s`), then per-process detail (`pidstat`, `strace`) and finally the logs (`journalctl -xe`, `dmesg -T`).",
+          "explanation": "Brendan Gregg's USE method formalises this: for every resource check Utilisation, Saturation and Errors. High load with low CPU usually means I/O wait or lock contention; a full disk and exhausted inodes both present as bizarre unrelated failures.",
+          "resources": [
+            { "title": "Brendan Gregg — Linux performance analysis in 60 seconds", "url": "https://netflixtechblog.com/linux-performance-analysis-in-60-000-milliseconds-accc10403c55", "kind": "article" }
+          ]
+        },
+        {
+          "id": "linux-processes-signals",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["linux.processes", "os.signals"],
+          "prompt": "What is the difference between `kill`, `kill -9` and `kill -HUP`?",
+          "answer": "Plain `kill` sends SIGTERM — a polite request the process can handle. `-9` sends SIGKILL, which the kernel enforces and no process can catch or clean up after. `-HUP` traditionally means 'reload your configuration'.",
+          "explanation": "Reaching for `-9` first skips graceful shutdown: open files unflushed, locks unreleased, in-flight requests dropped. Try SIGTERM, wait, then escalate. If SIGTERM does nothing, the process may be stuck in uninterruptible sleep (state D) — usually blocked on I/O.",
+          "resources": [
+            { "title": "man7 — signal(7)", "url": "https://man7.org/linux/man-pages/man7/signal.7.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "linux-systemd",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["linux.systemd", "devops"],
+          "prompt": "What does systemd give you over running a binary in a screen session?",
+          "answer": "Supervision and restart policies, dependency ordering, resource limits via cgroups, log capture into the journal, start on boot, and a consistent `systemctl` interface for start/stop/status/reload.",
+          "explanation": "Key commands: `systemctl status|start|enable|daemon-reload`, `journalctl -u <unit> -f`. The unit file's `Restart=`, `RestartSec=` and `OOMPolicy=` decide what happens when your service dies — set them deliberately rather than accepting defaults.",
+          "resources": [
+            { "title": "systemd — systemd.service(5)", "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "linux-find-xargs",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["bash.tools", "bash.safety"],
+          "prompt": "Why is this dangerous with unusual filenames, and what is the safe form?",
+          "code": "find . -name '*.log' | xargs rm",
+          "lang": "bash",
+          "answer": "Filenames containing spaces or newlines are split into multiple arguments, so the wrong files get deleted. Use `find . -name '*.log' -print0 | xargs -0 rm --` or `find . -name '*.log' -delete`.",
+          "explanation": "NUL is the only byte that cannot appear in a filename, which is why `-print0`/`-0` is the safe pairing. Always dry-run destructive finds with `-print` or `echo` first — `find` plus `rm` is one of the classic ways to destroy a machine.",
+          "prerequisites": ["bash-quoting"],
+          "resources": [
+            { "title": "man7 — find(1)", "url": "https://man7.org/linux/man-pages/man1/find.1.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "id": "rust",
+  "name": "Rust",
+  "icon": "🦀",
+  "category": "Languages",
+  "color": "#DEA584",
+  "description": "Ownership, borrowing, lifetimes, traits and fearless concurrency — the model that makes memory safety a compile-time property.",
+  "modules": [
+    {
+      "id": "rust-ownership",
+      "name": "Ownership & Borrowing",
+      "description": "The core model: who owns a value, who may look at it, and for how long.",
+      "cards": [
+        {
+          "id": "rs-ownership-rules",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["rust.ownership", "rust.core"],
+          "prompt": "State Rust's three ownership rules.",
+          "answer": "1. Every value has exactly one owner. 2. There can be only one owner at a time. 3. When the owner goes out of scope, the value is dropped.",
+          "explanation": "These rules give deterministic destruction without a garbage collector and without manual free. Everything else in Rust — moves, borrows, lifetimes — exists to let you work with values while keeping this invariant checkable at compile time.",
+          "resources": [
+            { "title": "The Rust Book — What is ownership?", "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-borrow-rules",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["rust.borrowing", "rust.core"],
+          "prompt": "What are the borrowing rules?",
+          "answer": "At any given time you may have either any number of shared references (`&T`) or exactly one mutable reference (`&mut T`) — never both. References must never outlive the value they point to.",
+          "explanation": "Aliasing XOR mutation is the whole trick: data races, iterator invalidation and use-after-free all require aliasing plus mutation. Forbidding the combination eliminates the entire class at compile time, which is what 'fearless concurrency' actually means.",
+          "prerequisites": ["rs-ownership-rules"],
+          "resources": [
+            { "title": "The Rust Book — References and borrowing", "url": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-move-vs-copy",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["rust.ownership", "rust.types"],
+          "prompt": "Why does this fail to compile, and why would it compile if `s` were an `i32`?",
+          "code": "let s = String::from(\"hi\");\nlet t = s;\nprintln!(\"{}\", s);",
+          "lang": "rust",
+          "answer": "`String` owns a heap buffer, so `let t = s` **moves** it and `s` is no longer valid. `i32` implements `Copy`, so assignment duplicates the bits and the original stays usable.",
+          "explanation": "Types that own resources cannot be `Copy`. Use `s.clone()` for an explicit deep copy, or borrow with `&s` when the callee only needs to read. The compiler error names the moved value and the line that moved it.",
+          "prerequisites": ["rs-ownership-rules"],
+          "resources": [
+            { "title": "The Rust Book — Ownership and moves", "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html#variables-and-data-interacting-with-move", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-lifetimes",
+          "type": "cloze",
+          "difficulty": 4,
+          "tags": ["rust.lifetimes"],
+          "prompt": "A lifetime annotation such as `'a` does not change how long a value lives — it ___ the relationship between the lifetimes of inputs and outputs.",
+          "answer": "describes",
+          "explanation": "Lifetimes are descriptive, not prescriptive. `fn longest<'a>(x: &'a str, y: &'a str) -> &'a str` tells the compiler the result may borrow from either input, so it can reject callers whose borrow would outlive the data. Elision rules infer most of them for you.",
+          "prerequisites": ["rs-borrow-rules"],
+          "resources": [
+            { "title": "The Rust Book — Lifetimes", "url": "https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-interior-mutability",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["rust.patterns", "rust.borrowing"],
+          "prompt": "`RefCell<T>` vs `Mutex<T>`",
+          "answer": "Both move borrow checking to runtime; RefCell is single-threaded, Mutex is thread-safe.",
+          "columns": {
+            "left": { "title": "RefCell<T>", "points": ["Single-threaded interior mutability", "Panics on a conflicting borrow at runtime", "Zero synchronisation cost", "Usually paired with Rc<T>"] },
+            "right": { "title": "Mutex<T>", "points": ["Safe across threads (`Send + Sync`)", "Blocks instead of panicking", "Real locking cost, and deadlock is possible", "Usually paired with Arc<T>"] }
+          },
+          "explanation": "Rust's default is compile-time checking; these types opt into runtime checking when the ownership graph is genuinely dynamic. `Rc<RefCell<T>>` for single-threaded shared mutable state, `Arc<Mutex<T>>` across threads.",
+          "prerequisites": ["rs-borrow-rules"],
+          "resources": [
+            { "title": "The Rust Book — RefCell and interior mutability", "url": "https://doc.rust-lang.org/book/ch15-05-interior-mutability.html", "kind": "book" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rust-types",
+      "name": "Types, Traits & Errors",
+      "description": "Enums, traits, generics and the error-handling model that replaced exceptions.",
+      "cards": [
+        {
+          "id": "rs-option-result",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["rust.errors", "rust.types"],
+          "prompt": "How does Rust represent absence and failure, and why are there no exceptions?",
+          "answer": "`Option<T>` is `Some(T)` or `None`; `Result<T, E>` is `Ok(T)` or `Err(E)`. Both are ordinary enums, so the compiler forces you to handle every case — failure is in the type signature rather than hidden in the control flow.",
+          "explanation": "There is no null and no throw. `?` propagates an `Err` up one level with an automatic `From` conversion, which keeps error handling terse without hiding it. `panic!` exists for unrecoverable bugs, not for expected failure.",
+          "resources": [
+            { "title": "The Rust Book — Error handling", "url": "https://doc.rust-lang.org/book/ch09-00-error-handling.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-question-mark",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["rust.errors", "rust.syntax"],
+          "prompt": "What does the `?` operator expand to here?",
+          "code": "fn read(path: &str) -> Result<String, std::io::Error> {\n    let s = std::fs::read_to_string(path)?;\n    Ok(s.trim().to_string())\n}",
+          "lang": "rust",
+          "answer": "On `Ok(v)` it evaluates to `v`; on `Err(e)` it returns early with `Err(From::from(e))` from the enclosing function.",
+          "explanation": "The `From` conversion is what lets `?` bubble different error types into one function-level error type — the basis of `anyhow::Error` in applications and `thiserror` enums in libraries.",
+          "prerequisites": ["rs-option-result"],
+          "resources": [
+            { "title": "Rust reference — The question mark operator", "url": "https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-question-mark-operator", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "rs-traits-vs-interfaces",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["rust.traits", "oop.polymorphism"],
+          "prompt": "Rust traits vs Java/C# interfaces",
+          "answer": "Traits can be implemented for types you did not define, support default methods and associated types, and dispatch statically by default.",
+          "columns": {
+            "left": { "title": "Rust trait", "points": ["Implement for foreign types (subject to orphan rules)", "Static dispatch via generics — monomorphised, inlinable", "`dyn Trait` opts into dynamic dispatch", "Associated types and consts"] },
+            "right": { "title": "Interface", "points": ["Must be declared on the type itself", "Always dynamic dispatch through a vtable", "Widely supported tooling and reflection", "Generic variance rules differ"] }
+          },
+          "explanation": "`impl Trait` / generics compile to a specialised copy per concrete type — zero-cost but larger binaries. `dyn Trait` is one vtable-based copy, smaller and slower. Choose per call site, not per codebase.",
+          "resources": [
+            { "title": "The Rust Book — Traits", "url": "https://doc.rust-lang.org/book/ch10-02-traits.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-send-sync",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["rust.concurrency", "rust.traits"],
+          "prompt": "What do the `Send` and `Sync` marker traits mean?",
+          "answer": "`Send`: the type can be transferred to another thread. `Sync`: `&T` can be shared between threads (equivalently, `T: Sync` iff `&T: Send`). Both are auto-derived when all fields qualify.",
+          "explanation": "These two markers are how the compiler proves thread safety. `Rc<T>` is neither (non-atomic refcount); `Arc<T>` is both when `T: Send + Sync`. `Cell`/`RefCell` are `Send` but not `Sync`. Getting a data race past the compiler requires `unsafe`.",
+          "prerequisites": ["rs-borrow-rules"],
+          "resources": [
+            { "title": "The Rustonomicon — Send and Sync", "url": "https://doc.rust-lang.org/nomicon/send-and-sync.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-iterator-lazy",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["rust.iterators", "rust.performance"],
+          "prompt": "How much work does this line do?",
+          "code": "let it = (1..1_000_000).map(|x| x * 2).filter(|x| x % 3 == 0);",
+          "lang": "rust",
+          "answer": "None. Iterator adaptors are lazy — nothing runs until a consuming adaptor such as `sum`, `collect`, `for` or `count` drives it.",
+          "explanation": "Because adaptors are generic structs resolved at compile time, the whole chain monomorphises and inlines into a single loop with no intermediate allocation — usually matching a hand-written loop exactly.",
+          "resources": [
+            { "title": "Rust std — Iterator", "url": "https://doc.rust-lang.org/std/iter/trait.Iterator.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "rs-unsafe",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["rust.unsafe", "rust.safety"],
+          "prompt": "What does `unsafe` actually permit, and what does it not?",
+          "answer": "It permits five things: dereferencing raw pointers, calling unsafe functions or FFI, accessing mutable statics, implementing unsafe traits, and accessing union fields. It never disables the borrow checker or the type system.",
+          "explanation": "`unsafe` means 'I have checked the invariants the compiler cannot'. The idiom is to wrap a small unsafe core in a safe API and document the invariants. Verify with Miri, which detects UB in Rust code that ordinary tests miss.",
+          "resources": [
+            { "title": "The Rust Book — Unsafe Rust", "url": "https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html", "kind": "book" },
+            { "title": "Miri", "url": "https://github.com/rust-lang/miri", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "rs-string-types",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["rust.strings", "rust.types"],
+          "prompt": "`String` vs `&str`",
+          "answer": "`String` is an owned, growable, heap-allocated UTF-8 buffer; `&str` is a borrowed view into UTF-8 bytes.",
+          "columns": {
+            "left": { "title": "String", "points": ["Owns its buffer, can grow", "Heap allocated", "Return type when you produce new text", "Derefs to &str automatically"] },
+            "right": { "title": "&str", "points": ["A borrowed slice — pointer plus length", "May point at a String, a literal, or static memory", "The right parameter type for reading text", "Zero-cost substring views"] }
+          },
+          "explanation": "Take `&str` in parameters and return `String` when producing owned data. Both are guaranteed valid UTF-8 — which is why indexing by byte position can panic on a char boundary, and why you iterate with `.chars()`.",
+          "resources": [
+            { "title": "Rust std — str", "url": "https://doc.rust-lang.org/std/primitive.str.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

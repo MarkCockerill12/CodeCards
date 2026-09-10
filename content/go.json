@@ -1,0 +1,132 @@
+{
+  "id": "go",
+  "name": "Go",
+  "icon": "🐹",
+  "category": "Languages",
+  "color": "#00ADD8",
+  "description": "Goroutines, channels, interfaces, error handling and the deliberate simplicity that defines the language.",
+  "modules": [
+    {
+      "id": "go-core",
+      "name": "Language & Errors",
+      "description": "Types, interfaces, and Go's explicit approach to failure.",
+      "cards": [
+        {
+          "id": "go-errors-explicit",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["go.errors", "go.core"],
+          "prompt": "Why does Go return errors as values instead of throwing?",
+          "answer": "Because every call site must visibly decide what to do about failure. `if err != nil` is verbose on purpose — error handling is normal control flow, not an exceptional path hidden from the reader.",
+          "explanation": "Wrap with `fmt.Errorf(\"...: %w\", err)` to preserve the chain, then inspect with `errors.Is` (sentinel) or `errors.As` (typed). `panic` is for genuinely unrecoverable programmer errors, not for expected failure.",
+          "resources": [
+            { "title": "Go blog — Error handling and Go", "url": "https://go.dev/blog/error-handling-and-go", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-interfaces-implicit",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["go.interfaces", "oop.polymorphism"],
+          "prompt": "How does Go's interface satisfaction differ from Java's?",
+          "answer": "It is implicit and structural: any type with the right method set satisfies the interface, with no `implements` declaration. Interfaces are therefore usually defined by the *consumer*, not shipped with the implementation.",
+          "explanation": "That is why 'accept interfaces, return structs' is idiomatic — the caller declares the small interface it needs (often one method) and any existing type can satisfy it. Large interfaces are a smell; `io.Reader` has exactly one method and is everywhere.",
+          "resources": [
+            { "title": "Effective Go — Interfaces", "url": "https://go.dev/doc/effective_go#interfaces", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-nil-interface",
+          "type": "predict-output",
+          "difficulty": 5,
+          "tags": ["go.gotchas", "go.interfaces"],
+          "prompt": "What does this print, and why is it surprising?",
+          "code": "package main\n\nimport \"fmt\"\n\ntype MyErr struct{}\n\nfunc (e *MyErr) Error() string { return \"boom\" }\n\nfunc mayFail() error {\n\tvar p *MyErr = nil\n\treturn p // typed nil in an interface\n}\n\nfunc main() {\n\tfmt.Println(mayFail() == nil)\n}",
+          "lang": "go",
+          "answer": "false",
+          "explanation": "An interface value holds a (type, value) pair. Returning a nil `*MyErr` gives an interface with a non-nil type and a nil value, so it is not equal to nil. Return a literal `nil` for the success path rather than a typed nil pointer.",
+          "prerequisites": ["go-interfaces-implicit"],
+          "resources": [
+            { "title": "Go FAQ — Why is my nil error value not equal to nil?", "url": "https://go.dev/doc/faq#nil_error", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-slice-aliasing",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["go.slices", "go.gotchas"],
+          "prompt": "Why can `append` here modify the original array?",
+          "code": "a := []int{1, 2, 3, 4, 5}\nb := a[:2]           // len 2, cap 5\nb = append(b, 99)    // writes into a's backing array\nfmt.Println(a)       // [1 2 99 4 5]",
+          "lang": "go",
+          "answer": "A slice is a view — pointer, length, capacity — over a backing array. Because `b` still has spare capacity, `append` writes in place rather than allocating. Use a three-index slice `a[:2:2]` to cap it, or copy explicitly.",
+          "explanation": "This bites whenever a function receives a slice and appends to it: the caller may or may not see the change, depending on capacity. Slices are cheap to pass precisely because nothing is copied — which is the same reason aliasing is possible.",
+          "resources": [
+            { "title": "Go blog — Slices: usage and internals", "url": "https://go.dev/blog/slices-intro", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "go-concurrency",
+      "name": "Concurrency",
+      "description": "Goroutines, channels, context and the patterns Go was designed for.",
+      "cards": [
+        {
+          "id": "go-goroutines",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["go.concurrency"],
+          "prompt": "What is a goroutine, and how does it differ from an OS thread?",
+          "answer": "A green thread multiplexed onto OS threads by the Go runtime. It starts with a ~2 KB growable stack, so hundreds of thousands are practical, and the runtime scheduler switches them in user space at blocking points.",
+          "explanation": "That is why Go writes as blocking code but scales like an event loop. The catch is that goroutines are not automatically cleaned up — one blocked forever on a channel is a leak, which is what `context` and buffered/closed channels are for.",
+          "resources": [
+            { "title": "Effective Go — Goroutines", "url": "https://go.dev/doc/effective_go#goroutines", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-channels",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["go.concurrency", "go.channels"],
+          "prompt": "Unbuffered vs buffered channels",
+          "answer": "An unbuffered channel synchronises sender and receiver — the send blocks until someone receives. A buffered channel accepts up to its capacity without a receiver present.",
+          "columns": {
+            "left": { "title": "make(chan T)", "points": ["Rendezvous: send and receive happen together", "Provides a happens-before guarantee", "Natural backpressure", "Deadlocks loudly if nobody receives"] },
+            "right": { "title": "make(chan T, n)", "points": ["Decouples producer and consumer up to n", "Absorbs bursts", "Hides slow consumers until the buffer fills", "Capacity is a real design decision"] }
+          },
+          "explanation": "'Do not communicate by sharing memory; share memory by communicating.' That said, a `sync.Mutex` around a struct is often simpler than a channel for guarding shared state — channels are for handing off ownership, not for every lock.",
+          "prerequisites": ["go-goroutines"],
+          "resources": [
+            { "title": "Go blog — Share memory by communicating", "url": "https://go.dev/blog/codelab-share", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-context",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["go.context", "go.concurrency"],
+          "prompt": "What is `context.Context` for, and what is the convention?",
+          "answer": "Carrying cancellation, deadlines and request-scoped values across API boundaries. Convention: pass it as the first parameter, never store it in a struct, and propagate it into every downstream call.",
+          "explanation": "When a request is cancelled, the context closes and every goroutine watching `ctx.Done()` can stop — which is how Go avoids leaking work on abandoned requests. A function that accepts a context and ignores it is worse than one that never took it.",
+          "prerequisites": ["go-goroutines"],
+          "resources": [
+            { "title": "Go blog — Contexts and structs", "url": "https://go.dev/blog/context-and-structs", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-race-detector",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["go.tooling", "concurrency.races"],
+          "prompt": "What does `go test -race` do?",
+          "answer": "It instruments memory accesses and reports data races observed at runtime — two goroutines touching the same memory without synchronisation, where at least one writes.",
+          "explanation": "It only finds races that actually occur during the run, so it needs tests that exercise concurrency. It is still the single most valuable tool in Go: run the whole suite with `-race` in CI, accepting the slowdown.",
+          "prerequisites": ["go-channels"],
+          "resources": [
+            { "title": "Go blog — Introducing the race detector", "url": "https://go.dev/blog/race-detector", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

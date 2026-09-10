@@ -1,0 +1,165 @@
+{
+  "id": "numeric-representation",
+  "name": "Numbers, Text & Time",
+  "icon": "🔢",
+  "category": "Computer Science",
+  "color": "#F97316",
+  "description": "Floating point, integer overflow, endianness, Unicode and time zones — the representation bugs that ship to production.",
+  "modules": [
+    {
+      "id": "num-numbers",
+      "name": "Numbers & Bits",
+      "description": "IEEE-754, two's complement, overflow and bitwise fundamentals.",
+      "cards": [
+        {
+          "id": "num-float-precision",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["numeric.float"],
+          "prompt": "What does this print?",
+          "code": "print(0.1 + 0.2)\nprint(0.1 + 0.2 == 0.3)\nprint(round(0.1 + 0.2, 10) == 0.3)",
+          "lang": "python",
+          "answer": "0.30000000000000004\nFalse\nTrue",
+          "explanation": "0.1 and 0.2 have no exact binary representation, just as 1/3 has no exact decimal one. Compare floats with a tolerance (`math.isclose`), never with `==`. Money belongs in integer minor units or a decimal type, never a float.",
+          "resources": [
+            { "title": "Python docs — Floating point arithmetic", "url": "https://docs.python.org/3/tutorial/floatingpoint.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "0.30000000000000004\nFalse\nTrue" }
+        },
+        {
+          "id": "num-ieee754",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["numeric.float", "numeric.representation"],
+          "prompt": "How is an IEEE-754 double laid out, and what special values does it have?",
+          "answer": "1 sign bit, 11 exponent bits, 52 stored mantissa bits (53 with the implicit leading 1). Specials: ±0, ±Infinity, and NaN — which is not equal to itself.",
+          "explanation": "That gives ~15–17 significant decimal digits and exact integers only up to 2^53. `NaN != NaN` is why `Number.isNaN` and `math.isnan` exist, and why NaN in a sort comparator can corrupt the ordering.",
+          "prerequisites": ["num-float-precision"],
+          "resources": [
+            { "title": "Wikipedia — Double-precision floating-point format", "url": "https://en.wikipedia.org/wiki/Double-precision_floating-point_format", "kind": "article" }
+          ]
+        },
+        {
+          "id": "num-twos-complement",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["numeric.integer"],
+          "prompt": "Why do computers use two's complement for signed integers?",
+          "answer": "Because addition, subtraction and comparison work identically for signed and unsigned values — no separate circuitry, and only one representation of zero.",
+          "explanation": "The asymmetry is the consequence: an 8-bit range is −128..127, so `-INT_MIN` overflows. In C/C++ signed overflow is undefined behaviour the optimiser exploits; in Java and Rust release builds it wraps; in Rust debug builds it panics.",
+          "resources": [
+            { "title": "Wikipedia — Two's complement", "url": "https://en.wikipedia.org/wiki/Two%27s_complement", "kind": "article" }
+          ]
+        },
+        {
+          "id": "num-integer-overflow",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["numeric.integer", "security.memory"],
+          "prompt": "Where does integer overflow become a security problem, not just a wrong number?",
+          "answer": "In size calculations: `malloc(count * size)` can wrap to a small allocation while the code then writes `count * size` bytes — a heap overflow. Length checks that overflow are a classic exploit primitive.",
+          "explanation": "Use checked arithmetic (`__builtin_mul_overflow`, `checked_mul`, `Math.addExact`) wherever a value derives from untrusted input and feeds a size, index or offset. CWE-190 tracks this class.",
+          "prerequisites": ["num-twos-complement"],
+          "resources": [
+            { "title": "CWE-190 — Integer Overflow or Wraparound", "url": "https://cwe.mitre.org/data/definitions/190.html", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "num-endianness",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["numeric.representation", "networking.protocol"],
+          "prompt": "What is endianness, and where must you care?",
+          "answer": "The byte order of multi-byte values: little-endian stores the least significant byte first (x86, ARM by default), big-endian the most significant first. It matters for binary file formats, network protocols and casting byte buffers.",
+          "explanation": "Network byte order is big-endian, hence `htons`/`ntohl`. Within one process it is invisible — until you memcpy a struct into a socket or read a file written on another architecture. Serialise explicitly rather than dumping raw structs.",
+          "resources": [
+            { "title": "Wikipedia — Endianness", "url": "https://en.wikipedia.org/wiki/Endianness", "kind": "article" }
+          ]
+        },
+        {
+          "id": "num-bit-tricks",
+          "type": "cloze",
+          "difficulty": 3,
+          "tags": ["numeric.bitwise"],
+          "prompt": "`x & (x - 1)` clears the lowest set bit, so `x & (x - 1) == 0` tests whether x is a power of ___.",
+          "answer": "two",
+          "explanation": "Other staples: `x & -x` isolates the lowest set bit; `x >> 1` is a floor-divide by two for unsigned values; XOR swaps and finds the unique element; and `x & (n-1)` replaces `x % n` when n is a power of two — which is why hash tables use power-of-two capacities.",
+          "resources": [
+            { "title": "Bit Twiddling Hacks", "url": "https://graphics.stanford.edu/~seander/bithacks.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "num-text-time",
+      "name": "Text & Time",
+      "description": "Unicode, encodings, and the time-zone rules that break naive date handling.",
+      "cards": [
+        {
+          "id": "text-unicode-utf8",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["text.unicode", "text.encoding"],
+          "prompt": "What is the difference between a code point, a character and a byte in UTF-8?",
+          "answer": "A code point is a Unicode number (U+1F600). UTF-8 encodes each code point in 1–4 bytes. A user-perceived character (grapheme cluster) may be several code points — 'é' can be one, or 'e' plus a combining accent.",
+          "explanation": "This is why `len(s)` differs by language, why slicing by byte index corrupts text, and why an emoji with a skin-tone modifier and ZWJ can be one grapheme made of many code points. Iterate by grapheme when the unit is 'what the user sees'.",
+          "resources": [
+            { "title": "Joel on Software — The absolute minimum every developer must know about Unicode", "url": "https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "text-normalization",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["text.unicode", "security.validation"],
+          "prompt": "Two usernames look identical but compare as different strings. What is happening and what do you do?",
+          "answer": "They differ in Unicode normalisation form — composed (NFC) versus decomposed (NFD), or confusable characters. Normalise to NFC (or NFKC for identifiers) before storing and comparing, and apply a confusables/skeleton check for security-sensitive names.",
+          "explanation": "Without normalisation you get duplicate accounts and failed lookups; without confusable checks you get homograph attacks, where a Cyrillic 'а' impersonates a Latin 'a' in a domain or username.",
+          "prerequisites": ["text-unicode-utf8"],
+          "resources": [
+            { "title": "Unicode — Normalization forms (UAX #15)", "url": "https://unicode.org/reports/tr15/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "time-utc-storage",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["time.timezones", "system.design"],
+          "prompt": "How should you store timestamps, and when is UTC the wrong answer?",
+          "answer": "Store instants as UTC (or with an explicit offset). UTC is wrong for *future* local events — a 9am meeting next March must store the local time plus the IANA zone, because the offset can change before then.",
+          "explanation": "Time zone rules change by political decision several times a year, so an offset captured today may be wrong for a future date. Keep the tz database updated, never store an abbreviation such as 'CST' (it is ambiguous), and let a library do the arithmetic.",
+          "resources": [
+            { "title": "IANA — Time Zone Database", "url": "https://www.iana.org/time-zones", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "time-dst-bug",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["time.timezones", "time.bugs"],
+          "prompt": "What is wrong with adding 86,400 seconds to get 'tomorrow'?",
+          "code": "tomorrow = now + 24 * 60 * 60",
+          "lang": "python",
+          "answer": "Not every local day is 24 hours — DST transitions make them 23 or 25. Adding a day is a calendar operation on local time, not an addition of seconds to an instant.",
+          "explanation": "Other classics: a local time that does not exist (spring forward) or occurs twice (fall back), leap years, and the assumption that a year has 365 days. Use the calendar API of a real date library and let it resolve ambiguity explicitly.",
+          "prerequisites": ["time-utc-storage"],
+          "resources": [
+            { "title": "MDN — Temporal", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "time-iso8601",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["time.formats"],
+          "prompt": "The ISO 8601 / RFC 3339 timestamp `2026-09-10T14:30:00Z` uses `Z` to mean ___.",
+          "answer": "UTC",
+          "explanation": "'Z' is Zulu — zero offset. ISO 8601 sorts lexicographically in chronological order, which is why it is the right format for log lines, filenames and API payloads. Locale formats such as 03/04/2026 are ambiguous by design.",
+          "resources": [
+            { "title": "RFC 3339 — Date and Time on the Internet", "url": "https://www.rfc-editor.org/rfc/rfc3339", "kind": "spec" }
+          ]
+        }
+      ]
+    }
+  ]
+}

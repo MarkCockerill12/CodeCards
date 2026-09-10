@@ -1,0 +1,133 @@
+{
+  "id": "repo-structure",
+  "name": "Repository & Project Structure",
+  "icon": "🗂️",
+  "category": "Architecture",
+  "color": "#65A30D",
+  "description": "Monorepo vs polyrepo, layering, dependency direction, package management and project layout that survives growth.",
+  "modules": [
+    {
+      "id": "repo-layout",
+      "name": "Repositories",
+      "description": "How to organise code across teams and services.",
+      "cards": [
+        {
+          "id": "repo-mono-vs-poly",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["repo.structure", "devops"],
+          "prompt": "Monorepo vs polyrepo",
+          "answer": "A monorepo holds many projects in one repository with one history; a polyrepo gives each project its own repository and lifecycle.",
+          "columns": {
+            "left": { "title": "Monorepo", "points": ["Atomic cross-project changes", "One version of every internal dependency", "Shared tooling and consistent standards", "Needs build tooling that scales (Nx, Turborepo, Bazel)"] },
+            "right": { "title": "Polyrepo", "points": ["Independent versioning and access control", "Small, fast clones and simple CI", "Cross-cutting changes need coordinated PRs", "Dependency drift between projects"] }
+          },
+          "explanation": "The deciding question is how often changes cross project boundaries. Frequent cross-cutting change favours a monorepo; genuinely independent products with different release cadences favour polyrepo. A monorepo without task caching and affected-project detection becomes painfully slow.",
+          "resources": [
+            { "title": "Monorepo tools", "url": "https://monorepo.tools/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "repo-monorepo-tooling",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["repo.structure", "devops.build"],
+          "prompt": "What does a monorepo need from its tooling?",
+          "answer": "A project graph, affected-target detection so CI only builds what changed, remote build caching, consistent task running, and code ownership rules per directory.",
+          "explanation": "Without affected-detection, every PR runs every test and CI time grows with the repo. Nx and Turborepo provide this for JS/TS; Bazel and Pants for polyglot repos. CODEOWNERS keeps review load routed to the right people.",
+          "prerequisites": ["repo-mono-vs-poly"],
+          "resources": [
+            { "title": "Turborepo — Core concepts", "url": "https://turborepo.com/docs/core-concepts", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-semver",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["repo.versioning", "craft"],
+          "prompt": "What do the three parts of a semantic version mean, and what do `^` and `~` allow?",
+          "answer": "MAJOR breaking, MINOR backwards-compatible feature, PATCH backwards-compatible fix. `^1.2.3` allows any 1.x.y at or above 1.2.3; `~1.2.3` allows 1.2.x only. Below 1.0.0 the rules are looser and `^0.2.3` allows only 0.2.x.",
+          "explanation": "Semver is a promise made by humans, so lockfiles exist because the promise is sometimes broken. Commit the lockfile for applications; libraries publish ranges. `npm ci` installs the lockfile exactly — that is the command CI should run.",
+          "resources": [
+            { "title": "Semantic Versioning 2.0.0", "url": "https://semver.org/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "repo-lockfile",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["repo.dependencies", "devops.build"],
+          "prompt": "The build works locally and fails in CI with a different library version. What is the cause and the fix?",
+          "answer": "A lockfile that was not committed, ignored, or bypassed by an install command that resolves ranges afresh. Commit it and use the reproducible install command (`npm ci`, `pnpm install --frozen-lockfile`, `poetry install`).",
+          "explanation": "Lockfiles pin the entire transitive tree with integrity hashes — reproducibility and supply-chain protection in one file. A lockfile diff in a pull request is also a genuine review artefact: it shows exactly which new code you are about to ship.",
+          "prerequisites": ["repo-semver"],
+          "resources": [
+            { "title": "npm docs — npm ci", "url": "https://docs.npmjs.com/cli/v10/commands/npm-ci", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "repo-code",
+      "name": "Code Organisation",
+      "description": "Layering, dependency direction and structure inside a project.",
+      "cards": [
+        {
+          "id": "repo-layered-architecture",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["architecture.layering"],
+          "prompt": "What is layered architecture, and what is the one rule that makes it work?",
+          "answer": "Presentation → application → domain → infrastructure, with dependencies pointing in one direction only. Domain logic must not import infrastructure.",
+          "explanation": "One-way dependencies mean you can test the domain without a database, and swap infrastructure without touching business rules. The direction is enforced by inverting interfaces: the domain declares a repository interface, infrastructure implements it.",
+          "resources": [
+            { "title": "Martin Fowler — PresentationDomainDataLayering", "url": "https://martinfowler.com/bliki/PresentationDomainDataLayering.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "repo-feature-folders",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["repo.structure", "craft"],
+          "prompt": "Organising by type vs organising by feature",
+          "answer": "By type groups all controllers, all models, all services; by feature groups everything for one capability together.",
+          "columns": {
+            "left": { "title": "By type", "points": ["Familiar from framework scaffolding", "Easy to find 'all the models'", "One change touches many folders", "Coupling is invisible"] },
+            "right": { "title": "By feature", "points": ["A change lives in one folder", "Deleting a feature is deleting a directory", "Boundaries are visible in the tree", "Shared code needs a deliberate home"] }
+          },
+          "explanation": "Feature folders scale better because the unit of change is a feature, not a layer. Keep a `shared`/`common` area but police it — everything drifts there by default, and a shared folder that imports from features has inverted the dependency.",
+          "resources": [
+            { "title": "Next.js — Project structure", "url": "https://nextjs.org/docs/app/getting-started/project-structure", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-circular-deps",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["repo.structure", "craft"],
+          "prompt": "Why are circular imports a design smell, not just a runtime annoyance?",
+          "code": "# user.py\nfrom order import Order\n\n# order.py\nfrom user import User   # ImportError / partially initialised module",
+          "lang": "python",
+          "answer": "The two modules are one unit that cannot be understood, tested or reused separately. Fixes: extract the shared piece into a third module, invert one direction with an interface, or merge them if they really are one concept.",
+          "explanation": "At runtime the symptoms vary by language — Python raises or gives half-initialised modules, JavaScript yields undefined bindings, C++ needs forward declarations. The design problem is the same everywhere, and tools such as madge or import-linter can fail the build on cycles.",
+          "prerequisites": ["repo-layered-architecture"],
+          "resources": [
+            { "title": "Python docs — The import system", "url": "https://docs.python.org/3/reference/import.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-readme",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["repo.docs", "craft"],
+          "prompt": "What belongs in a repository's README and supporting docs?",
+          "answer": "What the project is in one sentence, how to run it locally, how to run the tests, how to deploy, the architecture in a diagram or a paragraph, and where to get help. Longer material goes in `docs/`, with decisions recorded as ADRs.",
+          "explanation": "The test is whether a new joiner can get it running without asking anyone. Architecture Decision Records are the highest-value habit here: a short dated file per significant decision, stating context, decision and consequences — it answers 'why is this like this?' years later.",
+          "resources": [
+            { "title": "ADR — Architecture decision records", "url": "https://adr.github.io/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

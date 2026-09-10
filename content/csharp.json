@@ -1,0 +1,170 @@
+{
+  "id": "csharp",
+  "name": "C#",
+  "icon": "🟪",
+  "category": "Languages",
+  "color": "#68217A",
+  "description": "Value vs reference types, async/await, LINQ, disposal and the .NET runtime behaviours behind them.",
+  "modules": [
+    {
+      "id": "cs-types",
+      "name": "Types, Memory & Disposal",
+      "description": "Structs, classes, boxing, nullable reference types and deterministic cleanup.",
+      "cards": [
+        {
+          "id": "cs-struct-vs-class",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["csharp.types", "memory.stack-heap"],
+          "prompt": "`struct` vs `class` in C#",
+          "answer": "Structs are value types copied on assignment; classes are reference types where the reference is copied.",
+          "columns": {
+            "left": { "title": "struct (value type)", "points": ["Copied on assignment and when passed", "Usually on the stack or inline in its owner", "No null unless `Nullable<T>`", "Great for small, immutable, short-lived data"] },
+            "right": { "title": "class (reference type)", "points": ["Reference copied; object lives on the heap", "Garbage collected", "Can be null", "Right for identity, inheritance, larger state"] }
+          },
+          "explanation": "Guidance: make a struct only if it is small (~16 bytes or less), logically a single value, immutable and not boxed often. Mutable structs are a classic bug source because you mutate a copy without noticing.",
+          "resources": [
+            { "title": "Microsoft Learn — Choosing between class and struct", "url": "https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/choosing-between-class-and-struct", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-boxing",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["csharp.memory", "csharp.performance"],
+          "prompt": "What is boxing, and where does it sneak in?",
+          "answer": "Boxing wraps a value type in a heap object so it can be treated as `object` or an interface. It appears in non-generic collections, `object` parameters, string interpolation of value types, and calling an interface method on a struct through the interface.",
+          "explanation": "Each box is an allocation plus a copy plus later GC pressure. Generics avoid it — `List<int>` stores ints inline while `ArrayList` boxes each one. Constrained generic calls (`where T : IComparable<T>`) also avoid boxing that an `IComparable` parameter would cause.",
+          "prerequisites": ["cs-struct-vs-class"],
+          "resources": [
+            { "title": "Microsoft Learn — Boxing and unboxing", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/types/boxing-and-unboxing", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-idisposable",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["csharp.resources", "csharp.patterns"],
+          "prompt": "The GC handles memory. Why does `IDisposable` exist?",
+          "answer": "Because the GC only manages memory, and only nondeterministically. Files, sockets, DB connections, locks and native handles need releasing at a known moment — that is what `Dispose`, and the `using` statement that calls it, are for.",
+          "explanation": "Finalizers are a last-resort safety net: they run on a separate thread at an unknown time and delay collection by a full GC cycle. Implement the dispose pattern, prefer `using var`, and use `SafeHandle` rather than writing finalizers yourself.",
+          "resources": [
+            { "title": "Microsoft Learn — Implementing Dispose", "url": "https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-nullable-reference",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["csharp.nullability", "csharp.safety"],
+          "prompt": "What do nullable reference types actually change at runtime?",
+          "answer": "Nothing. They are compile-time annotations plus flow analysis: `string?` may be null, `string` should not be, and the compiler warns where you violate it. The runtime representation is identical.",
+          "explanation": "Enable with `<Nullable>enable</Nullable>`. The value is in the warnings, so treat them as errors in CI — half-enabled nullability gives false confidence. The `!` null-forgiving operator silences the compiler and should be rare and commented.",
+          "resources": [
+            { "title": "Microsoft Learn — Nullable reference types", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/nullable-references", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-record-vs-class",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["csharp.types", "csharp.modern"],
+          "prompt": "What does `record` add over `class`?",
+          "answer": "Value-based equality, a generated `ToString`, deconstruction, and `with` expressions for non-destructive mutation. `record struct` does the same for value types.",
+          "explanation": "Records suit DTOs, messages and domain values where two instances with the same data should be equal. Use `init`-only setters to make them genuinely immutable; the equality is still shallow, so a record holding a `List<T>` compares by list reference.",
+          "resources": [
+            { "title": "Microsoft Learn — Records", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/record", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cs-async-linq",
+      "name": "Async & LINQ",
+      "description": "The async state machine, deadlocks, deferred execution and the traps behind both.",
+      "cards": [
+        {
+          "id": "cs-async-deadlock",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["csharp.async", "csharp.gotchas"],
+          "prompt": "Why can this deadlock in a UI or classic ASP.NET app?",
+          "code": "public string Get() {\n    return GetAsync().Result;   // blocking on async\n}\n\nprivate async Task<string> GetAsync() {\n    var res = await client.GetStringAsync(url);\n    return res;\n}",
+          "lang": "csharp",
+          "answer": "`.Result` blocks the thread that owns the synchronization context; the continuation after `await` needs that same context to resume, so both wait forever. Await all the way up, or use `ConfigureAwait(false)` in library code.",
+          "explanation": "By default a continuation is posted back to the captured context. Blocking that context on the task creates a cycle. The rule: never block on async code — `async` should propagate to the entry point. ASP.NET Core has no such context, but libraries still cannot assume that.",
+          "resources": [
+            { "title": "Microsoft Learn — Async guidance: avoid sync over async", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/async-scenarios", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-async-void",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["csharp.async", "csharp.errors"],
+          "prompt": "Why is `async void` dangerous?",
+          "answer": "There is no Task to await or observe, so the caller cannot know when it finishes, and an exception is thrown on the synchronization context — typically crashing the process instead of surfacing as a faulted task.",
+          "explanation": "The single legitimate use is an event handler, whose signature demands `void`. Everywhere else return `Task` (or `ValueTask` for hot paths that usually complete synchronously) so failures and completion are observable.",
+          "prerequisites": ["cs-async-deadlock"],
+          "resources": [
+            { "title": "Microsoft Learn — Async return types", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/async-return-types", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-linq-deferred",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["csharp.linq"],
+          "prompt": "What does this print?",
+          "code": "var list = new List<int> { 1, 2, 3 };\nvar query = list.Where(x => x > 1);\nlist.Add(4);\nConsole.WriteLine(string.Join(\",\", query));",
+          "lang": "csharp",
+          "answer": "2,3,4",
+          "explanation": "LINQ query operators are deferred — `Where` builds an iterator and executes only when enumerated, at which point it sees the current contents of the list. Call `.ToList()` to snapshot, and beware enumerating an expensive query twice by accident.",
+          "resources": [
+            { "title": "Microsoft Learn — Deferred execution", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/linq/deferred-execution-and-lazy-evaluation-in-linq-to-objects", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-ienumerable-vs-iqueryable",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["csharp.linq", "db.orm"],
+          "prompt": "`IEnumerable<T>` vs `IQueryable<T>`",
+          "answer": "IEnumerable runs the delegate in memory; IQueryable builds an expression tree a provider translates — typically into SQL.",
+          "columns": {
+            "left": { "title": "IEnumerable<T>", "points": ["LINQ to Objects, in process", "Takes `Func<T,bool>` — compiled delegates", "Filters after data has been fetched", "Any C# expression is allowed"] },
+            "right": { "title": "IQueryable<T>", "points": ["LINQ to a provider (EF Core, etc.)", "Takes `Expression<Func<T,bool>>`", "Filters translate into the WHERE clause", "Unsupported expressions throw or fall back"] }
+          },
+          "explanation": "Casting an `IQueryable` to `IEnumerable` too early is a classic performance bug: the whole table is pulled into memory and filtered there. Watch for it whenever you call a custom method inside a query.",
+          "resources": [
+            { "title": "Microsoft Learn — Client vs server evaluation", "url": "https://learn.microsoft.com/en-us/ef/core/querying/client-eval", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-cancellation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["csharp.async", "csharp.patterns"],
+          "prompt": "How should a long-running async API support being cancelled?",
+          "answer": "Accept a `CancellationToken` parameter, pass it to every async call you make, and check `token.ThrowIfCancellationRequested()` around synchronous loops.",
+          "explanation": "Cancellation is cooperative — nothing forcibly aborts a task. A token that is accepted but never forwarded is worse than none, because callers believe cancellation works. `CancellationTokenSource` also provides timeouts via `CancelAfter`.",
+          "resources": [
+            { "title": "Microsoft Learn — Cancellation in managed threads", "url": "https://learn.microsoft.com/en-us/dotnet/standard/threading/cancellation-in-managed-threads", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-span",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["csharp.performance", "csharp.memory"],
+          "prompt": "What problem do `Span<T>` and `Memory<T>` solve?",
+          "answer": "They give a type-safe, bounds-checked view over contiguous memory — arrays, stack buffers or unmanaged memory — so you can slice and parse without allocating substrings or copies.",
+          "explanation": "`Span<T>` is a ref struct: stack-only, so it cannot be stored in a field or captured by an async method. `Memory<T>` is the heap-storable equivalent for async paths. Together they eliminate most parsing allocations in hot code.",
+          "resources": [
+            { "title": "Microsoft Learn — Memory and span usage guidelines", "url": "https://learn.microsoft.com/en-us/dotnet/standard/memory-and-spans/memory-t-usage-guidelines", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

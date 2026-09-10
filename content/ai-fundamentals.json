@@ -1,0 +1,143 @@
+{
+  "id": "ai-fundamentals",
+  "name": "AI & ML Fundamentals",
+  "icon": "🧠",
+  "category": "AI & Data",
+  "color": "#EA580C",
+  "description": "Weights, gradients, training, overfitting, transformers and the vocabulary needed to read a model card.",
+  "modules": [
+    {
+      "id": "ai-basics",
+      "name": "How Learning Works",
+      "description": "Parameters, loss, gradient descent and the training loop.",
+      "cards": [
+        {
+          "id": "ai-weights",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ai.fundamentals", "ai.training"],
+          "prompt": "What are weights and biases, and what does 'training' actually change?",
+          "answer": "Weights are the multipliers on each input to a neuron; biases are the offsets added afterwards. Training adjusts exactly these numbers — nothing else — to reduce the loss.",
+          "explanation": "A '7 billion parameter' model has 7 billion of these numbers. The architecture defines how they are wired; training decides their values. Inference is just arithmetic over fixed weights, which is why it can be so much cheaper than training.",
+          "resources": [
+            { "title": "3Blue1Brown — But what is a neural network?", "url": "https://www.3blue1brown.com/topics/neural-networks", "kind": "video" }
+          ]
+        },
+        {
+          "id": "ai-gradient-descent",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ai.training", "ai.optimisation"],
+          "prompt": "How do gradient descent and backpropagation fit together?",
+          "answer": "The loss function scores how wrong the output is. Backpropagation applies the chain rule to compute the gradient of the loss with respect to every parameter. Gradient descent then steps each parameter a little way downhill, scaled by the learning rate.",
+          "explanation": "Learning rate is the key hyperparameter: too high and training diverges, too low and it crawls or gets stuck. Optimisers such as Adam adapt the step size per parameter using running estimates of gradient mean and variance.",
+          "prerequisites": ["ai-weights"],
+          "resources": [
+            { "title": "Deep Learning Book — Chapter 6", "url": "https://www.deeplearningbook.org/contents/mlp.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "ai-overfitting",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ai.training", "ai.evaluation"],
+          "prompt": "Training accuracy is 99% and validation accuracy is 62%. What is happening and what do you do?",
+          "answer": "Overfitting — the model memorised the training set instead of learning generalisable structure. Remedies: more or more varied data, augmentation, regularisation (L2, dropout), a smaller model, or early stopping on validation loss.",
+          "explanation": "The mirror problem is underfitting: both numbers low, meaning the model or training is too weak. Watch the *gap* between train and validation curves — it is the clearest diagnostic in machine learning.",
+          "prerequisites": ["ai-gradient-descent"],
+          "resources": [
+            { "title": "Google — Machine learning crash course: generalization", "url": "https://developers.google.com/machine-learning/crash-course/overfitting/overfitting", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-train-val-test",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["ai.evaluation", "ai.data"],
+          "prompt": "What is wrong with this evaluation?",
+          "code": "X_scaled = scaler.fit_transform(X)          # fit on ALL data\nX_train, X_test = train_test_split(X_scaled)\nmodel.fit(X_train, y_train)\nprint(model.score(X_test, y_test))          # optimistic",
+          "lang": "python",
+          "answer": "Data leakage: the scaler was fitted on the test data too, so information from the test set leaked into training. Split first, fit the scaler on the training set only, then transform the test set with it.",
+          "explanation": "Leakage is the most common reason a model looks excellent offline and fails in production. Other forms: features computed after the outcome, duplicate rows across splits, and time-series data split randomly instead of chronologically.",
+          "prerequisites": ["ai-overfitting"],
+          "resources": [
+            { "title": "scikit-learn — Common pitfalls: data leakage", "url": "https://scikit-learn.org/stable/common_pitfalls.html#data-leakage", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-metrics",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ai.evaluation", "ai.metrics"],
+          "prompt": "A fraud detector is 99.9% accurate. Why might that be worthless?",
+          "answer": "Because 99.9% of transactions are legitimate — predicting 'not fraud' every time scores 99.9%. Use precision, recall, F1 and PR-AUC on the minority class, and pick the threshold from the real cost of each error type.",
+          "explanation": "Precision: of those flagged, how many were fraud. Recall: of the fraud, how much did we catch. The trade-off is a business decision — a missed fraud and an angry blocked customer have very different costs, and only you know the ratio.",
+          "resources": [
+            { "title": "Google — Classification: accuracy, precision, recall", "url": "https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-modern",
+      "name": "Modern Architectures",
+      "description": "Transformers, embeddings, tokens and what today's models are made of.",
+      "cards": [
+        {
+          "id": "ai-transformer-attention",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ai.transformers", "ai.architecture"],
+          "prompt": "What does self-attention do in a transformer?",
+          "answer": "For each token it computes a query, key and value; the query is compared against every key to produce weights, and the output is the weighted sum of values. Each token thus attends to every other token, learning which context matters.",
+          "explanation": "The win over RNNs is parallelism — every position is computed at once instead of sequentially — plus direct long-range connections. The cost is O(n²) in sequence length, which is why context windows are expensive and why efficient-attention research exists.",
+          "resources": [
+            { "title": "Attention Is All You Need", "url": "https://arxiv.org/abs/1706.03762", "kind": "article" },
+            { "title": "Jay Alammar — The illustrated transformer", "url": "https://jalammar.github.io/illustrated-transformer/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-embeddings",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ai.embeddings", "ai.retrieval"],
+          "prompt": "What is an embedding, and what makes it useful?",
+          "answer": "A dense vector representing an item — word, sentence, image — such that semantically similar items are close together in the vector space. Similarity is usually cosine distance.",
+          "explanation": "That geometry is what powers semantic search, recommendations, clustering and deduplication: nearest neighbours are 'things that mean the same'. Embeddings from different models are not comparable, and re-embedding a corpus after a model change is the expensive part.",
+          "prerequisites": ["ai-weights"],
+          "resources": [
+            { "title": "Google — Embeddings", "url": "https://developers.google.com/machine-learning/crash-course/embeddings", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-supervision-types",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["ai.fundamentals"],
+          "prompt": "Supervised vs unsupervised vs reinforcement learning",
+          "answer": "Supervised learns from labelled examples; unsupervised finds structure in unlabelled data; reinforcement learns from rewards received by acting in an environment.",
+          "columns": {
+            "left": { "title": "Supervised / Unsupervised", "points": ["Supervised: classification, regression — needs labels", "Labels are the expensive part", "Unsupervised: clustering, dimensionality reduction", "Self-supervised: labels derived from the data itself"] },
+            "right": { "title": "Reinforcement", "points": ["Agent, environment, actions, rewards", "Learns a policy by trial and error", "Sparse, delayed reward makes it hard", "Robotics, games, RLHF for alignment"] }
+          },
+          "explanation": "Self-supervision is what made large language models possible: 'predict the next token' generates labels from raw text for free, so training scales with data rather than with human annotation.",
+          "resources": [
+            { "title": "Google — ML crash course", "url": "https://developers.google.com/machine-learning/crash-course", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-gpu-why",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ai.hardware", "performance"],
+          "prompt": "Why are GPUs so much better than CPUs for training?",
+          "answer": "Training is dominated by large matrix multiplications — thousands of identical independent operations. GPUs have thousands of simple cores and very high memory bandwidth, which is exactly that workload; CPUs optimise for latency on a few complex sequential threads.",
+          "explanation": "The usual bottleneck is memory bandwidth, not arithmetic. That is why VRAM capacity limits model size, why quantisation (int8, 4-bit) makes inference so much cheaper, and why batching improves throughput dramatically at the cost of per-request latency.",
+          "resources": [
+            { "title": "NVIDIA — CUDA programming guide", "url": "https://docs.nvidia.com/cuda/cuda-c-programming-guide/", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

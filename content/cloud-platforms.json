@@ -1,0 +1,141 @@
+{
+  "id": "cloud-platforms",
+  "name": "Cloud Platforms",
+  "icon": "☁️",
+  "category": "Cloud & DevOps",
+  "color": "#FF9900",
+  "description": "AWS, Azure and GCP core services, the shared responsibility model, IAM, networking and cost control.",
+  "modules": [
+    {
+      "id": "cloud-core",
+      "name": "Core Concepts & Services",
+      "description": "The service categories every provider offers, and what the equivalents are called.",
+      "cards": [
+        {
+          "id": "cloud-service-map",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["cloud.aws", "cloud.azure", "cloud.gcp"],
+          "prompt": "Map the core services across AWS, Azure and GCP.",
+          "answer": "Compute: EC2 / Virtual Machines / Compute Engine. Objects: S3 / Blob Storage / Cloud Storage. Functions: Lambda / Functions / Cloud Functions. Managed Kubernetes: EKS / AKS / GKE. Managed SQL: RDS / SQL Database / Cloud SQL. Identity: IAM / Entra ID / Cloud IAM.",
+          "columns": {
+            "left": { "title": "AWS", "points": ["EC2, S3, Lambda, EKS", "RDS, DynamoDB, SQS/SNS", "VPC, Route 53, CloudFront", "Largest service catalogue"] },
+            "right": { "title": "Azure / GCP", "points": ["VMs / Compute Engine", "Blob / Cloud Storage", "AKS / GKE — GKE is the most mature Kubernetes", "Azure: enterprise and AD integration; GCP: data and ML"] }
+          },
+          "explanation": "The primitives are the same everywhere; the differences are in defaults, quotas, IAM models and pricing. Knowing the shape of one provider transfers directly — learn concepts, then look up names.",
+          "resources": [
+            { "title": "Google Cloud — AWS to GCP service comparison", "url": "https://cloud.google.com/docs/get-started/aws-azure-gcp-service-comparison", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-shared-responsibility",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cloud.security", "cloud.fundamentals"],
+          "prompt": "What is the shared responsibility model?",
+          "answer": "The provider secures the cloud — hardware, hypervisor, managed service internals. You secure what you put *in* it: your data, identities, access policies, network rules, OS patching on IaaS, and application code.",
+          "explanation": "Nearly every headline 'cloud breach' is a customer-side misconfiguration: a public bucket, an over-permissive role, an exposed database. The line moves with the service model — serverless shifts more to the provider, EC2 leaves patching to you.",
+          "resources": [
+            { "title": "AWS — Shared responsibility model", "url": "https://aws.amazon.com/compliance/shared-responsibility-model/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-regions-az",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cloud.architecture", "system.reliability"],
+          "prompt": "What is the difference between a region and an availability zone, and how should that shape a deployment?",
+          "answer": "A region is a geographic area; an availability zone is an isolated datacentre (or cluster) within it, with independent power, cooling and network. Deploy across at least two AZs for high availability; go multi-region only for disaster recovery or latency.",
+          "explanation": "Multi-AZ is nearly free and handles the common failure. Multi-region is expensive and hard — data replication, consistency, failover testing — so justify it with an actual RPO/RTO requirement rather than a vague wish for resilience.",
+          "resources": [
+            { "title": "AWS — Regions and availability zones", "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-compute-models",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["cloud.compute", "architecture.decisions"],
+          "prompt": "VMs vs containers vs serverless",
+          "answer": "VMs give full control and full operational burden; containers standardise packaging with orchestration overhead; serverless removes servers entirely at the cost of runtime constraints.",
+          "columns": {
+            "left": { "title": "VM / Container", "points": ["Any runtime, any language, long-running", "You own patching, scaling, capacity", "Predictable cost at steady load", "Kubernetes adds power and complexity"] },
+            "right": { "title": "Serverless", "points": ["Scales to zero and to thousands", "Pay per request; excellent for spiky load", "Cold starts, execution time limits", "Vendor-specific event model"] }
+          },
+          "explanation": "Cost crosses over: serverless is far cheaper for bursty or low-volume workloads and more expensive at sustained high throughput. Migration difficulty differs too — a container runs anywhere, a function is written against one provider's event contract.",
+          "resources": [
+            { "title": "AWS Lambda — Developer guide", "url": "https://docs.aws.amazon.com/lambda/latest/dg/welcome.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cloud-ops",
+      "name": "IAM, Networking & Cost",
+      "description": "The three things that cause the most cloud incidents and invoices.",
+      "cards": [
+        {
+          "id": "cloud-iam-least-privilege",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["cloud.iam", "security.principles"],
+          "prompt": "A service needs to read one S3 bucket. What does the policy look like, and what mistake do people make?",
+          "answer": "A role with `s3:GetObject` scoped to `arn:aws:s3:::bucket/*`, assumed by the service — no long-lived keys. The common mistake is attaching a broad managed policy such as `AmazonS3FullAccess`, or worse, `*:*`.",
+          "explanation": "Use roles and instance/workload identity so credentials rotate automatically. Then let access analysers and 'last accessed' data prune what is unused. Start from the narrowest policy that works, not from the broadest one that stops the ticket.",
+          "prerequisites": ["cloud-shared-responsibility"],
+          "resources": [
+            { "title": "AWS — IAM best practices", "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-vpc-basics",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cloud.networking"],
+          "prompt": "What are the pieces of a basic VPC design?",
+          "answer": "A CIDR block split into public and private subnets across AZs, an internet gateway for public egress and ingress, a NAT gateway for private egress, route tables per subnet, plus security groups (stateful, instance-level) and NACLs (stateless, subnet-level).",
+          "explanation": "Rule of thumb: only load balancers and bastions go in public subnets; applications and databases stay private. Security groups are the primary control — NACLs are a blunt secondary. VPC endpoints keep traffic to managed services off the public internet and cut NAT costs.",
+          "resources": [
+            { "title": "AWS — VPC user guide", "url": "https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-cost-drivers",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["cloud.cost", "devops"],
+          "prompt": "Your cloud bill doubled with no traffic change. Where do you look?",
+          "answer": "Data egress (cross-AZ and internet), NAT gateway processing, idle or oversized instances, unattached volumes and old snapshots, log retention, and anything left running from a test. Tag everything and enable cost anomaly alerts.",
+          "explanation": "Egress and NAT are the classic silent costs — chatty cross-AZ services can cost more than the compute running them. The controls that work: budgets with alerts, autoscaling with sane minimums, storage lifecycle policies, and committed-use discounts for genuine baseline load.",
+          "resources": [
+            { "title": "AWS — Cost optimization pillar", "url": "https://docs.aws.amazon.com/wellarchitected/latest/cost-optimization-pillar/welcome.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-managed-vs-self",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["cloud.architecture", "architecture.decisions"],
+          "prompt": "Managed database or run it yourself on VMs?",
+          "answer": "Managed, unless you have a specific need it cannot meet. You are paying for backups, patching, failover, monitoring and replication — all of which are expensive and easy to get subtly wrong.",
+          "explanation": "Self-hosting makes sense for unusual extensions, cost at very large scale, or hard portability requirements. Be honest about the operational cost: a database is a full-time responsibility, and 'we saved money' evaporates the first time a restore is needed and untested.",
+          "resources": [
+            { "title": "AWS — RDS user guide", "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-well-architected",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cloud.architecture"],
+          "prompt": "What are the pillars of the Well-Architected Framework?",
+          "answer": "Operational excellence, security, reliability, performance efficiency, cost optimisation, and sustainability.",
+          "explanation": "It is useful mostly as a review checklist: walk each pillar against a design and the gaps show up quickly. The pillars trade against each other, so the point is making the trade explicit rather than pretending you can maximise all six.",
+          "resources": [
+            { "title": "AWS Well-Architected Framework", "url": "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

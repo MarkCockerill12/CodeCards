@@ -1,0 +1,158 @@
+{
+  "id": "git",
+  "name": "Git & GitHub",
+  "icon": "🌿",
+  "category": "Process & Craft",
+  "color": "#F05032",
+  "description": "The object model, branching, merge vs rebase, recovery from mistakes and collaborating through pull requests.",
+  "modules": [
+    {
+      "id": "git-model",
+      "name": "The Object Model",
+      "description": "What git actually stores, and why that makes the commands make sense.",
+      "cards": [
+        {
+          "id": "git-objects",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["git.internals"],
+          "prompt": "What are git's four object types?",
+          "answer": "Blob (file contents), tree (a directory listing of blobs and trees), commit (a tree plus parents, author and message) and tag (an annotated pointer). Every object is addressed by the hash of its content.",
+          "explanation": "A commit is a snapshot, not a diff — diffs are computed on demand. Branches are just files containing a commit hash, which is why creating one is instant. Content addressing is why identical files are stored once and why history cannot be altered silently.",
+          "resources": [
+            { "title": "Pro Git — Git objects", "url": "https://git-scm.com/book/en/v2/Git-Internals-Git-Objects", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-three-areas",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["git.basics"],
+          "prompt": "What are the working tree, the index and HEAD?",
+          "answer": "The working tree is your files on disk. The index (staging area) is the proposed next commit. HEAD points at the current branch, which points at the last commit.",
+          "explanation": "Every command is a move between these three: `add` working tree → index, `commit` index → HEAD, `checkout`/`restore` HEAD → working tree. `reset --soft/--mixed/--hard` chooses how far back that move goes.",
+          "resources": [
+            { "title": "Pro Git — Recording changes", "url": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-merge-vs-rebase",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["git.branching", "git.workflow"],
+          "prompt": "Merge vs rebase",
+          "answer": "Merge records that two lines of work joined, creating a merge commit. Rebase replays your commits on top of the new base, producing a linear history with new commit hashes.",
+          "columns": {
+            "left": { "title": "Merge", "points": ["Preserves true history", "Non-destructive — hashes unchanged", "Safe on shared branches", "Busy graph with many merge commits"] },
+            "right": { "title": "Rebase", "points": ["Linear, readable history", "Rewrites commits — new hashes", "Never rebase a branch others have pulled", "Conflicts resolved per commit"] }
+          },
+          "explanation": "The common convention: rebase your local feature branch onto main to stay current, then merge into main. The golden rule is do not rewrite published history — anyone who pulled it now has a divergent copy.",
+          "prerequisites": ["git-three-areas"],
+          "resources": [
+            { "title": "Pro Git — Rebasing", "url": "https://git-scm.com/book/en/v2/Git-Branching-Rebasing", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-reset-modes",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["git.commands", "git.recovery"],
+          "prompt": "What is the difference between these three commands?",
+          "code": "git reset --soft  HEAD~1\ngit reset --mixed HEAD~1   # default\ngit reset --hard  HEAD~1",
+          "lang": "bash",
+          "answer": "`--soft` moves HEAD back but keeps changes staged. `--mixed` moves HEAD and unstages them, leaving files edited. `--hard` moves HEAD and discards the changes entirely.",
+          "explanation": "Only `--hard` loses work, and even then committed work is recoverable via `git reflog`. Uncommitted changes destroyed by `--hard` are genuinely gone — which is why `git stash` before an experiment is a cheap habit.",
+          "prerequisites": ["git-three-areas"],
+          "resources": [
+            { "title": "git-scm — git reset", "url": "https://git-scm.com/docs/git-reset", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "git-practice",
+      "name": "Daily Practice & Recovery",
+      "description": "Branching strategies, pull requests, and getting out of trouble.",
+      "cards": [
+        {
+          "id": "git-reflog-recovery",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["git.recovery"],
+          "prompt": "You ran `git reset --hard` and lost three commits. Are they gone?",
+          "answer": "No. `git reflog` lists every position HEAD has held, including orphaned commits. Find the hash and `git checkout -b recovery <hash>` or `git reset --hard <hash>`.",
+          "explanation": "Reflog is local, kept about 90 days by default, and covers reset, rebase, checkout, merge and amend. Almost anything committed is recoverable — which is the strongest argument for committing early and often, even messily.",
+          "prerequisites": ["git-reset-modes"],
+          "resources": [
+            { "title": "git-scm — git reflog", "url": "https://git-scm.com/docs/git-reflog", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-revert-vs-reset",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["git.commands", "git.workflow"],
+          "prompt": "A bad commit is already pushed to main. Revert or reset?",
+          "answer": "Revert. `git revert <hash>` creates a new commit undoing the change, leaving history intact for everyone. Reset rewrites history and requires a force push that breaks every other clone.",
+          "explanation": "Rule of thumb: reset for local, unpublished work; revert for anything shared. If you must force-push a shared branch, use `--force-with-lease` so you cannot clobber someone else's commits you have not seen.",
+          "prerequisites": ["git-reset-modes"],
+          "resources": [
+            { "title": "git-scm — git revert", "url": "https://git-scm.com/docs/git-revert", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-bisect",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["git.debugging"],
+          "prompt": "A bug appeared somewhere in the last 400 commits. How do you find which one introduced it?",
+          "answer": "`git bisect`: mark a known-good and a known-bad commit and git binary-searches between them — about 9 checkouts for 400 commits. With `git bisect run <script>` it is fully automatic.",
+          "explanation": "This is binary search applied to history, and it is close to magic when a regression has no obvious cause. It rewards small, atomic commits that each build and pass tests — a large commit only narrows the search to itself.",
+          "resources": [
+            { "title": "git-scm — git bisect", "url": "https://git-scm.com/docs/git-bisect", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-branching-strategies",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["git.workflow", "process"],
+          "prompt": "Trunk-based development vs GitFlow",
+          "answer": "Trunk-based: short-lived branches merged to main daily, releases from main with feature flags. GitFlow: long-lived develop, release and hotfix branches with formal promotion.",
+          "columns": {
+            "left": { "title": "Trunk-based", "points": ["Branches live hours to days", "Small, frequent, low-risk merges", "Needs feature flags and strong CI", "Suits continuous delivery"] },
+            "right": { "title": "GitFlow", "points": ["Explicit release and hotfix branches", "Supports versioned, shipped software", "Painful long-lived merges", "Heavy for web services"] }
+          },
+          "explanation": "Long-lived branches are where merge pain lives: the longer a branch runs, the worse the conflict. Most web teams should default to trunk-based; GitFlow makes more sense when you genuinely maintain several released versions.",
+          "resources": [
+            { "title": "Trunk Based Development", "url": "https://trunkbaseddevelopment.com/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "git-commit-messages",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["git.craft", "craft"],
+          "prompt": "What makes a good commit message?",
+          "answer": "A short imperative subject (~50 chars) saying what the commit does, a blank line, then a body explaining *why* — the context, the alternatives considered, and any consequence a future reader needs.",
+          "explanation": "The diff already shows what changed; the message must carry the reasoning, because that is what `git blame` cannot reconstruct. Conventional Commits (`feat:`, `fix:`) add machine-readable structure for changelogs and version bumps.",
+          "resources": [
+            { "title": "Conventional Commits", "url": "https://www.conventionalcommits.org/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "git-pr-review",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["git.github", "process.review"],
+          "prompt": "What makes a pull request easy to review?",
+          "answer": "One logical change, small enough to read in fifteen minutes, a description covering what and why, green CI, self-review comments on anything non-obvious, and no unrelated formatting churn.",
+          "explanation": "Review quality collapses with size — beyond a few hundred lines people skim and approve. Split refactors from behaviour changes into separate commits or PRs so the reviewer can see the real change instead of hunting it inside a reformat.",
+          "resources": [
+            { "title": "Google — Code review developer guide", "url": "https://google.github.io/eng-practices/review/", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

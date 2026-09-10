@@ -1,0 +1,140 @@
+{
+  "id": "api-design",
+  "name": "API Design",
+  "icon": "🔌",
+  "category": "Web",
+  "color": "#6366F1",
+  "description": "REST semantics, status codes, versioning, pagination, GraphQL, gRPC and auth flows.",
+  "modules": [
+    {
+      "id": "api-rest",
+      "name": "REST & HTTP Semantics",
+      "description": "Methods, status codes, idempotency and the conventions clients actually rely on.",
+      "cards": [
+        {
+          "id": "api-idempotent-methods",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["api.rest", "networking.http"],
+          "prompt": "Which HTTP methods are safe, and which are idempotent?",
+          "answer": "Safe (no side effects): GET, HEAD, OPTIONS. Idempotent (repeating gives the same result): GET, HEAD, OPTIONS, PUT, DELETE. POST and PATCH are neither by default.",
+          "explanation": "This is not pedantry — proxies, browsers and retry libraries act on it. A GET that mutates will be triggered by a prefetcher. A non-idempotent POST needs an idempotency key so a client retry after a timeout does not double-charge.",
+          "resources": [
+            { "title": "MDN — HTTP request methods", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-status-codes",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["api.rest", "networking.http"],
+          "prompt": "When do you use 400 vs 401 vs 403 vs 404 vs 409 vs 422 vs 429?",
+          "answer": "400 malformed request; 401 not authenticated; 403 authenticated but not allowed; 404 not found (or hiding existence from an unauthorised caller); 409 conflict with current state; 422 syntactically valid but semantically invalid; 429 rate limited.",
+          "explanation": "401 versus 403 is the pair most often confused: 401 means 'who are you?', 403 means 'I know who you are and no'. Returning 404 instead of 403 is a deliberate choice to avoid leaking that a resource exists.",
+          "resources": [
+            { "title": "MDN — HTTP response status codes", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-pagination",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["api.design", "db.performance"],
+          "prompt": "Offset pagination vs cursor pagination",
+          "answer": "Offset is simple and allows jumping to a page; cursor is stable under concurrent writes and stays fast at depth.",
+          "columns": {
+            "left": { "title": "?page=500&size=20", "points": ["Easy to implement, arbitrary page jumps", "`OFFSET 10000` still scans 10,000 rows", "Items shift between pages as data changes", "Duplicates and skips under active writes"] },
+            "right": { "title": "?after=<cursor>", "points": ["Keyset seek — constant time at any depth", "Stable results while data changes", "No page numbers or total count", "Cursor must encode the sort key"] }
+          },
+          "explanation": "Use cursors for feeds, logs and anything large or live. Encode the cursor opaquely (base64 of sort key plus tiebreaker id) so you can change the underlying scheme without breaking clients.",
+          "resources": [
+            { "title": "Use The Index, Luke — Paging through results", "url": "https://use-the-index-luke.com/no-offset", "kind": "article" }
+          ]
+        },
+        {
+          "id": "api-versioning",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["api.design", "api.compatibility"],
+          "prompt": "You need to change a response field's meaning. How do you avoid breaking every client?",
+          "answer": "Do not change it. Add a new field, populate both, migrate clients, then remove the old one after a deprecation window — the expand/contract pattern. Reserve version bumps (`/v2`) for changes that cannot be made additively.",
+          "explanation": "Backwards-compatible changes: adding optional fields, adding endpoints, adding enum values *if clients tolerate unknowns*. Breaking: removing or renaming fields, tightening validation, changing types or semantics. Document which guarantees you offer, or clients will assume all of them.",
+          "resources": [
+            { "title": "Google — API design guide: versioning", "url": "https://cloud.google.com/apis/design/versioning", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-error-shape",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["api.design", "api.errors"],
+          "prompt": "What belongs in an API error response?",
+          "answer": "A stable machine-readable code, a human-readable message, the field(s) at fault for validation errors, and a correlation/trace id. Never a stack trace or internal identifiers.",
+          "explanation": "RFC 9457 (problem details) standardises this shape. Machine codes let clients branch without string-matching prose; the trace id turns a user's screenshot into a log query. Keep internal detail out — it is reconnaissance for an attacker.",
+          "resources": [
+            { "title": "RFC 9457 — Problem Details for HTTP APIs", "url": "https://www.rfc-editor.org/rfc/rfc9457", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "api-styles",
+      "name": "Styles & Auth",
+      "description": "REST vs GraphQL vs gRPC, plus the auth flows you will actually implement.",
+      "cards": [
+        {
+          "id": "api-rest-graphql-grpc",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["api.design", "architecture.decisions"],
+          "prompt": "REST, GraphQL or gRPC — how do you choose?",
+          "answer": "REST for public, cacheable, resource-shaped APIs. GraphQL when many different clients need different slices of a graph and over-fetching hurts. gRPC for internal service-to-service calls where latency, streaming and typed contracts matter.",
+          "explanation": "GraphQL moves query complexity to the server: you must add depth limits, cost analysis and dataloaders or you have shipped an N+1 generator with a DoS vector. gRPC needs a proxy for browsers (gRPC-Web) and is harder to debug by hand.",
+          "resources": [
+            { "title": "gRPC — Introduction", "url": "https://grpc.io/docs/what-is-grpc/introduction/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-oauth-flow",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["api.auth", "security.oauth"],
+          "prompt": "Which OAuth 2.1 flow should a web or mobile app use, and why?",
+          "answer": "Authorization code flow with PKCE. The implicit flow is deprecated because it returns tokens in the URL fragment, and password grant is deprecated because it hands your credentials to the client.",
+          "explanation": "PKCE binds the authorisation code to the client that requested it with a code verifier, so an intercepted code is useless. Public clients (SPAs, mobile) cannot keep a secret, which is exactly why PKCE exists.",
+          "resources": [
+            { "title": "OAuth 2.0 — Authorization code flow with PKCE", "url": "https://oauth.net/2/pkce/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "api-jwt-tradeoffs",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["api.auth", "security.tokens"],
+          "prompt": "JWT vs opaque session tokens",
+          "answer": "JWTs are self-contained and verifiable without a lookup; opaque tokens are meaningless strings resolved against server state.",
+          "columns": {
+            "left": { "title": "JWT", "points": ["Stateless verification — no DB hit", "Carries claims to many services", "Cannot be revoked before expiry", "Larger; leaks claims if not encrypted"] },
+            "right": { "title": "Opaque session", "points": ["Revoke instantly by deleting the record", "Tiny; reveals nothing", "Requires a lookup (usually a cache hit)", "Simplest correct default"] }
+          },
+          "explanation": "The usual compromise: short-lived JWT access tokens (minutes) plus a revocable refresh token. Always pin the algorithm on verification — accepting `alg: none` or letting the token choose HMAC vs RSA is a classic critical bug.",
+          "resources": [
+            { "title": "OWASP — JSON Web Token cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-rate-limit",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["api.design", "system.reliability"],
+          "prompt": "How do you rate limit an API, and what should the response tell the client?",
+          "answer": "Token bucket or sliding window per key (user, IP, API key) in a shared store such as Redis. Return 429 with `Retry-After` and `RateLimit-*` headers so well-behaved clients can back off precisely.",
+          "explanation": "Token bucket allows bursts while capping the average — usually what you want. Clients should retry with exponential backoff plus jitter; synchronised retries cause the thundering herd that turns a blip into an outage.",
+          "resources": [
+            { "title": "IETF — RateLimit header fields for HTTP", "url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/", "kind": "spec" }
+          ]
+        }
+      ]
+    }
+  ]
+}

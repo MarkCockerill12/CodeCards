@@ -1,0 +1,152 @@
+{
+  "id": "design-patterns",
+  "name": "Design Patterns",
+  "icon": "♟️",
+  "category": "Architecture",
+  "color": "#9333EA",
+  "description": "Creational, structural and behavioural patterns — what problem each solves, and when a pattern is the wrong answer.",
+  "modules": [
+    {
+      "id": "dp-classic",
+      "name": "Classic Patterns",
+      "description": "The Gang of Four patterns you will actually see in real code.",
+      "cards": [
+        {
+          "id": "dp-categories",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["design.patterns"],
+          "prompt": "What are the three categories of design pattern, with examples?",
+          "answer": "Creational — how objects are made (factory, builder, singleton). Structural — how objects compose (adapter, decorator, facade, proxy). Behavioural — how objects interact (strategy, observer, command, state, template method).",
+          "explanation": "Patterns are a vocabulary, not a shopping list. Saying 'we'll use a strategy here' conveys a whole design in three words. Their real value is naming shapes you were going to build anyway.",
+          "resources": [
+            { "title": "Refactoring Guru — Design patterns", "url": "https://refactoring.guru/design-patterns", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-strategy",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["design.patterns", "oop.design"],
+          "prompt": "Your pricing code is a growing if/else over customer types. Which pattern, and what does it buy you?",
+          "answer": "Strategy: define a `PricingStrategy` interface, one implementation per rule, and select at runtime. New rules become new classes rather than edits to a growing conditional.",
+          "explanation": "This is the open/closed principle in practice. In languages with first-class functions the 'interface' can just be a function type — a map from customer type to a pricing function is a strategy pattern without ceremony.",
+          "resources": [
+            { "title": "Refactoring Guru — Strategy", "url": "https://refactoring.guru/design-patterns/strategy", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-decorator-vs-inheritance",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["design.patterns", "oop.design"],
+          "prompt": "Decorator vs subclassing for adding behaviour",
+          "answer": "A decorator wraps an object and adds behaviour at runtime; subclassing fixes the combination at compile time.",
+          "columns": {
+            "left": { "title": "Decorator", "points": ["Compose behaviours freely at runtime", "Avoids a class per combination", "Same interface in and out", "Deep stacks are hard to debug"] },
+            "right": { "title": "Subclass", "points": ["Simple and explicit", "Combinatorial explosion of classes", "Fixed at compile time", "Tight coupling to the base"] }
+          },
+          "explanation": "Decorators are everywhere: HTTP middleware, Java's stream wrappers, Python decorators, React higher-order components. The tell that you need one is a class name like `BufferedCompressedEncryptedStream`.",
+          "resources": [
+            { "title": "Refactoring Guru — Decorator", "url": "https://refactoring.guru/design-patterns/decorator", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-observer",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["design.patterns", "architecture.events"],
+          "prompt": "What is the observer pattern, and where does it appear in modern code?",
+          "answer": "Subjects notify registered observers when their state changes, without knowing who they are. It appears as DOM event listeners, reactive signals and stores, pub/sub systems and domain events.",
+          "explanation": "The trade-off is decoupling versus traceability: it is easy to add a listener and hard to answer 'what happens when this fires?'. Two practical hazards — forgetting to unsubscribe (a memory leak) and cascading updates that fire in an order nobody intended.",
+          "resources": [
+            { "title": "Refactoring Guru — Observer", "url": "https://refactoring.guru/design-patterns/observer", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-singleton-problems",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["design.patterns", "anti-patterns", "testing"],
+          "prompt": "Why is this singleton a problem for testing and concurrency?",
+          "code": "class Config:\n    _instance = None\n\n    @classmethod\n    def get(cls):\n        if cls._instance is None:      # race between threads\n            cls._instance = Config()\n        return cls._instance",
+          "lang": "python",
+          "answer": "It is global mutable state with a race in the lazy init. Tests share it and leak state between each other, and nothing can substitute a fake. Prefer dependency injection: construct once at the composition root and pass it in.",
+          "explanation": "The pattern conflates 'one instance' with 'globally reachable'. Keeping the first and dropping the second gives you testability for free. If you must have a singleton, initialise it eagerly or use the language's thread-safe idiom.",
+          "resources": [
+            { "title": "Refactoring Guru — Singleton", "url": "https://refactoring.guru/design-patterns/singleton", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-repository",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["design.patterns", "architecture.layering"],
+          "prompt": "What does the repository pattern give you?",
+          "answer": "A collection-like interface over persistence, so domain code says `orders.findPending()` rather than embedding SQL. It puts the interface in the domain and the implementation in infrastructure.",
+          "explanation": "The benefit is testability and one place for query logic — not database portability, which almost never happens. Do not add a repository that just forwards every ORM method; that is ceremony with no boundary.",
+          "prerequisites": ["dp-categories"],
+          "resources": [
+            { "title": "Martin Fowler — Repository", "url": "https://martinfowler.com/eaaCatalog/repository.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dp-judgement",
+      "name": "Judgement",
+      "description": "Anti-patterns, over-engineering, and knowing when a pattern is not the answer.",
+      "cards": [
+        {
+          "id": "dp-over-engineering",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["design.patterns", "craft"],
+          "prompt": "When is applying a design pattern the wrong move?",
+          "answer": "When the flexibility it buys is not needed. An `AbstractWidgetFactoryProvider` for one concrete implementation adds indirection, files and cognitive load without removing any pain.",
+          "explanation": "Patterns solve *specific* problems: 'this conditional keeps growing', 'these combinations explode', 'this dependency is untestable'. If you cannot name the problem, you are decorating. YAGNI applies — the second real case is the moment to abstract.",
+          "resources": [
+            { "title": "Martin Fowler — Yagni", "url": "https://martinfowler.com/bliki/Yagni.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-anti-patterns",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["anti-patterns", "craft"],
+          "prompt": "Name common anti-patterns and what each one looks like.",
+          "answer": "God object (one class does everything), spaghetti code (no structure), lava flow (dead code nobody dares delete), golden hammer (one tool for every problem), premature optimisation, magic numbers, and copy-paste programming.",
+          "explanation": "Most emerge from decisions that were locally reasonable: a class that grew one method at a time, code kept 'just in case'. The counter is continuous small refactoring plus tests that make deletion safe — not a grand rewrite.",
+          "resources": [
+            { "title": "Wikipedia — Anti-pattern", "url": "https://en.wikipedia.org/wiki/Anti-pattern", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-composition-root",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["design.patterns", "architecture.di"],
+          "prompt": "What is dependency injection, and what is a composition root?",
+          "answer": "DI means a component receives its collaborators rather than constructing or locating them. The composition root is the single place near the entry point where the object graph is assembled and wired.",
+          "explanation": "You do not need a framework — constructor parameters plus one wiring function is DI. What you gain is testability (pass a fake) and explicit dependencies (the constructor lists them). A service locator looks similar but hides dependencies, which loses most of the benefit.",
+          "prerequisites": ["dp-singleton-problems"],
+          "resources": [
+            { "title": "Martin Fowler — Inversion of control containers", "url": "https://martinfowler.com/articles/injection.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-functional-alternatives",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["design.patterns", "fp.concepts"],
+          "prompt": "Which classic patterns dissolve in a language with first-class functions?",
+          "answer": "Strategy becomes a function parameter, command becomes a closure, template method becomes a higher-order function, factory becomes a function returning a value, and observer becomes a list of callbacks or a stream.",
+          "explanation": "Many GoF patterns are workarounds for missing language features — they were written for C++ and Smalltalk. Recognising that keeps you from writing five classes where one function argument does the job.",
+          "resources": [
+            { "title": "Peter Norvig — Design patterns in dynamic languages", "url": "https://norvig.com/design-patterns/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

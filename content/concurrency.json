@@ -1,0 +1,165 @@
+{
+  "id": "concurrency",
+  "name": "Concurrency & Parallelism",
+  "icon": "🔀",
+  "category": "Computer Science",
+  "color": "#EC4899",
+  "description": "Threads, locks, races, memory ordering, async models and the deadlocks that eat production systems.",
+  "modules": [
+    {
+      "id": "conc-basics",
+      "name": "Models & Primitives",
+      "description": "What concurrency is, how it differs from parallelism, and the tools for coordinating work.",
+      "cards": [
+        {
+          "id": "conc-vs-parallel",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["concurrency.fundamentals"],
+          "prompt": "Concurrency vs parallelism",
+          "answer": "Concurrency is dealing with many things at once (structure); parallelism is doing many things at once (execution).",
+          "columns": {
+            "left": { "title": "Concurrency", "points": ["A way of structuring a program", "Possible on a single core via interleaving", "About composition and responsiveness", "Async I/O, coroutines, actors"] },
+            "right": { "title": "Parallelism", "points": ["Simultaneous execution on multiple cores", "Requires real hardware parallelism", "About throughput", "SIMD, thread pools, GPU kernels"] }
+          },
+          "explanation": "Rob Pike's framing: concurrency is about dealing with lots of things at once, parallelism is about doing lots of things at once. A concurrent design *enables* parallelism but does not require it — Node.js is concurrent and single-threaded.",
+          "resources": [
+            { "title": "Rob Pike — Concurrency is not parallelism", "url": "https://go.dev/blog/waza-talk", "kind": "video" }
+          ]
+        },
+        {
+          "id": "conc-process-thread",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["concurrency.os", "os.processes"],
+          "prompt": "Process vs thread",
+          "answer": "Processes have isolated address spaces; threads share one address space within a process.",
+          "columns": {
+            "left": { "title": "Process", "points": ["Own virtual address space — isolation", "Crash does not take down siblings", "Expensive to create; IPC needed to communicate", "True parallelism even with a GIL"] },
+            "right": { "title": "Thread", "points": ["Shares heap and file descriptors", "Cheap to create; own stack and registers", "Communication by shared memory — needs locks", "One bad thread can corrupt the whole process"] }
+          },
+          "explanation": "The trade is isolation against communication cost. Chrome uses processes per site for security; databases use threads for shared buffer pools. Green threads (goroutines, virtual threads) give thread-like ergonomics at a fraction of the cost.",
+          "resources": [
+            { "title": "Wikipedia — Thread (computing)", "url": "https://en.wikipedia.org/wiki/Thread_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-race-condition",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["concurrency.races"],
+          "prompt": "Why is this counter wrong under concurrency?",
+          "code": "counter = 0\n\ndef worker():\n    global counter\n    for _ in range(100000):\n        counter += 1   # not atomic",
+          "lang": "python",
+          "answer": "`counter += 1` is read, add, write — three steps. Two threads can read the same value and both write back the same increment, losing updates. Use a lock or an atomic type.",
+          "explanation": "A data race is unsynchronised access to shared mutable state where at least one access is a write. The classic fixes: a mutex, an atomic operation, a compare-and-swap loop, or removing the sharing entirely (per-thread accumulators merged at the end).",
+          "resources": [
+            { "title": "Wikipedia — Race condition", "url": "https://en.wikipedia.org/wiki/Race_condition#In_software", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-mutex-semaphore",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["concurrency.primitives"],
+          "prompt": "Mutex vs semaphore",
+          "answer": "A mutex is binary ownership — the locker must unlock. A semaphore is a counter permitting N holders, and any thread may signal it.",
+          "columns": {
+            "left": { "title": "Mutex", "points": ["Mutual exclusion for a critical section", "Has an owner; often reentrant", "Unlock by the owner only", "Protects invariants over shared data"] },
+            "right": { "title": "Semaphore", "points": ["Counts available permits", "No ownership — signal from anywhere", "Binary semaphore ≠ mutex (no owner)", "Limits concurrency, signals events"] }
+          },
+          "explanation": "Use a mutex to protect data, a semaphore to limit resource concurrency (connection pools, rate limits) or to signal between threads. Condition variables handle 'wait until a predicate holds' — always re-check the predicate in a loop, because of spurious wakeups.",
+          "resources": [
+            { "title": "Wikipedia — Semaphore (programming)", "url": "https://en.wikipedia.org/wiki/Semaphore_(programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-deadlock-conditions",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["concurrency.deadlock"],
+          "prompt": "What four conditions must hold simultaneously for deadlock, and how do you prevent it in practice?",
+          "answer": "Mutual exclusion, hold-and-wait, no preemption, and circular wait. Break any one — in practice you impose a global lock ordering to kill circular wait, or use timeouts and try-lock to break hold-and-wait.",
+          "explanation": "Lock ordering is the cheapest discipline: assign every lock a rank and always acquire in ascending order. Other practical rules: never call unknown code while holding a lock, keep critical sections tiny, and prefer lock-free queues or message passing where possible.",
+          "prerequisites": ["conc-mutex-semaphore"],
+          "resources": [
+            { "title": "Wikipedia — Deadlock", "url": "https://en.wikipedia.org/wiki/Deadlock", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "conc-advanced",
+      "name": "Memory Models & Patterns",
+      "description": "Visibility, atomics, lock-free thinking and the async concurrency models.",
+      "cards": [
+        {
+          "id": "conc-memory-visibility",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["concurrency.memory-model"],
+          "prompt": "Why can one thread's write be invisible to another even after it completes?",
+          "answer": "Compilers and CPUs reorder and buffer memory operations. Without a synchronisation edge — a lock, an atomic with the right ordering, a volatile/fence — there is no guarantee another thread ever observes the write, or observes writes in program order.",
+          "explanation": "Memory models define these guarantees as happens-before relationships, not as caches. Sequential consistency is the intuitive model; acquire/release is the cheap one that still orders everything before a release against everything after the matching acquire.",
+          "resources": [
+            { "title": "Preshing — Memory ordering at compile time and runtime", "url": "https://preshing.com/20120625/memory-ordering-at-compile-time/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-atomic-cas",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["concurrency.atomics", "concurrency.lock-free"],
+          "prompt": "What is compare-and-swap, and what is the ABA problem?",
+          "answer": "CAS atomically sets a location to a new value only if it currently equals an expected value, reporting success. ABA is when a value changes A→B→A between your read and your CAS, so the CAS succeeds even though the state was mutated meanwhile.",
+          "explanation": "CAS underpins lock-free stacks, queues and atomic counters, usually in a retry loop. ABA is defused with versioned pointers (a counter packed alongside), hazard pointers, or epoch-based reclamation — which is the hard part of lock-free data structures.",
+          "prerequisites": ["conc-memory-visibility"],
+          "resources": [
+            { "title": "Wikipedia — Compare-and-swap", "url": "https://en.wikipedia.org/wiki/Compare-and-swap", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-false-sharing",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["concurrency.performance", "memory.cache"],
+          "prompt": "Two threads increment two different counters and the program gets *slower* with more threads. Why?",
+          "answer": "False sharing: the counters sit in the same 64-byte cache line, so each write invalidates the other core's copy and the line ping-pongs between caches. Pad or align each counter to its own cache line.",
+          "explanation": "Cache coherence works per line, not per variable. Fixes: `alignas(64)` / `@Contended`, per-thread accumulators combined at the end, or striped counters (LongAdder). It is invisible in the code and obvious in a profiler's cache-miss counters.",
+          "prerequisites": ["conc-memory-visibility"],
+          "resources": [
+            { "title": "Wikipedia — False sharing", "url": "https://en.wikipedia.org/wiki/False_sharing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-async-models",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["concurrency.async", "architecture.model"],
+          "prompt": "Thread-per-request vs event loop",
+          "answer": "Thread-per-request writes naturally and blocks freely but costs memory per connection; an event loop handles huge connection counts on few threads but forbids blocking.",
+          "columns": {
+            "left": { "title": "Thread per request", "points": ["Simple, debuggable, natural stack traces", "~1 MB stack per thread", "Context switches under high concurrency", "Virtual threads remove most of the cost"] },
+            "right": { "title": "Event loop", "points": ["Thousands of connections per thread", "Any blocking call stalls everything", "Callback/async colouring spreads through the code", "Excellent for I/O-bound proxies and gateways"] }
+          },
+          "explanation": "The models converge: Go and Java 21 give you blocking-style code on cheap green threads with an event loop underneath. The rule that never changes is that CPU-bound work must leave the I/O thread.",
+          "resources": [
+            { "title": "The C10K problem", "url": "http://www.kegel.com/c10k.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-idempotency",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["concurrency.distributed", "system.reliability"],
+          "prompt": "A payment request times out and the client retries. How do you avoid charging twice?",
+          "answer": "Make the operation idempotent: the client sends an idempotency key, the server records the key with the result in the same transaction, and a repeat of that key returns the stored result rather than re-executing.",
+          "explanation": "At-least-once delivery is what networks actually give you, so exactly-once *processing* is built from idempotency plus deduplication. The key must be persisted atomically with the effect — otherwise a crash between them reopens the window.",
+          "resources": [
+            { "title": "Stripe — Idempotent requests", "url": "https://docs.stripe.com/api/idempotent_requests", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

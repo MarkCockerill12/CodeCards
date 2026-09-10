@@ -1,0 +1,140 @@
+{
+  "id": "methodologies",
+  "name": "Methodologies & Teamwork",
+  "icon": "📋",
+  "category": "Process & Craft",
+  "color": "#7C3AED",
+  "description": "Agile, Scrum, Kanban, waterfall, estimation, and the team practices that decide whether software ships.",
+  "modules": [
+    {
+      "id": "meth-models",
+      "name": "Process Models",
+      "description": "The frameworks, what they are actually for, and how they fail.",
+      "cards": [
+        {
+          "id": "meth-waterfall-agile",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["process.methodology"],
+          "prompt": "Waterfall vs agile",
+          "answer": "Waterfall completes each phase before the next — requirements, design, build, test, release. Agile delivers small increments repeatedly, adapting as it learns.",
+          "columns": {
+            "left": { "title": "Waterfall", "points": ["Requirements fixed up front", "Predictable plan, contract-friendly", "Feedback arrives only at the end", "Suits fixed, well-understood, regulated work"] },
+            "right": { "title": "Agile", "points": ["Working software every iteration", "Requirements expected to change", "Continuous feedback and correction", "Needs an engaged customer and real autonomy"] }
+          },
+          "explanation": "Waterfall is not a mistake — it is correct where change is expensive and requirements genuinely are known (bridges, avionics, certified medical devices). Agile bets that you will learn things that invalidate the plan, which for most software is true.",
+          "resources": [
+            { "title": "Manifesto for Agile Software Development", "url": "https://agilemanifesto.org/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-scrum-kanban",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["process.agile"],
+          "prompt": "Scrum vs Kanban",
+          "answer": "Scrum is iteration-based with fixed-length sprints, defined roles and ceremonies. Kanban is flow-based: visualise the work, limit work in progress, and optimise cycle time — no sprints required.",
+          "columns": {
+            "left": { "title": "Scrum", "points": ["Sprints, planning, review, retrospective", "Product owner and scrum master roles", "Commitment to a sprint scope", "Cadence helps teams that need structure"] },
+            "right": { "title": "Kanban", "points": ["Continuous flow, pull-based", "WIP limits are the core mechanic", "Metrics: cycle time, throughput, aging", "Better fit for support and interrupt-driven work"] }
+          },
+          "explanation": "WIP limits are the most transferable idea in either: starting less finishes more, because context switching and queueing are what actually slow teams down. Many teams run 'Scrumban' — Scrum's cadence with Kanban's flow limits.",
+          "resources": [
+            { "title": "The Scrum Guide", "url": "https://scrumguides.org/scrum-guide.html", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "meth-ceremonies",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["process.agile"],
+          "prompt": "What is each Scrum ceremony actually for?",
+          "answer": "Planning: agree what the sprint will deliver. Daily standup: surface blockers and re-plan the day (15 minutes, not a status report to a manager). Review: show working software to stakeholders and get feedback. Retrospective: improve how the team works.",
+          "explanation": "Each fails in a characteristic way: standups become status theatre, reviews become demos of slides, retros become complaint sessions with no actions. The test for any ceremony is whether it changes a decision — if not, it is a meeting with a costume on.",
+          "resources": [
+            { "title": "The Scrum Guide", "url": "https://scrumguides.org/scrum-guide.html", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "meth-estimation",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["process.estimation"],
+          "prompt": "Why are software estimates so consistently wrong, and what helps?",
+          "answer": "Because estimating means predicting work you have not yet understood, and the planning fallacy makes people estimate the best case. What helps: relative sizing, breaking work down until items are small, historical throughput, and giving ranges or confidence intervals rather than single numbers.",
+          "explanation": "Story points try to sidestep the problem by measuring relative size and letting observed velocity convert to time. The pathology is treating points as hours or as a productivity metric — at which point they get inflated and stop informing anything. Small slices beat clever estimation.",
+          "resources": [
+            { "title": "Martin Fowler — Purpose of estimation", "url": "https://martinfowler.com/bliki/PurposeOfEstimation.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "meth-team",
+      "name": "Teams & Delivery",
+      "description": "How teams actually get good, measured and unblocked.",
+      "cards": [
+        {
+          "id": "meth-dora",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["process.metrics", "devops"],
+          "prompt": "What are the four DORA metrics?",
+          "answer": "Deployment frequency, lead time for changes, change failure rate, and time to restore service. The first two measure throughput; the last two measure stability.",
+          "explanation": "The key research finding is that these do not trade off — elite teams deploy more often *and* break things less, because small frequent changes are easier to verify and revert. Measure the team's system, never individuals; any metric used to rank people becomes a target and stops measuring.",
+          "resources": [
+            { "title": "DORA — DevOps research and assessment", "url": "https://dora.dev/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-conway",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["process.organisation", "architecture"],
+          "prompt": "What is Conway's Law, and what is the 'inverse Conway manoeuvre'?",
+          "answer": "Organisations design systems that mirror their communication structures. The inverse manoeuvre is deliberately reorganising teams to produce the architecture you want.",
+          "explanation": "Four teams on a compiler produce a four-pass compiler. If you want autonomous services, you need autonomous teams that own them end to end; if teams must coordinate for every release, your architecture will keep re-coupling no matter how you draw the diagram.",
+          "resources": [
+            { "title": "Martin Fowler — Conway's Law", "url": "https://martinfowler.com/bliki/ConwaysLaw.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-psychological-safety",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["process.team", "culture"],
+          "prompt": "What did Google's Project Aristotle find distinguishes effective teams?",
+          "answer": "Psychological safety — the shared belief that you can take risks, admit mistakes and ask questions without being punished — mattered more than talent, tenure or team composition.",
+          "explanation": "It is directly operational for engineering: safe teams report incidents early, ask 'why is this like this?' in review, and stop bad plans before they ship. Blameless post-mortems and leaders admitting uncertainty are the concrete practices that build it.",
+          "resources": [
+            { "title": "Google re:Work — Understanding team effectiveness", "url": "https://rework.withgoogle.com/en/guides/understanding-team-effectiveness", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-technical-debt",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["process.debt", "craft"],
+          "prompt": "What does 'technical debt' mean, and how should a team manage it?",
+          "answer": "A deliberate trade of long-term maintainability for short-term speed, which then charges interest as slower future changes. Manage it by making it visible, paying it down continuously alongside features, and distinguishing deliberate debt from plain mess.",
+          "explanation": "The metaphor only works if the debt was a decision. 'We didn't know how' is not debt, it is learning; 'we never cleaned up' is not debt, it is neglect. A dedicated 'refactoring sprint' rarely gets approved — continuous small improvement does.",
+          "resources": [
+            { "title": "Martin Fowler — Technical debt quadrant", "url": "https://martinfowler.com/bliki/TechnicalDebtQuadrant.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-documentation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["process.docs", "craft"],
+          "prompt": "Which documentation is worth writing, given that all of it goes stale?",
+          "answer": "The kind that cannot be derived from the code: why a decision was made (ADRs), how to run and deploy the system, the architecture overview, runbooks for incidents, and API contracts for consumers. Not line-by-line descriptions of what code does.",
+          "explanation": "Keep docs close to the code so they are updated in the same pull request, and prefer generated documentation (OpenAPI, type-derived docs) where possible. A wrong document is worse than a missing one, so delete aggressively.",
+          "resources": [
+            { "title": "Diátaxis — A systematic framework for technical documentation", "url": "https://diataxis.fr/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

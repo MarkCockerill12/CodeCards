@@ -1,0 +1,265 @@
+{
+  "id": "os-fundamentals",
+  "name": "Operating Systems",
+  "icon": "🖥️",
+  "category": "Systems & OS",
+  "color": "#64748B",
+  "description": "Kernels, processes, scheduling, system calls, file systems and I/O — the layer everything else stands on.",
+  "modules": [
+    {
+      "id": "os-core",
+      "name": "Kernel, Processes & Scheduling",
+      "description": "Privilege levels, process lifecycle, context switches and how the CPU is shared.",
+      "cards": [
+        {
+          "id": "os-user-kernel-mode",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": [
+            "os.kernel",
+            "os.fundamentals"
+          ],
+          "prompt": "What is the difference between user mode and kernel mode, and how do you cross the boundary?",
+          "answer": "User mode restricts access to hardware and privileged instructions; kernel mode has full access. You cross deliberately with a system call (a trap instruction), or involuntarily via an interrupt or fault.",
+          "explanation": "The boundary is what makes isolation possible: a user process cannot touch another's memory or the disk directly, only ask the kernel to. Each crossing costs hundreds of cycles plus cache effects, which is why batching syscalls (io_uring, writev) matters in hot I/O paths.",
+          "resources": [
+            {
+              "title": "Wikipedia — Protection ring",
+              "url": "https://en.wikipedia.org/wiki/Protection_ring",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "os-syscall-examples",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": [
+            "os.syscalls",
+            "linux"
+          ],
+          "prompt": "On Linux, you can see exactly which system calls a program makes by running `___ ./program`.",
+          "answer": "strace",
+          "explanation": "`strace` traces syscalls and signals, `ltrace` library calls, and `perf` gives sampled profiles. Reaching for strace when a process 'hangs' usually answers the question in seconds — it is almost always blocked in a read, a poll or a futex.",
+          "resources": [
+            {
+              "title": "man7 — strace(1)",
+              "url": "https://man7.org/linux/man-pages/man1/strace.1.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "os-fork-exec",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": [
+            "os.processes",
+            "unix"
+          ],
+          "prompt": "What do `fork` and `exec` do, and why are they separate?",
+          "answer": "`fork` duplicates the current process (copy-on-write); `exec` replaces the process image with a new program. Separating them lets the child adjust its environment — redirect file descriptors, change user, set limits — between the two.",
+          "explanation": "That gap is how shells implement pipes and redirection. The cost is that fork copies page tables of a large parent; `posix_spawn` and `vfork` exist for the common spawn-and-exec case, and `fork` in a multithreaded process is a well-known footgun.",
+          "prerequisites": [
+            "os-user-kernel-mode"
+          ],
+          "resources": [
+            {
+              "title": "man7 — fork(2)",
+              "url": "https://man7.org/linux/man-pages/man2/fork.2.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "os-context-switch",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": [
+            "os.scheduling",
+            "performance"
+          ],
+          "prompt": "What does a context switch cost?",
+          "answer": "Saving and restoring registers is a microsecond or so, but the real cost is indirect: cold caches and TLB entries for the incoming task. A process switch also changes the address space, flushing more state than a thread switch.",
+          "explanation": "This is why oversubscribing threads hurts throughput, why pinning threads to cores helps latency-sensitive systems, and why green threads or async I/O — which switch in user space without touching the kernel — scale so much better for I/O-bound concurrency.",
+          "resources": [
+            {
+              "title": "Wikipedia — Context switch",
+              "url": "https://en.wikipedia.org/wiki/Context_switch",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "os-zombie-orphan",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": [
+            "os.processes",
+            "unix"
+          ],
+          "prompt": "Zombie process vs orphan process",
+          "answer": "A zombie has exited but its exit status has not been reaped by its parent; an orphan is still running but its parent died.",
+          "columns": {
+            "left": {
+              "title": "Zombie",
+              "points": [
+                "State Z in ps output",
+                "Holds only a PID and exit status",
+                "Caused by a parent that never calls wait()",
+                "Leaks PIDs — eventually fatal"
+              ]
+            },
+            "right": {
+              "title": "Orphan",
+              "points": [
+                "Still alive and running",
+                "Re-parented to init/systemd (PID 1)",
+                "Reaped automatically when it exits",
+                "Normal for daemons"
+              ]
+            }
+          },
+          "explanation": "This matters in containers: PID 1 in a container is your app, and if it does not reap adopted children you accumulate zombies. That is why `--init` or a tiny init like tini exists.",
+          "prerequisites": [
+            "os-fork-exec"
+          ],
+          "resources": [
+            {
+              "title": "man7 — wait(2)",
+              "url": "https://man7.org/linux/man-pages/man2/wait.2.html",
+              "kind": "docs"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "os-io",
+      "name": "Memory, Files & I/O",
+      "description": "Paging, file descriptors, buffering and the I/O models.",
+      "cards": [
+        {
+          "id": "os-paging-swap",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": [
+            "os.memory",
+            "memory.virtual"
+          ],
+          "prompt": "What is a page fault, and when is it expensive?",
+          "answer": "A page fault occurs when a process touches a virtual page with no valid mapping. Minor faults are resolved from memory (page cache, copy-on-write) and are cheap; major faults require disk I/O and cost milliseconds.",
+          "explanation": "Watch major faults, not total faults. Thrashing — where the working set exceeds RAM and every access faults — turns a healthy system into an unresponsive one, which is why the OOM killer often beats swapping to death.",
+          "resources": [
+            {
+              "title": "Wikipedia — Page fault",
+              "url": "https://en.wikipedia.org/wiki/Page_fault",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "os-file-descriptor",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": [
+            "os.io",
+            "unix"
+          ],
+          "prompt": "What is a file descriptor, and why is 'everything is a file' useful?",
+          "answer": "A small integer indexing the kernel's per-process table of open resources. Because files, sockets, pipes, devices and timers all appear as descriptors, the same `read`/`write`/`poll` calls work on all of them.",
+          "explanation": "That uniformity is why shell pipelines, `select`/`epoll` event loops and redirection compose so well. The limit (`ulimit -n`) is a classic production ceiling — 'too many open files' usually means leaked sockets, not too many files.",
+          "resources": [
+            {
+              "title": "man7 — open(2)",
+              "url": "https://man7.org/linux/man-pages/man2/open.2.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "os-blocking-models",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": [
+            "os.io",
+            "concurrency.async"
+          ],
+          "prompt": "Blocking I/O vs non-blocking with an event loop",
+          "answer": "Blocking parks the thread until data is ready; non-blocking returns immediately and you multiplex readiness with epoll/kqueue/IOCP.",
+          "columns": {
+            "left": {
+              "title": "Blocking",
+              "points": [
+                "Simple, linear code",
+                "One thread per connection",
+                "Memory and switching cost scales with connections",
+                "Fine up to a few thousand"
+              ]
+            },
+            "right": {
+              "title": "Non-blocking + poller",
+              "points": [
+                "One thread handles thousands of sockets",
+                "epoll/kqueue/IOCP or io_uring",
+                "Any blocking call poisons the loop",
+                "More complex error and lifecycle handling"
+              ]
+            }
+          },
+          "explanation": "`select` is O(n) per call and capped at FD_SETSIZE; `epoll` is O(1) with edge- or level-triggered notification. `io_uring` goes further with submission/completion rings that avoid syscalls per operation entirely.",
+          "prerequisites": [
+            "os-file-descriptor"
+          ],
+          "resources": [
+            {
+              "title": "man7 — epoll(7)",
+              "url": "https://man7.org/linux/man-pages/man7/epoll.7.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "os-buffering",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": [
+            "os.io",
+            "debugging"
+          ],
+          "prompt": "Your program's log output vanishes when it crashes, but appears when run in a terminal. Why?",
+          "answer": "stdout is line-buffered on a TTY and block-buffered when redirected to a file or pipe. On a crash the userspace buffer is never flushed. Flush explicitly, or switch to unbuffered/line-buffered mode.",
+          "explanation": "In Python, `python -u` or `flush=True`; in C, `setvbuf`; in containers, this is why logs appear in bursts. stderr is unbuffered by default — which is exactly why diagnostics belong there.",
+          "resources": [
+            {
+              "title": "man7 — setvbuf(3)",
+              "url": "https://man7.org/linux/man-pages/man3/setvbuf.3.html",
+              "kind": "docs"
+            }
+          ],
+          "code": "$ ./app > app.log      # crashes after printing 10,000 lines\n$ wc -l app.log\n0 app.log\n\n$ ./app                # same binary, straight to the terminal\nstarting up...\nprocessing batch 1",
+          "lang": "bash"
+        },
+        {
+          "id": "os-signals",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "os.signals",
+            "devops.deploy"
+          ],
+          "prompt": "Your container is killed during deploys and drops in-flight requests. Which signals are involved and what should the app do?",
+          "answer": "The orchestrator sends SIGTERM, waits a grace period, then SIGKILL (which cannot be caught). The app should catch SIGTERM, stop accepting new work, finish in-flight requests, close resources and exit before the deadline.",
+          "explanation": "Two common traps: the signal goes to PID 1, so a shell-form entrypoint that does not `exec` swallows it; and the readiness probe must fail *before* shutdown starts so the load balancer stops sending traffic first.",
+          "resources": [
+            {
+              "title": "Kubernetes — Pod termination",
+              "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination",
+              "kind": "docs"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "id": "html-css",
+  "name": "HTML & CSS",
+  "icon": "🎨",
+  "category": "Web",
+  "color": "#E34F26",
+  "description": "Semantics, the box model, flexbox and grid, specificity, stacking contexts and accessible markup.",
+  "modules": [
+    {
+      "id": "hc-html",
+      "name": "Semantic HTML & Accessibility",
+      "description": "Markup that means something — to browsers, to search engines and to assistive technology.",
+      "cards": [
+        {
+          "id": "html-semantics",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["html.semantics", "a11y"],
+          "prompt": "Why prefer `<button>`, `<nav>`, `<main>` and `<article>` over styled `<div>`s?",
+          "answer": "Semantic elements bring built-in behaviour and meaning: keyboard focus and activation, correct roles in the accessibility tree, landmark navigation for screen readers, and better parsing by search engines and reader modes.",
+          "explanation": "A `<div onclick>` is invisible to keyboard and screen-reader users unless you re-implement `tabindex`, Enter/Space handling, `role` and focus styling — four chances to get it wrong. The native element gets all of that free and correct.",
+          "resources": [
+            { "title": "MDN — HTML elements reference", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-aria-first-rule",
+          "type": "cloze",
+          "difficulty": 3,
+          "tags": ["a11y", "html.aria"],
+          "prompt": "The first rule of ARIA is: don't use ARIA — use a ___ HTML element instead if one exists.",
+          "answer": "native",
+          "explanation": "ARIA changes only how assistive tech reports an element; it adds no behaviour. `role=\"button\"` on a div still needs manual keyboard handling. Bad ARIA is worse than none because it lies to the accessibility tree.",
+          "prerequisites": ["html-semantics"],
+          "resources": [
+            { "title": "W3C — Using ARIA: rules of ARIA use", "url": "https://www.w3.org/TR/using-aria/#rule1", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "html-form-labels",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["a11y", "html.forms"],
+          "prompt": "What is wrong with this form field?",
+          "code": "<div>Email</div>\n<input type=\"text\" placeholder=\"Email\">",
+          "lang": "html",
+          "answer": "No `<label for>` association, and placeholder is not a label — it vanishes on input and often fails contrast. Use `<label for=\"email\">Email</label><input id=\"email\" type=\"email\">`.",
+          "explanation": "A proper label is announced by screen readers, and clicking it focuses the field — a real usability win on touch. `type=\"email\"` also brings the right mobile keyboard and free validation.",
+          "resources": [
+            { "title": "MDN — The label element", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "a11y-wcag-contrast",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["a11y", "design.accessibility"],
+          "prompt": "What are the headline WCAG 2.2 AA requirements developers hit most often?",
+          "answer": "Contrast of 4.5:1 for normal text (3:1 for large text and UI components), every function reachable by keyboard with a visible focus indicator, text resizable to 200%, correct heading order, alt text for meaningful images, and errors identified in text rather than by colour alone.",
+          "explanation": "Most of these are testable automatically (axe, Lighthouse) but automation catches perhaps a third of real issues. Tab through the page and use a screen reader once per feature — it finds what scanners cannot.",
+          "resources": [
+            { "title": "W3C — WCAG 2.2 quick reference", "url": "https://www.w3.org/WAI/WCAG22/quickref/", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hc-css",
+      "name": "Layout & the Cascade",
+      "description": "Specificity, box model, flexbox, grid and stacking — the parts that cause the most confusion.",
+      "cards": [
+        {
+          "id": "css-specificity",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["css.cascade"],
+          "prompt": "How is CSS specificity calculated, and what beats it?",
+          "answer": "As a tuple (inline, ID, class/attribute/pseudo-class, element/pseudo-element), compared left to right. Later rules win ties. `!important` overrides normal declarations, and inline styles beat selectors — but layer order and `!important` in earlier cascade layers can still take precedence.",
+          "explanation": "The practical lesson is to keep specificity flat: one class per component, no ID selectors in stylesheets, no `!important` arms races. Cascade layers (`@layer`) let you order framework and app styles explicitly instead of by accident.",
+          "resources": [
+            { "title": "MDN — Specificity", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Specificity", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-box-sizing",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["css.box-model"],
+          "prompt": "How wide is this element rendered, with and without `box-sizing: border-box`?",
+          "code": ".card {\n  width: 200px;\n  padding: 20px;\n  border: 2px solid;\n}",
+          "lang": "css",
+          "answer": "244px by default (content-box: 200 + 40 padding + 4 border); exactly 200px with `border-box`.",
+          "explanation": "`content-box` is the CSS default and almost never what you want, which is why virtually every reset sets `*, *::before, *::after { box-sizing: border-box }`. With border-box, `width` means the visible width.",
+          "resources": [
+            { "title": "MDN — box-sizing", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/box-sizing", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-flex-vs-grid",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["css.layout"],
+          "prompt": "Flexbox vs Grid",
+          "answer": "Flexbox lays out along one axis and sizes from content; Grid defines two-dimensional rows and columns from the container.",
+          "columns": {
+            "left": { "title": "Flexbox", "points": ["One dimension: a row or a column", "Content-out sizing, natural wrapping", "Ideal for toolbars, button groups, cards in a row", "`gap`, `flex-grow`, `align-items`"] },
+            "right": { "title": "Grid", "points": ["Two dimensions at once", "Layout-in sizing: you define the tracks", "Ideal for page layout and complex forms", "`grid-template-areas`, `minmax`, `auto-fit`"] }
+          },
+          "explanation": "They compose — a grid page layout with flex components inside is the normal pattern. `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))` gives a responsive card grid with no media queries at all.",
+          "resources": [
+            { "title": "MDN — CSS grid layout", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-stacking-context",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["css.stacking", "css.gotchas"],
+          "prompt": "Your modal has `z-index: 9999` and still renders behind a sidebar. Why?",
+          "code": ".page {\n  transform: translateZ(0);   /* added for \"performance\" */\n}\n\n.sidebar { position: relative; z-index: 10; }\n\n.modal   { position: fixed;    z-index: 9999; }  /* inside .page */",
+          "lang": "css",
+          "answer": "An ancestor created a stacking context — via `transform`, `opacity < 1`, `filter`, `will-change`, `position` with a z-index, `isolation`, or `contain`. Inside it, z-index is only compared against siblings in that context.",
+          "explanation": "z-index is not global. Once an ancestor forms a stacking context, no descendant can escape above the ancestor's own level. Fixes: portal the modal to `<body>`, remove the offending property, or use the top-layer `<dialog>` element which sidesteps stacking entirely.",
+          "prerequisites": ["css-specificity"],
+          "resources": [
+            { "title": "MDN — Stacking context", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Stacking_context", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-layout-vs-paint",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["css.performance", "web.rendering"],
+          "prompt": "An animation stutters. Which properties should you animate, and why?",
+          "answer": "`transform` and `opacity`. They can be handled by the compositor without triggering layout or paint; animating `width`, `top`, `margin` or `box-shadow` forces reflow and repaint every frame.",
+          "explanation": "The pipeline is style → layout → paint → composite. Layout is the expensive stage, and it invalidates everything after it. Reading a layout property (`offsetHeight`) right after a write forces synchronous layout — the 'layout thrashing' pattern to batch away.",
+          "resources": [
+            { "title": "web.dev — Stick to compositor-only properties", "url": "https://web.dev/articles/stick-to-compositor-only-properties-and-manage-layer-count", "kind": "article" }
+          ]
+        },
+        {
+          "id": "css-cascade-modern",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["css.modern"],
+          "prompt": "What do custom properties, `clamp()`, container queries and `:has()` each solve?",
+          "answer": "Custom properties give runtime-themable values inherited through the tree; `clamp(min, preferred, max)` gives fluid sizing without breakpoints; container queries style by the parent's size rather than the viewport; `:has()` is the long-awaited parent selector.",
+          "explanation": "Together they remove most of what preprocessors and JavaScript were doing. A component sized with container queries works correctly in a sidebar and in a full-width hero without knowing where it was placed.",
+          "resources": [
+            { "title": "MDN — CSS container queries", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

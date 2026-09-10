@@ -1,0 +1,254 @@
+{
+  "id": "networking",
+  "name": "Networking",
+  "icon": "🛰️",
+  "category": "Networking",
+  "color": "#0891B2",
+  "description": "TCP/IP, DNS, TLS, HTTP versions, load balancing and diagnosing what the network is really doing.",
+  "modules": [
+    {
+      "id": "net-transport",
+      "name": "Transport & Addressing",
+      "description": "The layers, TCP vs UDP, and how a name becomes a connection.",
+      "cards": [
+        {
+          "id": "net-tcp-vs-udp",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": [
+            "networking.transport"
+          ],
+          "prompt": "TCP vs UDP",
+          "answer": "TCP is connection-oriented, ordered, reliable and congestion-controlled. UDP is a thin datagram wrapper — no ordering, no retransmission, no handshake.",
+          "columns": {
+            "left": {
+              "title": "TCP",
+              "points": [
+                "Three-way handshake before data",
+                "Ordered, retransmitted, deduplicated",
+                "Congestion and flow control",
+                "Head-of-line blocking on loss"
+              ]
+            },
+            "right": {
+              "title": "UDP",
+              "points": [
+                "Fire and forget, no handshake",
+                "Application handles loss and ordering",
+                "Lower latency, multicast possible",
+                "DNS, VoIP, games, QUIC"
+              ]
+            }
+          },
+          "explanation": "QUIC is the interesting case: it runs over UDP and rebuilds reliability, ordering *per stream* and TLS in user space — which removes TCP's head-of-line blocking and lets connections survive a network change (Wi-Fi to cellular).",
+          "resources": [
+            {
+              "title": "Cloudflare — What is UDP?",
+              "url": "https://www.cloudflare.com/learning/ddos/glossary/user-datagram-protocol-udp/",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "net-tcp-handshake",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": [
+            "networking.tcp"
+          ],
+          "prompt": "Describe the TCP three-way handshake and connection teardown.",
+          "answer": "SYN → SYN-ACK → ACK establishes the connection and exchanges sequence numbers. Teardown is FIN/ACK in each direction, after which the closing side sits in TIME_WAIT for roughly 2×MSL.",
+          "explanation": "That handshake costs one round trip before any data — the reason connection reuse, HTTP keep-alive and TLS 1.3's 1-RTT handshake matter so much. Thousands of sockets stuck in TIME_WAIT on a busy proxy is normal, not a leak.",
+          "prerequisites": [
+            "net-tcp-vs-udp"
+          ],
+          "resources": [
+            {
+              "title": "RFC 9293 — Transmission Control Protocol",
+              "url": "https://www.rfc-editor.org/rfc/rfc9293",
+              "kind": "spec"
+            }
+          ]
+        },
+        {
+          "id": "net-dns-resolution",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": [
+            "networking.dns"
+          ],
+          "prompt": "How does a DNS lookup resolve, and what do A, CNAME, MX and TXT records do?",
+          "answer": "The resolver checks its cache, then queries a root server, a TLD server and the authoritative nameserver in turn. A maps a name to an IPv4 address (AAAA for IPv6), CNAME aliases one name to another, MX names mail servers, TXT holds arbitrary text used for SPF, DKIM and domain verification.",
+          "explanation": "TTL governs caching — which is why a DNS change 'has not propagated'. Lower TTLs before a planned migration. A CNAME cannot coexist with other records at the same name, hence ALIAS/ANAME records at the zone apex.",
+          "resources": [
+            {
+              "title": "Cloudflare — What is DNS?",
+              "url": "https://www.cloudflare.com/learning/dns/what-is-dns/",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "net-nat-private",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": [
+            "networking.ip"
+          ],
+          "prompt": "10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 are reserved as ___ address ranges (RFC 1918).",
+          "answer": "private",
+          "explanation": "They are not routable on the public internet, so NAT translates them at the edge. This is why inbound connections to a home machine need port forwarding, and why overlapping VPC CIDR ranges make VPC peering impossible — plan address space before you build.",
+          "resources": [
+            {
+              "title": "RFC 1918 — Address allocation for private internets",
+              "url": "https://www.rfc-editor.org/rfc/rfc1918",
+              "kind": "spec"
+            }
+          ]
+        },
+        {
+          "id": "net-cidr",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": [
+            "networking.ip",
+            "networking.subnets"
+          ],
+          "prompt": "How many usable host addresses are in a /24, and what is the range for 192.168.1.0/24?",
+          "answer": "254 usable hosts (256 minus network and broadcast): 192.168.1.1 through 192.168.1.254.",
+          "explanation": "The prefix length counts fixed bits, so /24 leaves 8 host bits = 256 addresses. Handy anchors: /16 is 65,536, /24 is 256, /28 is 16, /30 is 4 (2 usable — the classic point-to-point link). Cloud providers reserve extra addresses per subnet, so usable counts are slightly lower again.",
+          "resources": [
+            {
+              "title": "Wikipedia — CIDR",
+              "url": "https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing",
+              "kind": "article"
+            }
+          ],
+          "code": "$ ipcalc 192.168.1.0/24\nAddress:   192.168.1.0\nNetmask:   255.255.255.0 = 24\nNetwork:   192.168.1.0/24\nHostMin:   192.168.1.1\nHostMax:   192.168.1.254\nBroadcast: 192.168.1.255\nHosts/Net: ?",
+          "lang": "bash"
+        }
+      ]
+    },
+    {
+      "id": "net-app",
+      "name": "HTTP, TLS & Edge",
+      "description": "Protocol versions, encryption, proxies, load balancing and network debugging.",
+      "cards": [
+        {
+          "id": "net-http-versions",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": [
+            "networking.http"
+          ],
+          "prompt": "What changed between HTTP/1.1, HTTP/2 and HTTP/3?",
+          "answer": "HTTP/1.1 is text with one request in flight per connection. HTTP/2 is binary with multiplexed streams and header compression over one TCP connection. HTTP/3 moves to QUIC over UDP, removing TCP-level head-of-line blocking and cutting handshake round trips.",
+          "explanation": "HTTP/2 solved application-level head-of-line blocking but not transport-level: one lost TCP segment stalls every stream. QUIC fixes that by tracking loss per stream. It also made domain sharding and sprite sheets obsolete — those were HTTP/1.1 workarounds.",
+          "resources": [
+            {
+              "title": "Cloudflare — HTTP/3 explained",
+              "url": "https://blog.cloudflare.com/http3-the-past-present-and-future/",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "net-tls-handshake",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": [
+            "networking.tls",
+            "security.crypto"
+          ],
+          "prompt": "What does a TLS 1.3 handshake accomplish?",
+          "answer": "It authenticates the server via its certificate chain, agrees a shared secret with an ephemeral Diffie-Hellman exchange, and derives symmetric keys — in one round trip, with everything after the ServerHello encrypted.",
+          "explanation": "Ephemeral keys give forward secrecy: recording traffic today and stealing the private key tomorrow does not decrypt it. TLS 1.3 also removed RSA key exchange, static DH and the weak ciphers that powered a decade of downgrade attacks.",
+          "resources": [
+            {
+              "title": "RFC 8446 — TLS 1.3",
+              "url": "https://www.rfc-editor.org/rfc/rfc8446",
+              "kind": "spec"
+            }
+          ]
+        },
+        {
+          "id": "net-lb-l4-l7",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": [
+            "networking.load-balancing",
+            "system.design"
+          ],
+          "prompt": "Layer 4 vs layer 7 load balancing",
+          "answer": "L4 forwards TCP/UDP connections without reading the payload; L7 terminates the connection and routes on HTTP attributes.",
+          "columns": {
+            "left": {
+              "title": "L4",
+              "points": [
+                "Routes by IP and port",
+                "Very high throughput, low latency",
+                "Cannot route by path, header or cookie",
+                "Connection-level, not request-level, balancing"
+              ]
+            },
+            "right": {
+              "title": "L7",
+              "points": [
+                "Routes by host, path, header, cookie",
+                "Retries, rewrites, TLS termination, compression",
+                "Per-request balancing — better for HTTP/2",
+                "More CPU and more moving parts"
+              ]
+            }
+          },
+          "explanation": "L4 balancing plus long-lived HTTP/2 connections pins a client to one backend for the connection's life, which skews load. L7 balances each request. This is precisely why service meshes work at L7.",
+          "resources": [
+            {
+              "title": "NGINX — What is load balancing?",
+              "url": "https://www.f5.com/glossary/load-balancer",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "net-debug-tools",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": [
+            "networking.debugging",
+            "linux.ops"
+          ],
+          "prompt": "An API call fails intermittently. Which network tools do you reach for, and what does each tell you?",
+          "answer": "`dig` for resolution, `ping`/`mtr` for reachability and per-hop loss, `curl -v --trace-time` for TLS and timing breakdown, `ss -tanp` for socket states, `tcpdump`/Wireshark for the packets themselves.",
+          "explanation": "`curl -w` with a timing format separates DNS, connect, TLS and time-to-first-byte — usually identifying the culprit in one command. `mtr` beats `ping` because it shows where loss enters the path. Reach for tcpdump when the story still does not add up.",
+          "resources": [
+            {
+              "title": "curl — the manual",
+              "url": "https://curl.se/docs/manual.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "net-timeout-retry",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "networking.reliability",
+            "system.design"
+          ],
+          "prompt": "Why can naive retries turn a small outage into a large one?",
+          "answer": "Every client retrying simultaneously multiplies load on an already struggling service — a retry storm. Add exponential backoff with jitter, cap attempts, use a circuit breaker, and never retry non-idempotent operations without an idempotency key.",
+          "explanation": "Also set explicit timeouts everywhere: a request with no timeout holds a connection and a thread forever. Budget them down the call chain so an inner timeout is shorter than the outer one, or the outer caller gives up while work continues underneath.",
+          "resources": [
+            {
+              "title": "AWS — Timeouts, retries and backoff with jitter",
+              "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+              "kind": "article"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

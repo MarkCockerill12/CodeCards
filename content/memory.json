@@ -1,0 +1,152 @@
+{
+  "id": "memory",
+  "name": "Memory Fundamentals",
+  "icon": "🧠",
+  "category": "Computer Science",
+  "color": "#06B6D4",
+  "description": "Stack vs heap, virtual memory, caches, allocation, garbage collection and the bugs that come from getting them wrong.",
+  "modules": [
+    {
+      "id": "mem-model",
+      "name": "The Memory Model",
+      "description": "How a process sees memory, and what the hardware and OS are really doing underneath.",
+      "cards": [
+        {
+          "id": "mem-stack-heap",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["memory.stack-heap", "memory.fundamentals"],
+          "prompt": "Stack vs heap",
+          "answer": "The stack is a per-thread LIFO region managed automatically; the heap is a shared pool allocated and freed explicitly or by a GC.",
+          "columns": {
+            "left": { "title": "Stack", "points": ["Allocation is one pointer bump", "Freed automatically on return", "Small and fixed (~1–8 MB per thread)", "Hot in cache — excellent locality"] },
+            "right": { "title": "Heap", "points": ["Allocator must find a suitable block", "Lives until freed or collected", "Large, limited by address space and RAM", "Fragmentation and cache misses"] }
+          },
+          "explanation": "Stack overflow comes from deep recursion or huge locals; heap exhaustion from leaks or genuinely large data. Escape analysis in JIT compilers can promote a heap allocation to the stack when the object provably does not escape.",
+          "resources": [
+            { "title": "Wikipedia — Call stack", "url": "https://en.wikipedia.org/wiki/Call_stack", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-virtual-memory",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["memory.virtual", "os.memory"],
+          "prompt": "What does virtual memory give you, and how does address translation work?",
+          "answer": "Each process gets its own address space, isolated from others. The MMU translates virtual pages to physical frames via page tables, cached in the TLB; a missing page triggers a page fault the OS resolves.",
+          "explanation": "Virtual memory buys isolation, relocation, demand paging, copy-on-write (how `fork` is cheap) and memory-mapped files. It costs a translation on every access — which is why TLB misses and huge pages matter for database and JVM performance.",
+          "resources": [
+            { "title": "Wikipedia — Virtual memory", "url": "https://en.wikipedia.org/wiki/Virtual_memory", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-cache-hierarchy",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["memory.cache", "performance.hardware"],
+          "prompt": "Roughly what do L1, L2, L3 and main memory cost in cycles, and why does that dominate performance?",
+          "answer": "L1 ~4 cycles, L2 ~12, L3 ~40, DRAM ~200–300 cycles. A single main-memory access can cost more than a hundred arithmetic operations, so cache misses — not instruction count — decide most real performance.",
+          "explanation": "Memory moves in cache lines (usually 64 bytes), so touching one byte pulls in 64. That is why iterating an array beats a linked list, why struct-of-arrays beats array-of-structs for column scans, and why false sharing between threads is so destructive.",
+          "resources": [
+            { "title": "What every programmer should know about memory (Drepper)", "url": "https://people.freebsd.org/~lstewart/articles/cpumemory.pdf", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-locality",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["memory.cache", "performance.optimisation"],
+          "prompt": "Two loops sum the same 2D array — one row-major, one column-major. Why can the column-major version be 5–10x slower?",
+          "answer": "Row-major traversal walks memory sequentially, using every byte of each cache line and letting the prefetcher work. Column-major jumps by the row stride, so each access touches a new line and most of every line is wasted.",
+          "explanation": "Spatial locality (nearby addresses soon) and temporal locality (same address soon) are the two levers. Loop interchange, blocking/tiling and choosing the right data layout routinely beat micro-optimising the arithmetic.",
+          "prerequisites": ["mem-cache-hierarchy"],
+          "resources": [
+            { "title": "Wikipedia — Locality of reference", "url": "https://en.wikipedia.org/wiki/Locality_of_reference", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-alignment",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["memory.layout", "cpp.structs"],
+          "prompt": "On a typical 64-bit platform, what is `sizeof(S)`?",
+          "code": "struct S {\n    char  a;   // 1 byte\n    int   b;   // 4 bytes\n    char  c;   // 1 byte\n};",
+          "lang": "cpp",
+          "answer": "12 bytes — 3 bytes of padding after `a` to align `b`, and 3 bytes of tail padding so arrays stay aligned. Reordering to `int, char, char` gives 8.",
+          "explanation": "Each member must sit at an address that is a multiple of its alignment, and the struct is padded to a multiple of its strictest member. Ordering fields largest-first is free memory savings in hot data structures.",
+          "resources": [
+            { "title": "cppreference — Object alignment", "url": "https://en.cppreference.com/w/cpp/language/object#Alignment", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mem-management",
+      "name": "Allocation, GC & Bugs",
+      "description": "Allocators, collectors, leaks and the memory-safety failures behind most severe CVEs.",
+      "cards": [
+        {
+          "id": "mem-gc-strategies",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["memory.gc"],
+          "prompt": "Compare reference counting and tracing garbage collection.",
+          "answer": "Reference counting frees immediately when the count hits zero but cannot collect cycles and pays for every pointer update. Tracing GC periodically walks from roots and collects everything unreachable — handling cycles, at the cost of pauses and extra headroom.",
+          "explanation": "CPython uses reference counting plus a cycle detector; the JVM and .NET use tracing generational collectors; Swift uses ARC and asks you to break cycles with `weak`. Rust and C++ avoid both with ownership and RAII.",
+          "resources": [
+            { "title": "Wikipedia — Garbage collection", "url": "https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-leak-managed",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["memory.leaks", "debugging"],
+          "prompt": "You have a garbage collector. How can you still leak memory?",
+          "answer": "By keeping references alive: unbounded caches and collections, event listeners and callbacks never unregistered, static/global registries, thread-locals on pooled threads, and closures capturing large graphs.",
+          "explanation": "A GC frees the *unreachable*, not the *unused*. The fix is bounding lifetimes explicitly — size-limited caches, weak references where the key should drive the entry, and deregistration in teardown paths. Heap dumps plus dominator trees find them fast.",
+          "resources": [
+            { "title": "Chrome DevTools — Fix memory problems", "url": "https://developer.chrome.com/docs/devtools/memory-problems", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "mem-use-after-free",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["memory.safety", "security.memory"],
+          "prompt": "What are use-after-free, double free and buffer overflow, and why do they matter for security?",
+          "answer": "Use-after-free reads or writes memory that has been returned to the allocator; double free corrupts allocator metadata; buffer overflow writes past an allocation's end. All are exploitable primitives that let an attacker corrupt adjacent state or hijack control flow.",
+          "explanation": "Microsoft and Google both report that roughly 70% of their severe CVEs are memory-safety bugs. Mitigations (ASLR, stack canaries, NX, CFI) raise the cost; memory-safe languages and sanitisers remove the class.",
+          "resources": [
+            { "title": "CWE-416 — Use After Free", "url": "https://cwe.mitre.org/data/definitions/416.html", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "mem-fragmentation",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["memory.allocator"],
+          "prompt": "What is memory fragmentation, and how do allocators fight it?",
+          "answer": "External fragmentation is free memory split into blocks too small to satisfy a request; internal is space wasted inside an allocated block. Allocators fight it with size classes, slab/arena allocation, coalescing of adjacent free blocks and compaction (where pointers can move).",
+          "explanation": "Long-running servers can exhaust memory with plenty free in total. Arena or pool allocators — allocate many objects, free the whole region at once — remove both fragmentation and per-object free cost, which is why they are common in games and compilers.",
+          "resources": [
+            { "title": "Wikipedia — Fragmentation (computing)", "url": "https://en.wikipedia.org/wiki/Fragmentation_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-mmap",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["memory.virtual", "os.io"],
+          "prompt": "When is `mmap` a better way to read a large file than `read`?",
+          "answer": "When you need random access to a large file and want the page cache to do the work: mapping avoids copying between kernel and user buffers and lets the OS page in only what you touch.",
+          "explanation": "The trade-offs: page faults are invisible latency, I/O errors surface as SIGBUS rather than a return code, and it is awkward for files that change size. Sequential streaming is usually just as fast with plain reads plus readahead.",
+          "prerequisites": ["mem-virtual-memory"],
+          "resources": [
+            { "title": "man7 — mmap(2)", "url": "https://man7.org/linux/man-pages/man2/mmap.2.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

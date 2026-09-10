@@ -1,0 +1,151 @@
+{
+  "id": "regex",
+  "name": "Regular Expressions",
+  "icon": "🔍",
+  "category": "Computer Science",
+  "color": "#14B8A6",
+  "description": "Syntax, greediness, groups, lookaround and the catastrophic backtracking that turns a regex into a denial of service.",
+  "modules": [
+    {
+      "id": "re-core",
+      "name": "Syntax & Semantics",
+      "description": "The constructs that make up 95% of real regular expressions.",
+      "cards": [
+        {
+          "id": "re-quantifiers",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["regex.syntax"],
+          "prompt": "What do `*`, `+`, `?`, `{n,m}` mean, and what does adding `?` after them do?",
+          "answer": "Zero or more, one or more, zero or one, and between n and m repetitions. A trailing `?` makes the quantifier lazy — it matches as little as possible instead of as much.",
+          "explanation": "`<.*>` on `<a><b>` matches the whole string because `*` is greedy; `<.*?>` matches just `<a>`. Lazy quantifiers are usually the fix when a pattern 'matches too much', though a negated character class `<[^>]*>` is faster still.",
+          "resources": [
+            { "title": "MDN — Quantifiers", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Quantifiers", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-greedy-output",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["regex.greedy"],
+          "prompt": "What does this print?",
+          "code": "import re\ns = '<a><b>'\nprint(re.match(r'<.*>', s).group())\nprint(re.match(r'<.*?>', s).group())",
+          "lang": "python",
+          "answer": "<a><b>\n<a>",
+          "explanation": "Greedy `.*` consumes to the end then backtracks until the final `>` matches. Lazy `.*?` consumes as little as possible and stops at the first `>`. Same pattern shape, completely different result.",
+          "prerequisites": ["re-quantifiers"],
+          "resources": [
+            { "title": "Python docs — re module", "url": "https://docs.python.org/3/library/re.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "<a><b>\n<a>" }
+        },
+        {
+          "id": "re-anchors-boundaries",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["regex.syntax"],
+          "prompt": "`^` anchors to the start, `$` to the end, and `\\___` matches a word boundary.",
+          "answer": "b",
+          "explanation": "In multiline mode `^`/`$` match at every line break — a frequent source of validation bypasses, since `^\\d+$` can match `123\\nrm -rf /` in some engines. Use `\\A` and `\\z` where available for absolute string anchors.",
+          "resources": [
+            { "title": "MDN — Assertions", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Assertions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-groups",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["regex.groups"],
+          "prompt": "Capturing `( )` vs non-capturing `(?: )` groups",
+          "answer": "Both group for alternation and quantifiers; only capturing groups store the matched text for later reference.",
+          "columns": {
+            "left": { "title": "( ) capturing", "points": ["Text available as $1 / group(1)", "Usable in backreferences and replacements", "Named form `(?<year>...)` is far more readable", "Slight cost per group"] },
+            "right": { "title": "(?: ) non-capturing", "points": ["Groups without storing", "Keeps capture numbering stable", "Clearer intent in long patterns", "Marginally faster"] }
+          },
+          "explanation": "Use named groups for anything you extract — `(?<year>\\d{4})-(?<month>\\d{2})` survives someone inserting a group at the front, where `$1`/`$2` silently break.",
+          "resources": [
+            { "title": "MDN — Groups and backreferences", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Groups_and_backreferences", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-lookaround",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["regex.lookaround"],
+          "prompt": "What are the four lookaround assertions?",
+          "answer": "`(?=...)` positive lookahead, `(?!...)` negative lookahead, `(?<=...)` positive lookbehind, `(?<!...)` negative lookbehind. All are zero-width: they assert without consuming characters.",
+          "explanation": "Classic use: password rules — `^(?=.*[a-z])(?=.*\\d).{8,}$` asserts several independent conditions at position 0. Lookbehind support varies (JavaScript gained it in ES2018; some engines require fixed width).",
+          "prerequisites": ["re-groups"],
+          "resources": [
+            { "title": "MDN — Lookahead and lookbehind", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Assertions#lookahead_assertion", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "re-practice",
+      "name": "Performance & Judgement",
+      "description": "ReDoS, engine differences, and knowing when not to use a regex at all.",
+      "cards": [
+        {
+          "id": "re-redos",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["regex.performance", "security.dos"],
+          "prompt": "Why can this pattern hang the process on a 30-character input?",
+          "code": "const re = /^(a+)+$/;\nre.test('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!');",
+          "lang": "javascript",
+          "answer": "Catastrophic backtracking. Nested quantifiers over overlapping alternatives give exponentially many ways to split the input, and a failing match tries them all — O(2ⁿ).",
+          "explanation": "This is ReDoS (CWE-1333) and has taken down real services, including a Cloudflare outage in 2019. Avoid nested quantifiers over overlapping patterns, use possessive quantifiers or atomic groups where supported, or use a linear-time engine such as RE2.",
+          "resources": [
+            { "title": "OWASP — Regular expression denial of service", "url": "https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS", "kind": "article" },
+            { "title": "Google RE2", "url": "https://github.com/google/re2", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-engine-types",
+          "type": "compare",
+          "difficulty": 5,
+          "tags": ["regex.engines", "compilers.automata"],
+          "prompt": "Backtracking engines vs finite-automata engines",
+          "answer": "Backtracking engines (PCRE, Python re, JavaScript) support backreferences and lookaround but can go exponential; automata engines (RE2, Go regexp, rust regex) guarantee linear time by giving those features up.",
+          "columns": {
+            "left": { "title": "Backtracking", "points": ["Backreferences and lookaround", "Exponential worst case", "Ubiquitous in scripting languages", "Needs a timeout on untrusted patterns"] },
+            "right": { "title": "NFA/DFA simulation", "points": ["Linear in input length, guaranteed", "No backreferences", "Safe for user-supplied patterns", "RE2, Go, Rust"] }
+          },
+          "explanation": "If untrusted input or untrusted patterns are involved, choose the linear engine or impose a hard timeout. Thompson's construction is the theory: a true regular language needs no backtracking.",
+          "prerequisites": ["re-redos"],
+          "resources": [
+            { "title": "Russ Cox — Regular expression matching can be simple and fast", "url": "https://swtch.com/~rsc/regexp/regexp1.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "re-when-not",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["regex.judgement", "craft.tools"],
+          "prompt": "When should you *not* reach for a regex?",
+          "answer": "For nested or recursive structures — HTML, JSON, source code, balanced brackets. Regular languages cannot count nesting; use a real parser.",
+          "explanation": "Also avoid them for email validation (RFC 5322 is absurd — check for an `@` and send a confirmation), and for anything a string method does more clearly. A regex that needs a comment block to explain it usually wants to be a small parser.",
+          "resources": [
+            { "title": "Stack Overflow — You can't parse HTML with regex", "url": "https://stackoverflow.com/a/1732454", "kind": "article" }
+          ]
+        },
+        {
+          "id": "re-complexity",
+          "type": "complexity",
+          "difficulty": 4,
+          "tags": ["regex.performance", "algo.complexity"],
+          "prompt": "Matching complexity of a well-formed regex on a linear-time engine vs a backtracking engine?",
+          "answer": "O(n·m) on an automata engine (n = input length, m = pattern size); potentially O(2ⁿ) on a backtracking engine.",
+          "complexity": { "time": "O(n·m) linear engine; up to O(2ⁿ) backtracking", "space": "O(m)" },
+          "explanation": "Most patterns behave fine on backtracking engines — the danger is specific shapes with nested or ambiguous quantifiers. Compile patterns once outside hot loops; recompiling a regex per iteration is a common and silly cost.",
+          "prerequisites": ["re-engine-types"],
+          "resources": [
+            { "title": "Russ Cox — Regexp comparison", "url": "https://swtch.com/~rsc/regexp/", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "id": "iac",
+  "name": "Infrastructure as Code",
+  "icon": "🏗️",
+  "category": "Cloud & DevOps",
+  "color": "#7C3AED",
+  "description": "Terraform, state, drift, modules and configuration management — infrastructure you can review, test and rebuild.",
+  "modules": [
+    {
+      "id": "iac-core",
+      "name": "Principles & Terraform",
+      "description": "Declarative infrastructure, state, and the workflow that keeps it safe.",
+      "cards": [
+        {
+          "id": "iac-why",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["devops.iac"],
+          "prompt": "What does infrastructure as code give you over clicking in a console?",
+          "answer": "Reviewable changes, version history, reproducibility across environments, drift detection, disaster recovery by re-apply, and documentation that cannot go stale because it *is* the infrastructure.",
+          "explanation": "The pivotal property is reproducibility: you can stand up an identical staging environment, or rebuild after a region failure, because the definition is complete. Console clicking produces snowflakes nobody can recreate — including the person who made them.",
+          "resources": [
+            { "title": "HashiCorp — What is infrastructure as code?", "url": "https://developer.hashicorp.com/terraform/intro", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-declarative-imperative",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["devops.iac", "architecture.model"],
+          "prompt": "Declarative vs imperative infrastructure tooling",
+          "answer": "Declarative describes the desired end state and lets the tool compute the diff; imperative runs the steps you write to get there.",
+          "columns": {
+            "left": { "title": "Declarative (Terraform, CFN, K8s)", "points": ["Describe what, not how", "Plan shows the diff before applying", "Idempotent by construction", "Awkward for genuine sequences and one-offs"] },
+            "right": { "title": "Imperative (scripts, CLI, SDK)", "points": ["Full control over ordering", "Easy to reason about step by step", "You own idempotency", "Drifts from reality over time"] }
+          },
+          "explanation": "Ansible sits between: declarative-ish tasks executed in order. Use declarative for resources that persist and imperative for actions that happen once. The mistake is scripting `aws create-*` calls and calling it IaC — there is no reconciliation.",
+          "resources": [
+            { "title": "Terraform — Plan and apply", "url": "https://developer.hashicorp.com/terraform/tutorials/cli/plan", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-state",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["terraform.state", "devops.iac"],
+          "prompt": "What is Terraform state, and why does it need care?",
+          "answer": "A mapping from your configuration to real resource ids, plus cached attributes. It is how Terraform knows what it already created. It must be stored remotely, locked during apply, versioned, and treated as sensitive — it can contain secrets in plaintext.",
+          "explanation": "Two people applying against local state produces duplicated or destroyed resources; that is what state locking (DynamoDB, blob leases) prevents. `terraform import` adopts existing resources, and `state mv` handles refactors — never hand-edit the file.",
+          "prerequisites": ["iac-declarative-imperative"],
+          "resources": [
+            { "title": "Terraform — State", "url": "https://developer.hashicorp.com/terraform/language/state", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-drift",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["devops.iac", "operations"],
+          "prompt": "Someone fixed an incident by changing a security group in the console. What happens on the next apply, and what should the team do?",
+          "answer": "Terraform sees drift and reverts the manual change — potentially re-breaking production. The fix is to reconcile deliberately: bring the change into code, then apply. Prevent recurrence by restricting console write access and running drift detection on a schedule.",
+          "explanation": "Emergency console changes are sometimes correct — the failure is not writing them back. A scheduled `terraform plan` that alerts on any diff turns silent drift into a visible task while the reasoning is still fresh.",
+          "prerequisites": ["iac-state"],
+          "resources": [
+            { "title": "Terraform — Manage resource drift", "url": "https://developer.hashicorp.com/terraform/tutorials/state/resource-drift", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-modules",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["terraform.modules", "devops.iac"],
+          "prompt": "How should you structure IaC across environments?",
+          "answer": "Reusable modules with input variables, composed by thin per-environment root configurations with separate state. Environments differ by variable values (sizes, counts, CIDRs), not by copied code.",
+          "explanation": "Separate state per environment limits blast radius — a bad apply cannot touch production. Resist over-abstracting early: a module with thirty variables and conditional logic is harder to follow than two explicit files.",
+          "resources": [
+            { "title": "Terraform — Modules", "url": "https://developer.hashicorp.com/terraform/language/modules", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iac-practice",
+      "name": "Operating IaC",
+      "description": "Review, testing, secrets and the day-two realities.",
+      "cards": [
+        {
+          "id": "iac-plan-review",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["terraform.workflow", "devops.safety"],
+          "prompt": "What should stop this plan from being applied?",
+          "code": "Plan: 4 to add, 2 to change, 1 to destroy.\n\n  # aws_db_instance.primary must be replaced\n  -/+ resource \"aws_db_instance\" \"primary\" {\n      ~ engine_version = \"15.4\" -> \"16.1\"  # forces replacement\n    }",
+          "lang": "hcl",
+          "answer": "A forced replacement of the primary database — that destroys and recreates it, losing data and causing an outage. Investigate why the attribute forces replacement and use an in-place upgrade path instead.",
+          "explanation": "Always read the plan, especially the destroy count and any `forces replacement` comment. `prevent_destroy` on stateful resources turns a catastrophic apply into an error. Requiring plan output in the pull request makes this reviewable by someone other than the author.",
+          "prerequisites": ["iac-state"],
+          "resources": [
+            { "title": "Terraform — The lifecycle meta-argument", "url": "https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-policy-as-code",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["devops.iac", "security.governance"],
+          "prompt": "What is policy as code, and where does it run?",
+          "answer": "Machine-enforced rules — no public S3 buckets, encryption required, mandatory tags — evaluated against the plan in CI (Checkov, tfsec, OPA/Conftest, Sentinel) and again at the cloud control plane (SCPs, Azure Policy).",
+          "explanation": "Catching it in the pull request is cheap and educational; catching it at the control plane is the guarantee. You want both, because IaC is not the only way resources get created.",
+          "resources": [
+            { "title": "Open Policy Agent", "url": "https://www.openpolicyagent.org/docs/latest/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-secrets",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["devops.iac", "security.secrets"],
+          "prompt": "How do you handle a database password in Terraform?",
+          "answer": "Do not put it in the configuration or in a tfvars file. Generate it with a random resource or reference a secret manager, and let the application read it at runtime. Remember the value still lands in state, so state must be encrypted and access-controlled.",
+          "explanation": "'It is in a private repo' is not protection — repos get cloned, forked and leaked. The cleanest pattern is Terraform creating an empty secret container and a separate process populating it, so the value never enters the IaC path at all.",
+          "prerequisites": ["iac-state"],
+          "resources": [
+            { "title": "Terraform — Sensitive data in state", "url": "https://developer.hashicorp.com/terraform/language/state/sensitive-data", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-immutable",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["devops.iac", "architecture"],
+          "prompt": "What is immutable infrastructure, and what does it replace?",
+          "answer": "Servers are never modified in place — a change means building a new image and replacing the instance. It replaces configuration management that mutates long-lived servers, and with it, configuration drift.",
+          "explanation": "Immutability makes rollback trivial (deploy the previous image) and eliminates the 'works on that box' problem. It requires externalised state, quick image builds and automated replacement — which is exactly what containers and autoscaling groups provide.",
+          "resources": [
+            { "title": "HashiCorp — Packer", "url": "https://developer.hashicorp.com/packer/docs/intro", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

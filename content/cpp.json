@@ -1,0 +1,195 @@
+{
+  "id": "cpp",
+  "name": "C++",
+  "icon": "⚙️",
+  "category": "Languages",
+  "color": "#00599C",
+  "description": "Object lifetime, RAII, move semantics, templates and the undefined behaviour that separates working code from lucky code.",
+  "modules": [
+    {
+      "id": "cpp-lifetime",
+      "name": "Objects, Lifetime & RAII",
+      "description": "Construction, destruction, ownership and the rules that keep C++ memory-safe by design.",
+      "cards": [
+        {
+          "id": "cpp-raii",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["cpp.raii", "cpp.memory"],
+          "prompt": "What is RAII, and why does it matter more in C++ than almost anywhere else?",
+          "answer": "Resource Acquisition Is Initialisation: a resource is owned by an object, acquired in its constructor and released in its destructor. Because destructors run deterministically on scope exit — including during stack unwinding — cleanup is automatic and exception-safe.",
+          "explanation": "RAII is why `std::lock_guard`, `std::unique_ptr` and `std::fstream` need no `finally`. Every raw `new`, `malloc`, `fopen` or manual `lock` in modern C++ should be wrapped in a type whose destructor does the release.",
+          "resources": [
+            { "title": "cppreference — RAII", "url": "https://en.cppreference.com/w/cpp/language/raii", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-rule-of-five",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cpp.oop", "cpp.lifetime"],
+          "prompt": "What is the Rule of Zero / Three / Five?",
+          "answer": "Rule of Zero: design classes that need no custom copy/move/destructor by holding RAII members. If you must write one of destructor, copy constructor or copy assignment, you probably need all three — plus the move constructor and move assignment, making five.",
+          "explanation": "The special members interact: declaring a destructor suppresses implicit move operations, silently degrading moves into copies. Prefer Rule of Zero — let `std::vector`, `std::string` and smart pointers own the resources and write none of the five.",
+          "prerequisites": ["cpp-raii"],
+          "resources": [
+            { "title": "cppreference — Rule of three/five/zero", "url": "https://en.cppreference.com/w/cpp/language/rule_of_three", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-unique-vs-shared",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["cpp.smart-pointers", "cpp.memory"],
+          "prompt": "`std::unique_ptr` vs `std::shared_ptr`",
+          "answer": "unique_ptr is a single owner with zero overhead; shared_ptr is reference-counted with real costs.",
+          "columns": {
+            "left": { "title": "unique_ptr", "points": ["Exactly one owner; move-only", "Same size as a raw pointer, no atomic traffic", "Expresses ownership transfer in the signature", "The default choice"] },
+            "right": { "title": "shared_ptr", "points": ["Shared ownership via an atomic refcount", "Two allocations unless you use make_shared", "Cycles leak — break them with weak_ptr", "Only when lifetime genuinely is shared"] }
+          },
+          "explanation": "Reach for `unique_ptr` first and upgrade only when several owners really can outlive each other. Passing `shared_ptr` everywhere hides ownership and adds atomic increments on every copy — a measurable cost in hot paths.",
+          "resources": [
+            { "title": "cppreference — Smart pointers", "url": "https://en.cppreference.com/w/cpp/memory", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-dangling-reference",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["cpp.ub", "cpp.lifetime"],
+          "prompt": "What is undefined behaviour here?",
+          "code": "const std::string& greet() {\n    std::string s = \"hello\";\n    return s;\n}\n\nint main() {\n    const std::string& r = greet();\n    std::cout << r << '\\n';\n}",
+          "lang": "cpp",
+          "answer": "`s` is destroyed when `greet` returns, so `r` binds to a dead object — a dangling reference. Return by value instead; copy elision makes it free.",
+          "explanation": "Binding a const reference to a temporary extends its lifetime, but returning a reference to a local never does. Return by value: guaranteed copy elision (C++17) constructs the result directly in the caller's storage.",
+          "resources": [
+            { "title": "cppreference — Lifetime", "url": "https://en.cppreference.com/w/cpp/language/lifetime", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-virtual-destructor",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["cpp.oop", "cpp.ub"],
+          "prompt": "You delete a derived object through a base-class pointer. What must be true, and what happens if it is not?",
+          "answer": "The base destructor must be `virtual`. Otherwise the behaviour is undefined — typically only the base part is destroyed, leaking the derived members.",
+          "explanation": "A non-virtual destructor means the call is resolved statically to the base version. Rule of thumb: a class with any virtual function that is deleted polymorphically needs a virtual destructor; a base not meant for polymorphic deletion should have a protected non-virtual one.",
+          "prerequisites": ["cpp-rule-of-five"],
+          "resources": [
+            { "title": "cppreference — Destructors", "url": "https://en.cppreference.com/w/cpp/language/destructor", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-vtable",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cpp.oop", "cpp.memory"],
+          "prompt": "How is a virtual call typically implemented?",
+          "answer": "Each polymorphic class has a vtable of function pointers; each object stores a vptr to its class's vtable. A virtual call loads the vptr, indexes the vtable and calls through the pointer.",
+          "explanation": "That is two dependent loads plus an indirect branch — cheap, but not free, and usually unable to inline. It also explains why virtual calls in constructors resolve to the base version: the vptr is updated as each base sub-object is constructed.",
+          "resources": [
+            { "title": "cppreference — Virtual functions", "url": "https://en.cppreference.com/w/cpp/language/virtual", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpp-modern",
+      "name": "Move Semantics & Templates",
+      "description": "Value categories, perfect forwarding, templates and the standard library idioms built on them.",
+      "cards": [
+        {
+          "id": "cpp-lvalue-rvalue",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cpp.value-categories", "cpp.move"],
+          "prompt": "What are lvalues, prvalues and xvalues?",
+          "answer": "An lvalue has identity and cannot be moved from implicitly. A prvalue is a pure temporary with no identity. An xvalue has identity but is expiring — safe to move from. Glvalue = lvalue + xvalue; rvalue = prvalue + xvalue.",
+          "explanation": "`std::move` does not move anything — it is a cast to an rvalue reference, producing an xvalue so overload resolution picks the move overload. `std::forward` conditionally casts, preserving the caller's value category in templates.",
+          "resources": [
+            { "title": "cppreference — Value categories", "url": "https://en.cppreference.com/w/cpp/language/value_category", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-move-after",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["cpp.move", "cpp.stdlib"],
+          "prompt": "What is the state of `a` after the move?",
+          "code": "std::string a = \"hello\";\nstd::string b = std::move(a);\n// what can you legally do with a now?",
+          "lang": "cpp",
+          "answer": "`a` is in a valid but unspecified state. You may assign to it or destroy it; you must not assume it is empty or read its value meaningfully.",
+          "explanation": "The standard library guarantees moved-from objects are valid but unspecified — most implementations leave `std::string` empty, and relying on that is non-portable. Assign a fresh value before use, or treat the variable as dead.",
+          "prerequisites": ["cpp-lvalue-rvalue"],
+          "resources": [
+            { "title": "cppreference — std::move", "url": "https://en.cppreference.com/w/cpp/utility/move", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-vector-invalidation",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["cpp.stdlib", "cpp.ub"],
+          "prompt": "Why can this crash?",
+          "code": "std::vector<int> v{1, 2, 3};\nint& first = v[0];\nv.push_back(4);\nstd::cout << first;   // ???",
+          "lang": "cpp",
+          "answer": "`push_back` may reallocate, invalidating all references, pointers and iterators into the vector. `first` then dangles.",
+          "explanation": "Know each container's invalidation rules: vector invalidates everything on reallocation and on insert/erase before the position; `std::deque` invalidates iterators but not references on end insertion; node-based containers (list, map, unordered_map) keep references stable except for erased elements.",
+          "resources": [
+            { "title": "cppreference — Iterator invalidation", "url": "https://en.cppreference.com/w/cpp/container", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-template-instantiation",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cpp.templates", "cpp.build"],
+          "prompt": "Why do template definitions usually live in headers?",
+          "answer": "Templates are instantiated at the point of use, so the compiler needs the full definition in every translation unit that uses them. Otherwise you get link errors for the missing instantiation.",
+          "explanation": "The alternatives are explicit instantiation in one TU (fine when the set of types is known and small) or C++20 modules. This is also why heavy template use slows builds so dramatically: the same code is parsed and instantiated repeatedly.",
+          "resources": [
+            { "title": "cppreference — Class templates", "url": "https://en.cppreference.com/w/cpp/language/class_template", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-ub-list",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.ub", "cpp.safety"],
+          "prompt": "Name the classic sources of undefined behaviour in C++.",
+          "answer": "Reading uninitialised values, out-of-bounds access, use-after-free, dangling references, signed integer overflow, data races, null dereference, violating strict aliasing, and infinite loops with no side effects.",
+          "explanation": "UB is not 'it crashes' — the optimiser is entitled to assume it never happens, so it can delete your null check or your bounds test. Build with `-fsanitize=address,undefined` in CI; ASan and UBSan catch most of this list at the moment it happens.",
+          "resources": [
+            { "title": "cppreference — Undefined behavior", "url": "https://en.cppreference.com/w/cpp/language/ub", "kind": "docs" },
+            { "title": "Clang — UndefinedBehaviorSanitizer", "url": "https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "cpp-vector-complexity",
+          "type": "complexity",
+          "difficulty": 3,
+          "tags": ["cpp.stdlib", "ds.array"],
+          "prompt": "Complexity of `std::vector::push_back`?",
+          "answer": "Amortised O(1); an individual call is O(n) when it reallocates.",
+          "complexity": { "time": "O(1) amortised, O(n) worst per call", "space": "O(n)" },
+          "explanation": "Growth is geometric (typically 1.5x or 2x), so n pushes cost O(n) total copies/moves. Call `reserve` when the final size is known: it removes the reallocation spikes and the iterator invalidation that comes with them.",
+          "resources": [
+            { "title": "cppreference — std::vector", "url": "https://en.cppreference.com/w/cpp/container/vector", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-const-ref-param",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["cpp.api-design", "cpp.performance"],
+          "prompt": "How should a function take a `std::string` parameter it intends to store?",
+          "answer": "Take it by value and `std::move` it into place — one copy for lvalue callers, zero for rvalue callers. Take `const&` only when you never store it.",
+          "explanation": "By-value-then-move collapses the two overloads (`const&` and `&&`) into one function with near-optimal cost. For a read-only parameter that is never stored, `const std::string&` or `std::string_view` avoids any copy at all.",
+          "resources": [
+            { "title": "C++ Core Guidelines — Parameter passing", "url": "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f-functions", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "id": "containers",
+  "name": "Containers & Kubernetes",
+  "icon": "📦",
+  "category": "Cloud & DevOps",
+  "color": "#2496ED",
+  "description": "How containers actually work, writing good images, and the Kubernetes objects you cannot avoid.",
+  "modules": [
+    {
+      "id": "ctr-docker",
+      "name": "Containers & Images",
+      "description": "Namespaces, cgroups, layers and building images that are small, fast and safe.",
+      "cards": [
+        {
+          "id": "ctr-vs-vm",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["containers.fundamentals", "os.kernel"],
+          "prompt": "Container vs virtual machine",
+          "answer": "A container is an isolated process on the host kernel (namespaces plus cgroups); a VM runs a full guest kernel on a hypervisor.",
+          "columns": {
+            "left": { "title": "Container", "points": ["Shares the host kernel", "Starts in milliseconds, megabytes of overhead", "Weaker isolation boundary — kernel is shared", "Linux containers need a Linux kernel"] },
+            "right": { "title": "VM", "points": ["Own kernel and virtual hardware", "Seconds to boot, gigabytes of overhead", "Strong isolation — hypervisor boundary", "Any OS on any host"] }
+          },
+          "explanation": "'Containers are not a security boundary' is shorthand for: a kernel exploit escapes the container. That is why multi-tenant platforms use microVMs (Firecracker, gVisor). Docker on macOS and Windows runs a Linux VM underneath for the same reason.",
+          "resources": [
+            { "title": "Docker docs — What is a container?", "url": "https://www.docker.com/resources/what-container/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-namespaces-cgroups",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["containers.internals", "linux"],
+          "prompt": "Which kernel features make a container?",
+          "answer": "Namespaces provide isolation (pid, net, mnt, uts, ipc, user, cgroup) and cgroups enforce resource limits (CPU, memory, I/O, pids). Add a layered filesystem (overlayfs) plus capabilities, seccomp and MAC policies for the rest.",
+          "explanation": "There is no 'container' object in the kernel — it is a process with a particular set of namespaces and cgroups. That is why `ps` on the host shows container processes, and why a container OOM is really a cgroup memory limit being hit.",
+          "prerequisites": ["ctr-vs-vm"],
+          "resources": [
+            { "title": "man7 — namespaces(7)", "url": "https://man7.org/linux/man-pages/man7/namespaces.7.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-layer-cache",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["containers.docker", "devops.build"],
+          "prompt": "Why does this Dockerfile reinstall every dependency on every code change?",
+          "code": "FROM node:22\nWORKDIR /app\nCOPY . .\nRUN npm ci\nCMD [\"node\", \"server.js\"]",
+          "lang": "dockerfile",
+          "answer": "`COPY . .` invalidates the cache whenever any file changes, so the `npm ci` layer is rebuilt every time. Copy the lockfiles first, install, then copy the source.",
+          "explanation": "Each instruction is a cached layer keyed on its inputs; once one is invalidated, every later layer rebuilds. Order from least to most frequently changing. A `.dockerignore` matters too — without it, `node_modules` and `.git` are shipped into the build context.",
+          "resources": [
+            { "title": "Docker docs — Build cache", "url": "https://docs.docker.com/build/cache/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-image-hardening",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["containers.security", "devops.build"],
+          "prompt": "What makes a production container image good?",
+          "answer": "Multi-stage build so no compilers ship, a minimal base (distroless, alpine or slim), a non-root USER, pinned base image digest, no secrets in layers, a healthcheck, and a small explicit set of files.",
+          "explanation": "Smaller images pull faster, start faster and have less to scan and patch. Remember that deleting a file in a later layer does not remove it from the image — a secret copied in layer 3 is still extractable even if layer 6 deletes it.",
+          "prerequisites": ["ctr-layer-cache"],
+          "resources": [
+            { "title": "Docker docs — Building best practices", "url": "https://docs.docker.com/build/building/best-practices/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-stateless",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["containers.design", "architecture"],
+          "prompt": "Why should a container be stateless and treat its filesystem as ephemeral?",
+          "answer": "Because containers are recreated constantly — deploys, scaling, node failures, evictions. Anything written to the container filesystem disappears. State belongs in a database, an object store or a mounted volume.",
+          "explanation": "This is what makes horizontal scaling and zero-downtime deploys possible. The corollaries: configuration comes from the environment, logs go to stdout, and sessions live in a shared store rather than local memory.",
+          "resources": [
+            { "title": "The Twelve-Factor App", "url": "https://12factor.net/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ctr-k8s",
+      "name": "Kubernetes",
+      "description": "The objects, the control loop, and the operational realities.",
+      "cards": [
+        {
+          "id": "k8s-objects",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["kubernetes.objects"],
+          "prompt": "What do Pod, ReplicaSet, Deployment, Service and Ingress each do?",
+          "answer": "A Pod is one or more co-scheduled containers sharing a network namespace. A ReplicaSet keeps N pod copies running. A Deployment manages ReplicaSets to give rolling updates and rollback. A Service gives a stable virtual IP and load balances to pods. An Ingress routes external HTTP traffic to Services.",
+          "explanation": "You almost never create Pods or ReplicaSets directly — you declare a Deployment and let the controllers converge. StatefulSets add stable identities and per-pod storage for databases; DaemonSets run one pod per node for agents.",
+          "resources": [
+            { "title": "Kubernetes — Workload resources", "url": "https://kubernetes.io/docs/concepts/workloads/controllers/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-control-loop",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["kubernetes.architecture"],
+          "prompt": "What is the reconciliation loop, and why is it the core idea of Kubernetes?",
+          "answer": "You declare desired state; controllers continuously observe actual state and act to close the gap. Nothing is a one-shot command — it is a loop that keeps running forever.",
+          "explanation": "This is why `kubectl apply` is idempotent, why deleting a pod recreates it, and why the same model extends to your own resources via CRDs and operators. It also means failures are usually 'the loop cannot converge' — read the events, not just the pod status.",
+          "prerequisites": ["k8s-objects"],
+          "resources": [
+            { "title": "Kubernetes — Controllers", "url": "https://kubernetes.io/docs/concepts/architecture/controller/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-probes",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["kubernetes.operations", "system.reliability"],
+          "prompt": "Liveness vs readiness vs startup probes",
+          "answer": "Liveness restarts a broken container; readiness removes a pod from Service endpoints; startup gives slow-booting apps time before the other probes apply.",
+          "columns": {
+            "left": { "title": "Liveness", "points": ["Failure → container restarted", "Only for unrecoverable hangs", "Must not check dependencies", "Too aggressive → restart loops"] },
+            "right": { "title": "Readiness", "points": ["Failure → no traffic sent, pod kept", "Right place to check dependencies", "Drives rolling-update progress", "Fail it first during graceful shutdown"] }
+          },
+          "explanation": "The classic outage: a liveness probe that checks the database. The database blips, every pod fails liveness, the whole deployment restart-loops, and a minor dependency problem becomes a total outage.",
+          "resources": [
+            { "title": "Kubernetes — Configure liveness, readiness and startup probes", "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-requests-limits",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["kubernetes.resources", "performance"],
+          "prompt": "What is the difference between resource requests and limits, and what goes wrong with each?",
+          "answer": "Requests are what the scheduler reserves; limits are the hard ceiling. Exceeding a memory limit gets the container OOM-killed; exceeding a CPU limit gets it throttled, not killed.",
+          "explanation": "CPU limits cause surprising latency: a bursty app is throttled every 100 ms period even when the node is idle. Common guidance is to set memory requests equal to limits and be cautious with CPU limits. No requests at all means BestEffort QoS — first to be evicted.",
+          "prerequisites": ["k8s-probes"],
+          "resources": [
+            { "title": "Kubernetes — Resource management for pods", "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-do-you-need",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["kubernetes.decisions", "architecture.decisions"],
+          "prompt": "When is Kubernetes the wrong choice?",
+          "answer": "When you have a handful of services, no dedicated platform capacity, and no need for its scheduling and self-healing. A managed container platform (ECS, Cloud Run, App Service, Fly) or plain VMs delivers faster with far less to learn and operate.",
+          "explanation": "Kubernetes is an excellent answer to problems of scale and heterogeneity: many teams, many services, bin-packing, portable primitives. Adopted too early it becomes the main thing the team maintains instead of the product.",
+          "resources": [
+            { "title": "Google Cloud Run — Overview", "url": "https://cloud.google.com/run/docs/overview/what-is-cloud-run", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

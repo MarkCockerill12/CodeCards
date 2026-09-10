@@ -1,0 +1,129 @@
+{
+  "id": "ssh",
+  "name": "SSH & Remote Access",
+  "icon": "🔑",
+  "category": "Networking",
+  "color": "#334155",
+  "description": "Key authentication, host verification, the config file, tunnels, agent forwarding and hardening a server.",
+  "modules": [
+    {
+      "id": "ssh-core",
+      "name": "Keys, Trust & Config",
+      "description": "How SSH authenticates both directions, and how to make it pleasant to use.",
+      "cards": [
+        {
+          "id": "ssh-key-auth",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ssh.auth", "security.crypto"],
+          "prompt": "How does SSH public-key authentication work, and why is it better than a password?",
+          "answer": "You keep a private key; the server holds the public key in `~/.ssh/authorized_keys`. The server sends a challenge the client signs with the private key. The secret never crosses the network, so it cannot be phished, sniffed or brute-forced.",
+          "explanation": "Generate with `ssh-keygen -t ed25519 -C \"you@host\"` — Ed25519 is fast, short and the current default recommendation. Protect the key with a passphrase and let the agent cache it; permissions must be 600 on the private key or SSH refuses it.",
+          "resources": [
+            { "title": "OpenSSH — ssh-keygen(1)", "url": "https://man.openbsd.org/ssh-keygen.1", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-host-key",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ssh.security", "security.mitm"],
+          "prompt": "You get 'REMOTE HOST IDENTIFICATION HAS CHANGED!'. What does it mean and what should you do?",
+          "answer": "The server's host key no longer matches `~/.ssh/known_hosts`. Either the server was rebuilt or rekeyed, or someone is intercepting the connection. Verify the new fingerprint through a separate trusted channel before removing the old entry.",
+          "explanation": "Host keys are how the *client* authenticates the *server* — the half people forget. Blindly running `ssh-keygen -R host` trains you to click through a genuine MITM. In fleets, publish host keys via configuration management or use SSH certificates.",
+          "prerequisites": ["ssh-key-auth"],
+          "resources": [
+            { "title": "OpenSSH — ssh(1)", "url": "https://man.openbsd.org/ssh.1", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-config",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ssh.config", "productivity"],
+          "prompt": "What does `~/.ssh/config` give you?",
+          "answer": "Per-host aliases and defaults: `Host prod` with `HostName`, `User`, `Port`, `IdentityFile`, `ProxyJump` for bastions, and `ServerAliveInterval` to stop idle disconnects. Then `ssh prod` just works, and scp/rsync/git inherit it.",
+          "explanation": "`ProxyJump bastion` replaces fragile nested ssh commands. `ControlMaster auto` with `ControlPersist 10m` reuses one connection for subsequent sessions — dramatically faster for tools that open many SSH connections, such as Ansible.",
+          "resources": [
+            { "title": "OpenSSH — ssh_config(5)", "url": "https://man.openbsd.org/ssh_config.5", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-agent-forwarding",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ssh.security", "ssh.agent"],
+          "prompt": "What is agent forwarding, and why is it risky?",
+          "answer": "It lets a remote host use your local agent to authenticate onward hops, without copying your key there. The risk is that anyone with root on that host can use the forwarded socket to authenticate as you while you are connected.",
+          "explanation": "Prefer `ProxyJump`, which tunnels the connection instead of exposing the agent. If you must forward, do it per-host rather than globally, and use `ssh-add -c` so each use requires confirmation.",
+          "prerequisites": ["ssh-config"],
+          "resources": [
+            { "title": "OpenSSH — ssh-agent(1)", "url": "https://man.openbsd.org/ssh-agent.1", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ssh-advanced",
+      "name": "Tunnels & Hardening",
+      "description": "Port forwarding, file transfer and locking down sshd.",
+      "cards": [
+        {
+          "id": "ssh-local-remote-forward",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["ssh.tunnels"],
+          "prompt": "`ssh -L` vs `ssh -R`",
+          "answer": "`-L` (local forward) opens a port on your machine that tunnels to a host reachable from the server. `-R` (remote forward) opens a port on the server that tunnels back to something reachable from your machine.",
+          "columns": {
+            "left": { "title": "-L local:host:port", "points": ["Listens locally", "Reach a database behind a bastion", "`-L 5432:db.internal:5432`", "Traffic flows you → server → target"] },
+            "right": { "title": "-R remote:host:port", "points": ["Listens on the remote server", "Expose your local dev server outward", "`-R 8080:localhost:3000`", "Needs GatewayPorts to bind non-loopback"] }
+          },
+          "explanation": "`-D` adds a third mode: a local SOCKS proxy routing arbitrary traffic through the server. All three are legitimate admin tools and all three are also classic pivoting techniques — which is why forwarding is often disabled on hardened bastions.",
+          "resources": [
+            { "title": "OpenSSH — Port forwarding", "url": "https://man.openbsd.org/ssh.1#L", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-scp-rsync",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["ssh.transfer", "linux.tools"],
+          "prompt": "You need to sync a large directory to a server repeatedly over a flaky link. Which tool?",
+          "answer": "`rsync -avz --partial --progress` over SSH. It transfers only differences, compresses in flight, preserves metadata and can resume interrupted transfers — none of which scp does.",
+          "explanation": "Mind the trailing slash: `rsync src/ dst` copies the *contents*, `rsync src dst` copies the directory itself. Always dry-run with `-n` before adding `--delete`, which will happily mirror an accidental local deletion.",
+          "resources": [
+            { "title": "man7 — rsync(1)", "url": "https://man7.org/linux/man-pages/man1/rsync.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-hardening",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ssh.security", "security.hardening"],
+          "prompt": "How do you harden an internet-facing sshd?",
+          "answer": "Disable password authentication and root login (`PasswordAuthentication no`, `PermitRootLogin no`), allow only specific users or groups, use modern key types, rate-limit with fail2ban or firewall rules, and keep it behind a bastion or VPN where possible.",
+          "explanation": "Changing the port only reduces log noise — it is not security. The genuine wins are key-only auth and reducing exposure. Adding a hardware token (`sk-ed25519`) makes key theft alone insufficient.",
+          "prerequisites": ["ssh-key-auth"],
+          "resources": [
+            { "title": "OpenSSH — sshd_config(5)", "url": "https://man.openbsd.org/sshd_config.5", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-git-auth",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["ssh.git", "debugging"],
+          "prompt": "`git push` over SSH says 'Permission denied (publickey)'. How do you diagnose it?",
+          "code": "$ ssh -T git@github.com\nPermission denied (publickey).\n$ ssh -vT git@github.com   # verbose: which keys were offered?",
+          "lang": "bash",
+          "answer": "Run `ssh -vT` and read which identity files were offered. Usual causes: key not added to the agent (`ssh-add -l` is empty), wrong key for that account, key not registered on the host, or private-key permissions too open.",
+          "explanation": "SSH offers a limited number of keys before the server rejects the connection, so a crowded agent can fail even when the right key exists. Pin the key per host with `IdentityFile` plus `IdentitiesOnly yes`.",
+          "resources": [
+            { "title": "GitHub Docs — Error: permission denied (publickey)", "url": "https://docs.github.com/en/authentication/troubleshooting-ssh/error-permission-denied-publickey", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

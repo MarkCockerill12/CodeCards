@@ -1,0 +1,140 @@
+{
+  "id": "db-internals",
+  "name": "Database Internals",
+  "icon": "⚙️",
+  "category": "Data & Databases",
+  "color": "#0EA5E9",
+  "description": "Storage engines, B-trees vs LSM, WAL, MVCC, locking and how a query planner decides what to do.",
+  "modules": [
+    {
+      "id": "dbi-storage",
+      "name": "Storage & Durability",
+      "description": "How rows reach disk and survive a crash.",
+      "cards": [
+        {
+          "id": "dbi-wal",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["db.durability", "db.internals"],
+          "prompt": "What is a write-ahead log, and why does it make commits fast *and* durable?",
+          "answer": "Changes are appended to a sequential log and fsync-ed before the data pages are updated. A commit only needs one sequential write; the random page writes happen later at a checkpoint. On crash, the log is replayed.",
+          "explanation": "Sequential fsync is orders of magnitude cheaper than random writes across the heap. The WAL also powers replication (ship the log), point-in-time recovery and, in Postgres, the visibility bookkeeping MVCC needs.",
+          "resources": [
+            { "title": "PostgreSQL docs — Write-Ahead Logging", "url": "https://www.postgresql.org/docs/current/wal-intro.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-btree-vs-lsm",
+          "type": "compare",
+          "difficulty": 5,
+          "tags": ["db.storage-engine", "ds.btree"],
+          "prompt": "B-tree vs LSM-tree storage engines",
+          "answer": "B-trees update pages in place — read-optimised; LSM-trees append to sorted files and merge later — write-optimised.",
+          "columns": {
+            "left": { "title": "B-tree (Postgres, InnoDB)", "points": ["In-place page updates", "Predictable read path, one lookup", "Write amplification from page splits and WAL", "Mature range-scan performance"] },
+            "right": { "title": "LSM (RocksDB, Cassandra)", "points": ["Sequential writes into memtable then SSTables", "Very high write throughput", "Reads may touch several levels — Bloom filters help", "Background compaction costs I/O and can spike latency"] }
+          },
+          "explanation": "Pick by workload shape: write-heavy ingestion and time-series suit LSM; mixed OLTP with lots of point reads and range scans suits B-trees. Both amplify writes, just at different times — B-trees now, LSM during compaction.",
+          "resources": [
+            { "title": "RocksDB wiki — LSM tree overview", "url": "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-mvcc",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["db.transactions", "db.internals"],
+          "prompt": "How does MVCC let readers avoid blocking writers?",
+          "answer": "Each write creates a new row version tagged with transaction IDs. A reader sees the snapshot of versions visible to its own transaction, so it never waits on a writer's lock.",
+          "explanation": "The cost is garbage: dead versions must be reclaimed (Postgres VACUUM, InnoDB purge). A long-running transaction pins old versions and causes table bloat — which is why an idle-in-transaction connection can quietly degrade the whole database.",
+          "prerequisites": ["dbi-wal"],
+          "resources": [
+            { "title": "PostgreSQL docs — Concurrency control", "url": "https://www.postgresql.org/docs/current/mvcc-intro.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-buffer-pool",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["db.internals", "system.cache"],
+          "prompt": "What is the buffer pool, and why is its hit rate the first metric you check?",
+          "answer": "An in-memory cache of disk pages. If the working set fits, most reads never touch storage; once it does not, every miss becomes an I/O and latency changes by orders of magnitude.",
+          "explanation": "A hit rate falling off a cliff usually means the data outgrew RAM or a query started scanning something huge and evicted everything useful. Sizing (`shared_buffers`, `innodb_buffer_pool_size`) is the highest-leverage tuning knob there is.",
+          "resources": [
+            { "title": "PostgreSQL docs — Resource consumption", "url": "https://www.postgresql.org/docs/current/runtime-config-resource.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dbi-execution",
+      "name": "Locking & Query Execution",
+      "description": "Locks, deadlocks, join strategies and how the planner chooses.",
+      "cards": [
+        {
+          "id": "dbi-lock-types",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["db.locking", "db.transactions"],
+          "prompt": "What is the difference between shared and exclusive locks, and what is a row lock versus a table lock?",
+          "answer": "Shared (read) locks are compatible with each other; exclusive (write) locks are compatible with nothing. Row locks affect single rows; table locks affect everything and are usually taken by DDL.",
+          "explanation": "Most OLTP contention comes from unexpected escalation or from DDL: an `ALTER TABLE` needing an ACCESS EXCLUSIVE lock will queue behind long readers and then block every new query behind it. Always set a `lock_timeout` for migrations.",
+          "resources": [
+            { "title": "PostgreSQL docs — Explicit locking", "url": "https://www.postgresql.org/docs/current/explicit-locking.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-deadlock-db",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["db.locking", "concurrency.deadlock"],
+          "prompt": "Two transactions update the same two rows in opposite order and one is aborted. What happened, and how do you prevent it?",
+          "answer": "A deadlock: each holds a lock the other needs, and the detector kills the cheaper victim. Prevent it by always updating rows in a consistent order (for example, ascending primary key) and keeping transactions short.",
+          "explanation": "Databases detect rather than prevent deadlocks, so your application must be able to retry the aborted transaction. That retry path deserves a test — it is exercised rarely and is a common source of data corruption when written carelessly.",
+          "prerequisites": ["dbi-lock-types"],
+          "resources": [
+            { "title": "MySQL — Deadlocks in InnoDB", "url": "https://dev.mysql.com/doc/refman/8.0/en/innodb-deadlocks.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-join-strategies",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["db.planner", "sql.performance"],
+          "prompt": "What are the three main join algorithms, and when does the planner pick each?",
+          "answer": "Nested loop (small outer input, indexed inner), hash join (large unsorted inputs, equality predicates), merge join (both inputs already sorted, or sortable cheaply — also handles range joins).",
+          "explanation": "Seeing a nested loop over millions of rows in a plan almost always means the planner underestimated cardinality. Fix the statistics or the predicate rather than forcing a join type — hints, where they exist, freeze a decision that should stay adaptive.",
+          "prerequisites": ["dbi-buffer-pool"],
+          "resources": [
+            { "title": "Use The Index, Luke — Join operations", "url": "https://use-the-index-luke.com/sql/join", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dbi-connection-pool",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["db.operations", "system.performance"],
+          "prompt": "Your app opens 500 database connections and throughput collapses. Why, and what is the fix?",
+          "answer": "Each Postgres connection is a process with its own memory; hundreds of them thrash CPU and memory while only a few can make progress. Use a connection pool (PgBouncer, HikariCP) sized near the core count plus disk parallelism.",
+          "explanation": "The counter-intuitive result is that fewer connections give higher throughput and lower latency — the queue moves to the pool, where it is cheap, instead of the database, where it is not. Serverless platforms need a proxy for exactly this reason.",
+          "resources": [
+            { "title": "PgBouncer documentation", "url": "https://www.pgbouncer.org/usage.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-migration-safety",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["db.operations", "devops.deploy"],
+          "prompt": "How do you add a NOT NULL column to a 500-million-row table without downtime?",
+          "answer": "In steps: add the column as nullable (metadata-only on modern versions), backfill in batches, add a NOT VALID check constraint, validate it concurrently, then set NOT NULL. Deploy code that tolerates both shapes first.",
+          "explanation": "This is the expand–migrate–contract pattern: never change schema and code in one irreversible step. Create indexes with CONCURRENTLY, batch backfills to avoid long transactions and lock queues, and always set a lock timeout.",
+          "prerequisites": ["dbi-lock-types"],
+          "resources": [
+            { "title": "PostgreSQL docs — ALTER TABLE", "url": "https://www.postgresql.org/docs/current/sql-altertable.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

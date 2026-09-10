@@ -1,0 +1,254 @@
+{
+  "id": "algorithms",
+  "name": "Algorithms",
+  "icon": "🧮",
+  "category": "Computer Science",
+  "color": "#F59E0B",
+  "description": "Complexity, sorting, searching, graph traversal, dynamic programming and the patterns behind most interview questions.",
+  "modules": [
+    {
+      "id": "algo-complexity",
+      "name": "Complexity & Analysis",
+      "description": "Big-O, amortised cost and how to reason about an algorithm before writing it.",
+      "cards": [
+        {
+          "id": "algo-big-o-meaning",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["algo.complexity"],
+          "prompt": "What do O, Ω and Θ actually describe?",
+          "answer": "O is an asymptotic upper bound, Ω a lower bound, Θ a tight bound. They describe growth as input size increases, ignoring constants and lower-order terms.",
+          "explanation": "'Quicksort is O(n²)' is true but unhelpful; 'Θ(n log n) average, O(n²) worst' is the useful statement. Constants matter in practice: an O(n log n) algorithm with a huge constant loses to O(n²) at small n, which is why sorts switch to insertion sort under ~16 elements.",
+          "resources": [
+            { "title": "Wikipedia — Big O notation", "url": "https://en.wikipedia.org/wiki/Big_O_notation", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-common-classes",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["algo.complexity"],
+          "prompt": "Ordered from fastest to slowest growth: O(1), O(log n), O(n), O(n log n), O(n²), O(2ⁿ), O(___).",
+          "answer": "n!",
+          "explanation": "Factorial growth appears in brute-force permutation problems such as naive travelling salesman. Useful anchors: log₂(1,000,000) ≈ 20; n log n on a million items is ~20 million operations (instant); n² on a million is 10¹² (hours).",
+          "resources": [
+            { "title": "Big-O cheat sheet", "url": "https://www.bigocheatsheet.com/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-nested-loop-trap",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["algo.complexity", "algo.analysis"],
+          "prompt": "What is the time complexity of this function?",
+          "code": "def f(items):\n    seen = []\n    for x in items:          # n\n        if x not in seen:    # O(len(seen)) list scan\n            seen.append(x)\n    return seen",
+          "lang": "python",
+          "answer": "O(n²) — `x not in seen` is a linear scan performed n times. Using a set makes it O(n).",
+          "explanation": "The loop looks linear because the quadratic part hides inside an innocent-looking operator. Always ask what each library call costs: `in` on a list is O(n), on a set or dict it is O(1).",
+          "resources": [
+            { "title": "Python wiki — Time complexity", "url": "https://wiki.python.org/moin/TimeComplexity", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "algo-space-time-tradeoff",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["algo.tradeoffs"],
+          "prompt": "Give three concrete examples of trading space for time.",
+          "answer": "Hash maps (memory for O(1) lookup), memoisation/caching (store results instead of recomputing), and precomputed indexes or lookup tables (build once, query cheaply).",
+          "explanation": "The reverse trade exists too: streaming algorithms and in-place sorts give up memory to fit constraints, and probabilistic structures such as Bloom filters or HyperLogLog trade exactness for tiny footprints.",
+          "resources": [
+            { "title": "Wikipedia — Space–time tradeoff", "url": "https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "algo-sorting-searching",
+      "name": "Sorting & Searching",
+      "description": "The sorts worth knowing, why libraries pick hybrids, and binary search done correctly.",
+      "cards": [
+        {
+          "id": "algo-quicksort-vs-mergesort",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["algo.sorting"],
+          "prompt": "Quicksort vs merge sort",
+          "answer": "Quicksort is in-place and cache-friendly with O(n²) worst case; merge sort is stable with a guaranteed O(n log n) but needs O(n) extra space.",
+          "columns": {
+            "left": { "title": "Quicksort", "points": ["O(n log n) average, O(n²) worst", "In place — O(log n) stack", "Not stable", "Excellent constants and locality"] },
+            "right": { "title": "Merge sort", "points": ["O(n log n) guaranteed", "O(n) auxiliary space", "Stable", "Natural fit for linked lists and external sorting"] }
+          },
+          "explanation": "Real libraries use hybrids: introsort (quicksort + heapsort fallback + insertion sort for small ranges) in C++, and Timsort (merge sort exploiting existing runs) in Python and Java for objects — because stability matters when sorting records by multiple keys.",
+          "resources": [
+            { "title": "Wikipedia — Timsort", "url": "https://en.wikipedia.org/wiki/Timsort", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-stability",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["algo.sorting"],
+          "prompt": "What does a *stable* sort guarantee, and when do you need it?",
+          "answer": "Equal elements keep their relative input order. You need it for multi-key sorting: sort by name, then by department, and names stay ordered within each department.",
+          "explanation": "Without stability you must build a composite comparator instead of sorting in passes. Java's `Arrays.sort` is stable for objects (Timsort) but not for primitives (dual-pivot quicksort) — because primitives are indistinguishable when equal.",
+          "prerequisites": ["algo-quicksort-vs-mergesort"],
+          "resources": [
+            { "title": "Wikipedia — Sorting algorithm stability", "url": "https://en.wikipedia.org/wiki/Sorting_algorithm#Stability", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-binary-search-bug",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["algo.search", "algo.correctness"],
+          "prompt": "This binary search has a bug that survived in production libraries for years. What is it?",
+          "code": "int mid = (low + high) / 2;",
+          "lang": "java",
+          "answer": "`low + high` can overflow a 32-bit int for large arrays, producing a negative index. Use `low + (high - low) / 2` (or unsigned shift `>>> 1`).",
+          "explanation": "This exact bug lived in the JDK's `Arrays.binarySearch` for nine years. It is the standard reminder that a correct algorithm can still have an incorrect implementation — and that overflow is a real, not theoretical, failure mode.",
+          "resources": [
+            { "title": "Google Research — Nearly all binary searches are broken", "url": "https://research.google/blog/extra-extra-read-all-about-it-nearly-all-binary-searches-and-mergesorts-are-broken/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-binary-search-complexity",
+          "type": "complexity",
+          "difficulty": 2,
+          "tags": ["algo.search", "algo.complexity"],
+          "prompt": "Binary search on a sorted array: time and space?",
+          "answer": "O(log n) time, O(1) space iteratively.",
+          "complexity": { "time": "O(log n)", "space": "O(1) iterative, O(log n) recursive" },
+          "explanation": "It requires random access and sorted data — which is why it works on arrays but not linked lists. If you must sort first, that O(n log n) dominates, so binary search only pays off across many queries on the same data.",
+          "resources": [
+            { "title": "Wikipedia — Binary search algorithm", "url": "https://en.wikipedia.org/wiki/Binary_search_algorithm", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-two-pointer",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["algo.patterns", "algo.arrays"],
+          "prompt": "Find whether a sorted array contains two numbers summing to a target, in O(n) time and O(1) space.",
+          "answer": "Two pointers: one at each end. If the sum is too large move the right pointer left; too small, move the left pointer right; equal, done.",
+          "explanation": "Sortedness makes each move provably safe — a discarded pair could never have worked. The same pattern solves container-with-most-water, three-sum (after sorting), and palindrome checks. The hash-set alternative is O(n) time but O(n) space and works unsorted.",
+          "resources": [
+            { "title": "Wikipedia — Two pointers technique", "url": "https://en.wikipedia.org/wiki/Two_pointers_technique", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-sliding-window",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["algo.patterns", "algo.arrays"],
+          "prompt": "When does the sliding-window pattern apply, and what does it replace?",
+          "answer": "When you need the best or a valid contiguous subarray/substring under a monotone constraint. It replaces the O(n·k) or O(n²) recomputation with incremental update as the window moves — O(n).",
+          "explanation": "Fixed-size windows (max sum of k elements) just add the entering and subtract the leaving element. Variable windows (longest substring without repeats, smallest subarray ≥ target) grow the right edge and shrink the left while the constraint is violated.",
+          "resources": [
+            { "title": "Wikipedia — Sliding window protocol (concept)", "url": "https://en.wikipedia.org/wiki/Sliding_window_protocol", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "algo-graphs-dp",
+      "name": "Graphs, DP & Greedy",
+      "description": "Traversal, shortest paths, dynamic programming and knowing when greedy is actually correct.",
+      "cards": [
+        {
+          "id": "algo-bfs-vs-dfs",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["algo.graph", "algo.traversal"],
+          "prompt": "BFS vs DFS",
+          "answer": "BFS explores level by level with a queue and finds shortest paths in unweighted graphs; DFS dives deep with a stack or recursion and suits ordering and connectivity problems.",
+          "columns": {
+            "left": { "title": "BFS", "points": ["Queue; O(V+E)", "Shortest path in unweighted graphs", "Memory ~ width of the graph", "Level-order, flood fill, nearest-neighbour"] },
+            "right": { "title": "DFS", "points": ["Stack/recursion; O(V+E)", "Topological sort, cycle detection, SCCs", "Memory ~ depth of the graph", "Backtracking and path enumeration"] }
+          },
+          "explanation": "Both visit every vertex and edge once. Choose by what you need from the order: BFS if distance matters, DFS if structure does. On very deep graphs, DFS recursion can blow the stack — use an explicit stack.",
+          "resources": [
+            { "title": "Wikipedia — Breadth-first search", "url": "https://en.wikipedia.org/wiki/Breadth-first_search", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-dijkstra",
+          "type": "complexity",
+          "difficulty": 4,
+          "tags": ["algo.graph", "algo.shortest-path"],
+          "prompt": "Dijkstra's algorithm with a binary heap: complexity, and what assumption does it require?",
+          "answer": "O((V + E) log V). It requires non-negative edge weights.",
+          "complexity": { "time": "O((V+E) log V) with a binary heap", "space": "O(V)" },
+          "explanation": "Negative edges break the greedy invariant that a settled node is final — use Bellman–Ford (O(VE), detects negative cycles) instead. A* is Dijkstra plus an admissible heuristic, which prunes the search without losing optimality.",
+          "prerequisites": ["algo-bfs-vs-dfs"],
+          "resources": [
+            { "title": "Wikipedia — Dijkstra's algorithm", "url": "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-topological-sort",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["algo.graph", "build.dependencies"],
+          "prompt": "You must order build tasks so every dependency runs first, and report an error if that is impossible. What do you use?",
+          "answer": "Topological sort of the dependency DAG — Kahn's algorithm (repeatedly take nodes with in-degree 0) or DFS post-order reversed. If nodes remain with non-zero in-degree, there is a cycle.",
+          "explanation": "This is the algorithm behind make, npm, task schedulers, course prerequisites and spreadsheet recalculation. Kahn's version gives you cycle detection for free and parallelises naturally: every in-degree-0 node can run at once.",
+          "resources": [
+            { "title": "Wikipedia — Topological sorting", "url": "https://en.wikipedia.org/wiki/Topological_sorting", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-dp-requirements",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["algo.dp"],
+          "prompt": "What two properties must a problem have for dynamic programming to apply?",
+          "answer": "Optimal substructure (an optimal solution is built from optimal solutions to subproblems) and overlapping subproblems (the same subproblems recur).",
+          "explanation": "Without overlap, plain divide and conquer is enough. Memoisation is top-down DP (recursion plus a cache); tabulation is bottom-up. Start by writing the recurrence and identifying the state — the code follows from those.",
+          "resources": [
+            { "title": "Wikipedia — Dynamic programming", "url": "https://en.wikipedia.org/wiki/Dynamic_programming", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-memo-fib",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["algo.dp", "algo.complexity"],
+          "prompt": "What is the complexity before and after adding the cache?",
+          "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n-1) + fib(n-2)",
+          "lang": "python",
+          "answer": "Without the cache O(2ⁿ) time; with it O(n) time and O(n) space.",
+          "explanation": "The naive tree recomputes `fib(n-2)` exponentially often. Memoisation makes each state computed once, collapsing the tree to a linear chain — the clearest illustration of overlapping subproblems there is.",
+          "prerequisites": ["algo-dp-requirements"],
+          "resources": [
+            { "title": "Python docs — functools.lru_cache", "url": "https://docs.python.org/3/library/functools.html#functools.lru_cache", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "algo-greedy-correct",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["algo.greedy"],
+          "prompt": "When is a greedy algorithm provably correct, and give an example where it fails?",
+          "answer": "When the problem has the greedy-choice property and optimal substructure — as in interval scheduling by earliest finish time, Huffman coding, or Kruskal's MST. It fails on 0/1 knapsack, where taking the best ratio first can miss the optimum.",
+          "explanation": "Greedy is fast and simple but needs a proof — usually an exchange argument showing any optimal solution can be transformed into the greedy one without getting worse. Coin change is the classic trap: greedy works for {1,5,10,25} and fails for {1,3,4} on 6.",
+          "resources": [
+            { "title": "Wikipedia — Greedy algorithm", "url": "https://en.wikipedia.org/wiki/Greedy_algorithm", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-backtracking",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["algo.backtracking", "algo.search"],
+          "prompt": "What is backtracking, and what makes it tractable?",
+          "answer": "Systematic search that builds candidates incrementally and abandons a branch as soon as it cannot lead to a solution. Pruning is what keeps the exponential space manageable.",
+          "explanation": "N-queens, sudoku, subsets, permutations and constraint solvers are all backtracking. The template is: choose, explore, un-choose. Good pruning (constraint propagation, ordering by most-constrained variable) is worth far more than micro-optimising the loop.",
+          "resources": [
+            { "title": "Wikipedia — Backtracking", "url": "https://en.wikipedia.org/wiki/Backtracking", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

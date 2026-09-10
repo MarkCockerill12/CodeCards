@@ -1,0 +1,163 @@
+{
+  "id": "code-craft",
+  "name": "Code Craft & Career",
+  "icon": "🛠️",
+  "category": "Process & Craft",
+  "color": "#0EA5E9",
+  "description": "Naming, refactoring, code review, licensing, debugging discipline and the interview skills nobody teaches.",
+  "modules": [
+    {
+      "id": "craft-code",
+      "name": "Writing Code People Can Read",
+      "description": "Naming, structure, refactoring and error handling.",
+      "cards": [
+        {
+          "id": "craft-naming",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["craft.naming"],
+          "prompt": "What makes a good name?",
+          "answer": "It states intent, is pronounceable and searchable, and its length matches its scope — a loop index can be `i`, a module-level export cannot. Booleans read as predicates (`isReady`, `hasAccess`); functions are verbs; avoid encodings and unexplained abbreviations.",
+          "explanation": "Naming is the cheapest documentation there is: `getUserById` needs no comment, `process(data)` needs a paragraph. If a good name is hard to find, that is usually a sign the thing does more than one job.",
+          "resources": [
+            { "title": "Clean Code (Martin) — Meaningful names", "url": "https://www.oreilly.com/library/view/clean-code-a/9780136083238/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "craft-comments",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["craft.comments"],
+          "prompt": "Which of these comments earns its place?",
+          "code": "// increment i by 1\ni += 1;\n\n// Retry three times: the payment gateway returns 502 for ~2s\n// after a failover. Confirmed with vendor, ticket #4821.\nfor (let attempt = 0; attempt < 3; attempt++) { ... }",
+          "lang": "javascript",
+          "answer": "The second. The first restates the code and will rot; the second records *why*, which the code cannot express and no future reader could reconstruct.",
+          "explanation": "Comment the why, not the what: constraints, rejected alternatives, links to tickets and specifications, and warnings about non-obvious consequences. A comment explaining confusing code is often a refactoring you decided not to do.",
+          "resources": [
+            { "title": "Stack Overflow Blog — Best practices for writing code comments", "url": "https://stackoverflow.blog/2021/12/23/best-practices-for-writing-code-comments/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-refactoring",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["craft.refactoring"],
+          "prompt": "What is refactoring, strictly, and what makes it safe?",
+          "answer": "Changing the internal structure of code without changing its observable behaviour. It is safe when tests cover that behaviour and each step is small enough to verify — otherwise it is a rewrite wearing a disguise.",
+          "explanation": "Never mix refactoring with behaviour change in one commit: a reviewer cannot see the real change inside a reformat, and a bisect cannot separate them. Common moves: extract function, rename, replace conditional with polymorphism, introduce parameter object.",
+          "prerequisites": ["craft-naming"],
+          "resources": [
+            { "title": "Refactoring — Catalog", "url": "https://refactoring.com/catalog/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "craft-error-handling",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["craft.errors"],
+          "prompt": "What are the rules of good error handling?",
+          "answer": "Fail fast and loudly; handle errors where you have enough context to act; never swallow an exception silently; preserve the original cause when wrapping; distinguish expected failures (invalid input) from bugs (null dereference); and include enough context to diagnose without a debugger.",
+          "explanation": "The worst pattern is `catch { /* ignore */ }` — it converts a loud failure into silent corruption discovered days later. Errors are part of your API: model expected failures in the type system where the language allows it.",
+          "resources": [
+            { "title": "Go blog — Working with errors", "url": "https://go.dev/blog/go1.13-errors", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-premature-optimisation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["craft.performance"],
+          "prompt": "When should you optimise?",
+          "answer": "After measuring. Profile to find where the time actually goes, optimise that, and measure again. Before that, write the clearest correct code — except for algorithmic choices and data layout, which are expensive to change later.",
+          "explanation": "Knuth's line is usually truncated: the full quote allows that the critical 3% deserves attention. Intuition about hotspots is famously bad — the bottleneck is routinely an accidental O(n²), an N+1 query, or a serialisation nobody thought about.",
+          "resources": [
+            { "title": "Wikipedia — Program optimization", "url": "https://en.wikipedia.org/wiki/Program_optimization", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-debugging-method",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["craft.debugging"],
+          "prompt": "What is a systematic debugging method?",
+          "answer": "Reproduce it reliably, then form a hypothesis, then design an observation that would disprove it, then test. Bisect the space — in the code, in history, in the data — rather than reading everything. Change one thing at a time.",
+          "explanation": "The failure mode is changing things hopefully until the symptom moves, which produces fixes nobody understands and regressions later. If you cannot reproduce it, the first task is reproduction, not repair. Rubber-duck explanation solves a startling share of bugs before any tool is opened.",
+          "resources": [
+            { "title": "Debugging: The 9 Indispensable Rules (Agans)", "url": "https://debuggingrules.com/", "kind": "book" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "craft-career",
+      "name": "Working & Interviewing",
+      "description": "Review, licensing, and the parts of the job that are not code.",
+      "cards": [
+        {
+          "id": "craft-review-giving",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["process.review", "craft"],
+          "prompt": "How do you give a good code review?",
+          "answer": "Review promptly. Separate must-fix from suggestion from nitpick, and say which is which. Ask questions instead of issuing verdicts. Comment on the code, never the author. Approve when it is better than what is there, not when it is perfect.",
+          "explanation": "Blocking on personal style preferences is the fastest way to make review adversarial — automate formatting so it never comes up. Praise good solutions explicitly; review that only ever finds fault trains people to write defensively rather than well.",
+          "resources": [
+            { "title": "Google — How to do a code review", "url": "https://google.github.io/eng-practices/review/reviewer/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "craft-licences",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["licensing", "legal"],
+          "prompt": "Permissive vs copyleft licences",
+          "answer": "Permissive (MIT, Apache-2.0, BSD) lets you use the code in proprietary software with attribution. Copyleft (GPL, AGPL) requires derivative works you distribute to be released under the same licence.",
+          "columns": {
+            "left": { "title": "MIT / Apache-2.0", "points": ["Use in closed-source products", "Apache-2.0 adds an explicit patent grant", "Attribution required", "The default for most libraries"] },
+            "right": { "title": "GPL / AGPL", "points": ["Derivatives must be GPL when distributed", "AGPL extends this to network use (SaaS)", "Incompatible with many corporate policies", "LGPL relaxes it for dynamic linking"] }
+          },
+          "explanation": "AGPL is the one to check before adopting a dependency in a hosted product — 'we never distribute binaries' is not an exemption. 'No licence' means all rights reserved: unlicensed code on GitHub is not free to use.",
+          "resources": [
+            { "title": "Choose an open source license", "url": "https://choosealicense.com/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-interview-coding",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["interview", "career"],
+          "prompt": "How should you approach a coding interview question?",
+          "answer": "Restate the problem and confirm constraints. Give a brute-force approach and its complexity out loud. Improve it, explaining the insight. Only then write code. Walk through an example, then discuss edge cases and tests.",
+          "explanation": "Silent coding is the most common failure — the interviewer is assessing your reasoning, which they cannot see. Saying 'this is O(n²), I think a hash map makes it O(n)' scores even if you never finish. Ask clarifying questions; ambiguity is usually deliberate.",
+          "resources": [
+            { "title": "Tech Interview Handbook", "url": "https://www.techinterviewhandbook.org/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-interview-behavioural",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["interview", "career"],
+          "prompt": "What is the STAR method, and what makes a strong behavioural answer?",
+          "answer": "Situation, Task, Action, Result. A strong answer is specific, uses 'I' rather than 'we' for your own contribution, quantifies the outcome, and includes what you learned — especially when the story is about a failure.",
+          "explanation": "Prepare six or seven real stories covering conflict, failure, leading without authority, a hard technical decision, and a time you changed your mind. They will cover most questions asked. Rehearsed generic answers are transparent; concrete detail is what convinces.",
+          "resources": [
+            { "title": "Tech Interview Handbook — Behavioral interview", "url": "https://www.techinterviewhandbook.org/behavioral-interview/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-learning",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["career", "learning"],
+          "prompt": "How do you keep learning effectively as a working engineer?",
+          "answer": "Learn depth-first from primary sources when you need something, and breadth-first through fundamentals that do not expire — data structures, networking, operating systems, databases. Build things. Read code written by people better than you. Space your revision instead of cramming.",
+          "explanation": "Frameworks turn over every few years; the layer beneath them barely changes, and it is what makes new frameworks easy to learn. Spaced repetition works because the testing effect — retrieving an answer — builds far stronger memories than re-reading it.",
+          "resources": [
+            { "title": "Teach Yourself Programming in Ten Years (Norvig)", "url": "https://norvig.com/21-days.html", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

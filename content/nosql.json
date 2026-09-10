@@ -1,0 +1,263 @@
+{
+  "id": "nosql",
+  "name": "NoSQL & Data Stores",
+  "icon": "🧿",
+  "category": "Data & Databases",
+  "color": "#4DB33D",
+  "description": "Document, key-value, wide-column, graph, search and time-series stores — what each is for and what each gives up.",
+  "modules": [
+    {
+      "id": "nosql-families",
+      "name": "Store Families",
+      "description": "The five main NoSQL shapes and the workloads they were built for.",
+      "cards": [
+        {
+          "id": "nosql-families-overview",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": [
+            "db.nosql",
+            "db.selection"
+          ],
+          "prompt": "Name the main NoSQL families and a representative of each.",
+          "answer": "Key-value (Redis, DynamoDB), document (MongoDB, Couchbase), wide-column (Cassandra, HBase, Bigtable), graph (Neo4j, Neptune), search (Elasticsearch, OpenSearch) and time-series (InfluxDB, TimescaleDB, Prometheus).",
+          "explanation": "'NoSQL' describes what they are not. What actually differs is the data model, the query capability and the consistency guarantee — pick by access pattern, not by label. Many of them have since added SQL-ish query languages.",
+          "resources": [
+            {
+              "title": "Wikipedia — NoSQL",
+              "url": "https://en.wikipedia.org/wiki/NoSQL",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "nosql-document-vs-relational",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": [
+            "db.nosql",
+            "db.modelling"
+          ],
+          "prompt": "Document store vs relational database",
+          "answer": "Documents embed related data for single-read access; relational normalises and joins at query time.",
+          "columns": {
+            "left": {
+              "title": "Document",
+              "points": [
+                "Aggregate fetched in one read",
+                "Flexible, per-document schema",
+                "Duplication — updates must fan out",
+                "Joins are limited or application-side"
+              ]
+            },
+            "right": {
+              "title": "Relational",
+              "points": [
+                "Each fact stored once",
+                "Declarative joins across any relationship",
+                "Schema enforced and migrated centrally",
+                "Multi-table reads cost joins"
+              ]
+            }
+          },
+          "explanation": "Embed when the data is read and written together and bounded in size; reference when it is shared, unbounded or independently updated. Schema-less really means schema-on-read: the schema still exists, it just lives in your application code.",
+          "resources": [
+            {
+              "title": "MongoDB — Data model design",
+              "url": "https://www.mongodb.com/docs/manual/core/data-model-design/",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "nosql-access-pattern-first",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "db.nosql",
+            "db.modelling"
+          ],
+          "prompt": "Why does DynamoDB modelling start from access patterns rather than entities?",
+          "answer": "Because you can only query efficiently by partition key (and optionally sort key). There are no joins and no ad-hoc queries, so the table layout has to be designed around the exact reads you will perform.",
+          "explanation": "This produces single-table designs where several entity types share a table with composite keys. The pay-off is predictable single-digit millisecond latency at any scale; the price is that a new access pattern may require a new index or a backfill.",
+          "prerequisites": [
+            "nosql-families-overview"
+          ],
+          "resources": [
+            {
+              "title": "AWS — DynamoDB single-table design",
+              "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "nosql-redis-uses",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": [
+            "db.redis",
+            "system.cache"
+          ],
+          "prompt": "Beyond caching, what is Redis actually good at?",
+          "answer": "Rate limiting (atomic counters with TTL), distributed locks, leaderboards (sorted sets), session storage, queues and streams, pub/sub, and set operations for tags and recommendations.",
+          "explanation": "The value is atomic operations on rich data types in a single-threaded command loop — no race conditions between check and set. Remember it is primarily in-memory: persistence (RDB/AOF) exists but Redis is not your system of record.",
+          "resources": [
+            {
+              "title": "Redis — Data types",
+              "url": "https://redis.io/docs/latest/develop/data-types/",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "nosql-graph",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "db.graph",
+            "db.selection"
+          ],
+          "prompt": "When is a graph database genuinely better than SQL with join tables?",
+          "answer": "When queries traverse variable-depth relationships — shortest path, 'friends of friends of friends', fraud rings, dependency chains. Each hop in SQL is another join written at authoring time; a graph traversal expresses depth as a parameter.",
+          "explanation": "Graph engines store adjacency directly, so a hop is a pointer walk rather than an index lookup. For fixed one- or two-hop relationships, a relational schema is usually simpler and faster. Postgres recursive CTEs cover many cases without a new database.",
+          "resources": [
+            {
+              "title": "Neo4j — Graph database concepts",
+              "url": "https://neo4j.com/docs/getting-started/appendix/graphdb-concepts/",
+              "kind": "docs"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nosql-distributed",
+      "name": "Distribution & Consistency",
+      "description": "CAP, replication, partitioning and what 'eventually consistent' means in practice.",
+      "cards": [
+        {
+          "id": "nosql-cap",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": [
+            "distributed.cap",
+            "db.consistency"
+          ],
+          "prompt": "State the CAP theorem precisely, and the common misreading.",
+          "answer": "When a network partition occurs, a distributed system must choose between consistency (linearisability) and availability. The misreading is 'pick two of three' — partitions are not optional, so the real choice is CP or AP *during a partition*.",
+          "explanation": "PACELC extends it usefully: else (no partition), you trade latency against consistency. That is why 'eventually consistent' stores still offer strong reads at higher latency, and why quorum settings (R + W > N) are a per-query decision in Cassandra and DynamoDB.",
+          "resources": [
+            {
+              "title": "Wikipedia — CAP theorem",
+              "url": "https://en.wikipedia.org/wiki/CAP_theorem",
+              "kind": "article"
+            }
+          ]
+        },
+        {
+          "id": "nosql-partition-key",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "db.partitioning",
+            "db.performance"
+          ],
+          "prompt": "Why is `current_date` a terrible partition key for a high-write table?",
+          "answer": "Every write for a given day lands on one partition — a hot shard that limits throughput to a single node while the rest idle.",
+          "explanation": "Good partition keys have high cardinality and even access distribution. Fixes: prefix with a hash or a bucket number, use a compound key such as `(user_id, date)`, or add a random suffix and fan out reads. Monotonic keys (timestamps, sequential IDs) hot-spot for the same reason.",
+          "prerequisites": [
+            "nosql-access-pattern-first"
+          ],
+          "resources": [
+            {
+              "title": "AWS — Designing partition keys",
+              "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "nosql-replication-modes",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": [
+            "db.replication",
+            "distributed.consistency"
+          ],
+          "prompt": "Synchronous vs asynchronous replication",
+          "answer": "Synchronous acknowledges only after replicas have the write (no data loss, higher latency); asynchronous acknowledges immediately (fast, but a failover can lose recent writes).",
+          "columns": {
+            "left": {
+              "title": "Synchronous",
+              "points": [
+                "Zero RPO on failover",
+                "Write latency = slowest replica",
+                "A slow replica can stall writes",
+                "Often quorum-based rather than all-replicas"
+              ]
+            },
+            "right": {
+              "title": "Asynchronous",
+              "points": [
+                "Low, predictable write latency",
+                "Replication lag — stale reads",
+                "Failover may lose the tail of the log",
+                "Standard for cross-region replicas"
+              ]
+            }
+          },
+          "explanation": "Replication lag is why a user can write a comment and not see it on the next page load if that read hits a replica. Fixes: read-your-writes routing to the primary for a window, or session consistency tokens.",
+          "resources": [
+            {
+              "title": "PostgreSQL docs — Replication",
+              "url": "https://www.postgresql.org/docs/current/high-availability.html",
+              "kind": "docs"
+            }
+          ]
+        },
+        {
+          "id": "nosql-eventual-consistency",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "distributed.consistency",
+            "system.design"
+          ],
+          "prompt": "What does a user actually experience under eventual consistency, and how do you make it acceptable?",
+          "answer": "Stale reads, and occasionally seeing their own write disappear. Mitigate with read-your-writes (pin the session to the primary or the same replica briefly), optimistic UI, and monotonic-read guarantees so time never appears to run backwards.",
+          "explanation": "'Eventually' has no bound by default — measure and alert on replication lag. Some data tolerates staleness (view counts) and some does not (account balance, permissions); classify per field, not per system.",
+          "prerequisites": [
+            "nosql-cap"
+          ],
+          "resources": [
+            {
+              "title": "Designing Data-Intensive Applications (Kleppmann)",
+              "url": "https://dataintensive.net/",
+              "kind": "book"
+            }
+          ]
+        },
+        {
+          "id": "nosql-choose",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": [
+            "db.selection",
+            "architecture.decisions"
+          ],
+          "prompt": "A new service needs a datastore. What is the sensible default, and what justifies moving off it?",
+          "answer": "Start with Postgres. Move off it when you have a specific, measured need it cannot meet: petabyte-scale writes, sub-millisecond key-value latency, full-text relevance ranking, graph traversal depth, or genuinely global multi-master writes.",
+          "explanation": "Postgres covers relational, JSONB documents, full-text search, geospatial, time-series (Timescale) and queues adequately. One well-understood system beats three half-understood ones, and 'we might need scale later' is not a measurement.",
+          "resources": [
+            {
+              "title": "PostgreSQL — JSON types",
+              "url": "https://www.postgresql.org/docs/current/datatype-json.html",
+              "kind": "docs"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

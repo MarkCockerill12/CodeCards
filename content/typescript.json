@@ -1,0 +1,188 @@
+{
+  "id": "typescript",
+  "name": "TypeScript",
+  "icon": "🔷",
+  "category": "Languages",
+  "color": "#3178C6",
+  "description": "Structural typing, narrowing, generics and the type-level tools that make large codebases tractable.",
+  "modules": [
+    {
+      "id": "ts-foundations",
+      "name": "Type System Foundations",
+      "description": "What TypeScript actually checks, and the mental model behind its answers.",
+      "cards": [
+        {
+          "id": "ts-structural-typing",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ts.types", "ts.model"],
+          "prompt": "Is TypeScript's type system nominal or structural?",
+          "answer": "Structural. Compatibility is decided by shape, not by declared name or inheritance — if it has the required members with compatible types, it fits.",
+          "explanation": "Two unrelated interfaces with identical members are interchangeable. When you need nominal behaviour (an `OrderId` that a plain string cannot satisfy) you brand the type: `type OrderId = string & { readonly __brand: unique symbol }`.",
+          "resources": [
+            { "title": "TypeScript Handbook — Type compatibility", "url": "https://www.typescriptlang.org/docs/handbook/type-compatibility.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-any-vs-unknown",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["ts.types", "ts.safety"],
+          "prompt": "`any` vs `unknown`",
+          "answer": "`any` disables checking; `unknown` accepts anything but forbids use until narrowed.",
+          "columns": {
+            "left": { "title": "any", "points": ["Assignable to and from everything", "Every property access compiles", "Silently spreads through inference", "An escape hatch that leaks"] },
+            "right": { "title": "unknown", "points": ["Accepts any value on the way in", "Nothing can be done with it before narrowing", "Forces an explicit type guard", "The correct type for JSON, catch clauses, IPC"] }
+          },
+          "explanation": "`unknown` is the type-safe top type. Use it at every boundary where data arrives from outside the program, then validate. Every `any` is a hole where the compiler stops helping — and holes propagate.",
+          "resources": [
+            { "title": "TypeScript Handbook — unknown", "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-type-vs-interface",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["ts.types", "ts.syntax"],
+          "prompt": "`type` alias vs `interface`",
+          "answer": "Interfaces declare object shapes and merge across declarations; type aliases name any type at all, including unions and mapped types.",
+          "columns": {
+            "left": { "title": "interface", "points": ["Declaration merging (extend third-party types)", "`extends` clauses, familiar to OO readers", "Object/class shapes only", "Slightly better error messages in places"] },
+            "right": { "title": "type", "points": ["Unions, intersections, tuples, primitives", "Conditional and mapped types", "Cannot be reopened — no accidental merging", "Required for anything type-level and clever"] }
+          },
+          "explanation": "A practical rule: interfaces for public object contracts you may want others to augment, type aliases for everything else. Never mix both for the same concept in one codebase.",
+          "resources": [
+            { "title": "TypeScript Handbook — Interfaces vs type aliases", "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-narrowing",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ts.narrowing", "ts.control-flow"],
+          "prompt": "Which constructs narrow a union type in TypeScript?",
+          "answer": "`typeof`, `instanceof`, truthiness checks, equality against literals, the `in` operator, discriminated-union switches, and user-defined type predicates (`x is Foo`).",
+          "explanation": "Control-flow analysis tracks the narrowed type per branch. Discriminated unions — a shared literal `kind` field — are the most robust option because adding a variant produces an exhaustiveness error where you handle them, if you assign the default branch to `never`.",
+          "resources": [
+            { "title": "TypeScript Handbook — Narrowing", "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-never-exhaustive",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["ts.narrowing", "ts.patterns"],
+          "prompt": "What does the compiler do when a new variant is added to `Shape` but not to the switch?",
+          "code": "type Shape =\n  | { kind: 'circle'; r: number }\n  | { kind: 'square'; s: number };\n\nfunction area(shape: Shape): number {\n  switch (shape.kind) {\n    case 'circle': return Math.PI * shape.r ** 2;\n    case 'square': return shape.s ** 2;\n    default: {\n      const exhaustive: never = shape;\n      return exhaustive;\n    }\n  }\n}",
+          "lang": "typescript",
+          "answer": "It errors at the `never` assignment: the new variant is not assignable to `never`, pointing straight at the unhandled case.",
+          "explanation": "This is the exhaustiveness check. Without it, a missing case silently falls through at runtime. With it, every place that switches on the union fails to compile the moment the union grows — turning a whole class of bug into a compile error.",
+          "prerequisites": ["ts-narrowing"],
+          "resources": [
+            { "title": "TypeScript Handbook — Exhaustiveness checking", "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-erasure",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["ts.runtime", "ts.gotchas"],
+          "prompt": "Why does this fail at runtime?",
+          "code": "interface User { id: string; name: string }\n\nfunction isUser(x: unknown): x is User {\n  return x instanceof User;   // ???\n}",
+          "lang": "typescript",
+          "answer": "Interfaces are erased at compile time — there is no `User` value at runtime to use with `instanceof`. Check the shape manually, or validate with a schema library such as Zod.",
+          "explanation": "TypeScript types vanish entirely in the emitted JavaScript. Anything that must exist at runtime — validation, discriminants, reflection — has to be written as real code or generated from a schema that also produces the type.",
+          "resources": [
+            { "title": "TypeScript Handbook — Type predicates", "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ts-generics",
+      "name": "Generics & Type-Level Programming",
+      "description": "Constraints, inference, conditional and mapped types, and the utility types worth memorising.",
+      "cards": [
+        {
+          "id": "ts-generic-constraint",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["ts.generics"],
+          "prompt": "To require that a generic parameter has a `length`, write `function f<T ___ { length: number }>(x: T)`.",
+          "answer": "extends",
+          "explanation": "`extends` constrains a type parameter — read it as 'is assignable to'. Constraints let you use members inside the function while preserving the caller's exact type in the return, which a plain `{ length: number }` parameter would throw away.",
+          "resources": [
+            { "title": "TypeScript Handbook — Generic constraints", "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-utility-types",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ts.utility-types", "ts.generics"],
+          "prompt": "What do `Partial`, `Required`, `Pick`, `Omit`, `Record`, `ReturnType` and `Awaited` do?",
+          "answer": "Partial makes all properties optional; Required removes optionality; Pick selects keys; Omit removes keys; Record builds a map type from keys to values; ReturnType extracts a function's return type; Awaited unwraps a promise.",
+          "explanation": "These are ordinary types built from mapped and conditional types — nothing magic. Deriving types (`Omit<User, 'password'>`) instead of re-declaring them keeps the two in sync forever, which is the entire point of a structural type system.",
+          "resources": [
+            { "title": "TypeScript Handbook — Utility types", "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-conditional-infer",
+          "type": "predict-output",
+          "difficulty": 5,
+          "tags": ["ts.conditional-types", "ts.generics"],
+          "prompt": "What is `Unwrap<Promise<string[]>>`?",
+          "code": "type Unwrap<T> = T extends Promise<infer U> ? U : T;\n\ntype A = Unwrap<Promise<string[]>>;\ntype B = Unwrap<number>;",
+          "lang": "typescript",
+          "answer": "`A` is `string[]` and `B` is `number`.",
+          "explanation": "`infer` declares a type variable inside a conditional type and binds it by pattern matching. If the pattern does not match, the false branch returns the input unchanged. This is the mechanism behind `ReturnType`, `Parameters` and `Awaited`.",
+          "prerequisites": ["ts-utility-types"],
+          "resources": [
+            { "title": "TypeScript Handbook — Conditional types", "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-satisfies",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ts.syntax", "ts.inference"],
+          "prompt": "What does the `satisfies` operator give you that a type annotation does not?",
+          "answer": "It checks the value against a type **without** widening the inferred type — you keep the narrow literal inference and still get the constraint checked.",
+          "explanation": "`const config: Record<string, string> = {...}` loses the specific keys. `const config = {...} satisfies Record<string, string>` validates the shape but leaves `config` with its exact literal key set, so lookups stay type-safe.",
+          "resources": [
+            { "title": "TypeScript 4.9 release notes — satisfies", "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-strict-flags",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ts.config", "ts.safety"],
+          "prompt": "You inherit a TypeScript codebase with `strict: false`. What do you turn on, and in what order?",
+          "answer": "Enable `strict` family flags incrementally: `noImplicitAny` first, then `strictNullChecks` (the big one), then the rest — fixing each wave before moving on.",
+          "explanation": "`strictNullChecks` is where the real defect-finding happens: without it, `null` and `undefined` inhabit every type and the compiler cannot warn you. Migrate directory by directory if needed, and add `noUncheckedIndexedAccess` once the basics are clean.",
+          "resources": [
+            { "title": "TypeScript — tsconfig strict", "url": "https://www.typescriptlang.org/tsconfig#strict", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-enum-vs-union",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["ts.types", "ts.patterns"],
+          "prompt": "`enum` vs a union of string literals",
+          "answer": "Enums emit runtime code and are nominal-ish; literal unions are pure types with zero runtime cost.",
+          "columns": {
+            "left": { "title": "enum Status { ... }", "points": ["Emits a JavaScript object (except `const enum`)", "Numeric enums accept any number — unsound", "Awkward across module and bundler boundaries", "Reverse mapping for numeric members"] },
+            "right": { "title": "type Status = 'a' | 'b'", "points": ["Erased entirely — no runtime footprint", "Values are plain strings, easy to log and serialise", "Narrows perfectly in switches", "Pair with `as const` objects when you need a value list"] }
+          },
+          "explanation": "Most modern codebases prefer literal unions plus an `as const` object when a runtime list is required. It serialises naturally, works across bundlers, and never surprises anyone reading the emitted JavaScript.",
+          "resources": [
+            { "title": "TypeScript Handbook — Enums", "url": "https://www.typescriptlang.org/docs/handbook/enums.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

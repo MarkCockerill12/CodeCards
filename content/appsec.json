@@ -1,0 +1,139 @@
+{
+  "id": "appsec",
+  "name": "Application Security",
+  "icon": "🐞",
+  "category": "Security",
+  "color": "#B91C1C",
+  "description": "OWASP Top 10, secure SDLC, dependency and supply-chain risk, and the tooling that finds bugs before attackers do.",
+  "modules": [
+    {
+      "id": "as-owasp",
+      "name": "OWASP Top 10 in Practice",
+      "description": "The categories that account for most real-world web vulnerabilities.",
+      "cards": [
+        {
+          "id": "as-owasp-top10",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.owasp", "appsec"],
+          "prompt": "Name the OWASP Top 10 (2021) categories.",
+          "answer": "A01 Broken access control, A02 Cryptographic failures, A03 Injection, A04 Insecure design, A05 Security misconfiguration, A06 Vulnerable and outdated components, A07 Identification and authentication failures, A08 Software and data integrity failures, A09 Security logging and monitoring failures, A10 Server-side request forgery.",
+          "explanation": "It is a ranked awareness document, not a checklist for coverage. Note that A04 (insecure design) and A08 (supply chain) were the additions — recognition that most breaches now come from architecture and dependencies, not a missing escape function.",
+          "resources": [
+            { "title": "OWASP Top 10", "url": "https://owasp.org/Top10/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "as-idor",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["security.access-control", "appsec"],
+          "prompt": "What is the vulnerability here?",
+          "code": "@app.get('/api/invoices/<invoice_id>')\n@login_required\ndef get_invoice(invoice_id):\n    return db.invoices.find_one({'_id': invoice_id})",
+          "lang": "python",
+          "answer": "Insecure direct object reference: the user is authenticated but never authorised for *this* invoice. Any logged-in user can read any invoice by changing the id. Scope the query to the owner.",
+          "explanation": "IDOR is the most common instance of A01. The robust fix is to make ownership part of the query (`{'_id': id, 'owner': current_user.id}`) rather than a separate check someone will forget. Unguessable ids are not access control.",
+          "resources": [
+            { "title": "OWASP — Insecure direct object reference prevention", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-injection-general",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.injection", "appsec"],
+          "prompt": "Injection is not just SQL. Name the other common forms and the single underlying fix.",
+          "answer": "Command injection, LDAP, XPath, NoSQL, template injection, log injection, header injection and prompt injection. The underlying fix is always the same: never let untrusted data cross into a position where it is interpreted as code — use parameterisation or a safe API, not escaping.",
+          "explanation": "Whenever you build a string that another interpreter will parse, you have an injection risk. `subprocess.run([...], shell=False)` beats string concatenation; a template engine with autoescape beats manual escaping; a query builder beats format strings.",
+          "resources": [
+            { "title": "OWASP — Injection prevention", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-deserialization",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["security.deserialization", "appsec"],
+          "prompt": "Why is `pickle.loads(user_data)` (or Java native deserialization) a critical vulnerability?",
+          "answer": "Those formats can reconstruct arbitrary objects and invoke code during deserialization, so untrusted input becomes remote code execution. Use a data-only format — JSON with a schema — and never deserialize untrusted data into live objects.",
+          "explanation": "Gadget chains make this exploitable even without an obvious `__reduce__`: attackers assemble classes already on your classpath. Log4Shell was a variant of the same theme — untrusted data reaching an interpreter with more power than expected.",
+          "resources": [
+            { "title": "OWASP — Deserialization cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-logging",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["security.logging", "appsec"],
+          "prompt": "What should security logging capture — and what must it never contain?",
+          "answer": "Capture authentication successes and failures, access-control denials, privilege changes, input validation failures, and administrative actions — each with who, what, when, from where, and a correlation id. Never log passwords, tokens, full card numbers, or unredacted personal data.",
+          "explanation": "A09 exists because the average breach goes undetected for months. Logs must also be tamper-resistant (ship them off the host) and monitored — an unread log is an expensive way to store disappointment.",
+          "resources": [
+            { "title": "OWASP — Logging cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "as-sdlc",
+      "name": "Secure SDLC & Supply Chain",
+      "description": "Shifting security left, dependency risk and the tooling that scales.",
+      "cards": [
+        {
+          "id": "as-sast-dast",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["security.tooling", "devops.cicd"],
+          "prompt": "SAST vs DAST vs SCA",
+          "answer": "SAST analyses source without running it, DAST attacks the running application, SCA inventories your dependencies and flags known CVEs.",
+          "columns": {
+            "left": { "title": "SAST", "points": ["Runs on every commit, finds issues early", "Sees all code paths, including rare ones", "High false-positive rate", "Cannot see runtime or config issues"] },
+            "right": { "title": "DAST / SCA", "points": ["DAST: real requests, real responses — few false positives", "DAST: only exercises what it can reach", "SCA: cheapest high-value scan there is", "SCA: needs a real fix path, not just a report"] }
+          },
+          "explanation": "Start with SCA — known-vulnerable dependencies are the highest-yield, lowest-effort category. Then SAST on diffs only (full-repo scans produce backlog fatigue), then DAST in staging. Tools find bug classes; threat modelling finds design flaws.",
+          "resources": [
+            { "title": "OWASP — Source code analysis tools", "url": "https://owasp.org/www-community/Source_Code_Analysis_Tools", "kind": "article" }
+          ]
+        },
+        {
+          "id": "as-supply-chain",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["security.supply-chain", "devops"],
+          "prompt": "What are the main software supply-chain risks, and what reduces them?",
+          "answer": "Typosquatted or hijacked packages, malicious post-install scripts, compromised build systems, and unpinned transitive dependencies. Reduce them with lockfiles, pinned digests, dependency review, disabled install scripts, an SBOM, artefact signing and reproducible builds.",
+          "explanation": "SolarWinds and the xz backdoor showed the build system itself is a target. SLSA gives a maturity ladder; the practical first steps are pinning by hash, minimising dependencies, and keeping CI credentials scoped and short-lived.",
+          "resources": [
+            { "title": "SLSA — Supply-chain Levels for Software Artifacts", "url": "https://slsa.dev/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "as-dependency-hygiene",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.dependencies", "craft"],
+          "prompt": "What should you check before adding a dependency?",
+          "answer": "Maintenance activity and maintainer count, open critical issues, transitive dependency count, licence compatibility, install-script behaviour, download provenance — and whether ten lines of your own code would do the job.",
+          "explanation": "Every dependency is code you ship, an update treadmill and an attack surface. `left-pad` and `event-stream` were both small packages. The rule of thumb: the smaller the utility, the higher the bar for pulling it in.",
+          "prerequisites": ["as-supply-chain"],
+          "resources": [
+            { "title": "OpenSSF Scorecard", "url": "https://github.com/ossf/scorecard", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "as-input-validation",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.validation", "appsec"],
+          "prompt": "Where does input validation belong, and should it be an allowlist or a denylist?",
+          "answer": "On the server, at the trust boundary, always — client-side validation is a UX feature. Use an allowlist: define what is valid and reject everything else. Denylists are always incomplete.",
+          "explanation": "Validate structure and type at the edge (a schema library such as Zod or Pydantic), then encode contextually at every output sink. Validation and encoding are different jobs; doing only one of them is where injection bugs live.",
+          "resources": [
+            { "title": "OWASP — Input validation cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}
