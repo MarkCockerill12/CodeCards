@@ -40,7 +40,7 @@ export interface Card {
   complexity?: { time: string; space?: string };
   prerequisites?: string[];
   resources: Resource[];
-  verify?: { runtime: 'node' | 'python'; expectedOutput: string };
+  verify?: { runtime: 'node' | 'python' | 'go' | 'rust' | 'java' | 'csharp' | 'php' | 'kotlin'; expectedOutput: string };
   verifiedAt?: string;
   /** Injected at load time so a card always knows where it lives. */
   topicId?: string;

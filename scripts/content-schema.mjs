@@ -40,7 +40,7 @@ export const cardSchema = z
     resources: z.array(resourceSchema).min(1, 'every card needs at least one resource'),
     verify: z
       .object({
-        runtime: z.enum(['node', 'python']),
+        runtime: z.enum(['node', 'python', 'go', 'rust', 'java', 'csharp', 'php', 'kotlin']),
         expectedOutput: z.string(),
       })
       .optional(),

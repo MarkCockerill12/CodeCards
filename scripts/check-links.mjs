@@ -21,8 +21,9 @@ async function head(url) {
   };
   try {
     let res = await fetch(url, { ...opts, method: 'HEAD' });
-    // A lot of docs hosts refuse HEAD but answer GET fine.
-    if (res.status === 405 || res.status === 403) res = await fetch(url, { ...opts, method: 'GET' });
+    // Many hosts mishandle HEAD (405, 403, even 404) but answer GET fine, so confirm any
+    // client error with a real GET before calling the link dead.
+    if (res.status >= 400 && res.status < 500) res = await fetch(url, { ...opts, method: 'GET' });
     return res.status;
   } catch (err) {
     return err.name === 'TimeoutError' ? 'timeout' : 'error';
@@ -50,6 +51,10 @@ async function main() {
 
   console.log(`checking ${targets.length} unique urls (concurrency ${CONCURRENCY})…`);
   const bad = [];
+  // Bot protection (Cloudflare, Medium, Stack Overflow) answers automated requests with
+  // these even though the page exists — report them, but do not fail the run on them.
+  const BLOCKED = new Set([401, 403, 406, 429]);
+  const blocked = [];
   let done = 0;
 
   const queue = [...targets];
@@ -59,18 +64,24 @@ async function main() {
       if (!job) return;
       const status = await head(job.url);
       done += 1;
-      if (typeof status !== 'number' || status >= 400) bad.push({ ...job, status });
+      if (BLOCKED.has(status)) blocked.push({ ...job, status });
+      else if (typeof status !== 'number' || status >= 400) bad.push({ ...job, status });
       if (done % 25 === 0) process.stdout.write(`  ${done}/${targets.length}\r`);
     }
   });
   await Promise.all(workers);
 
+  if (blocked.length) {
+    console.log(`\n\x1b[33m${blocked.length} link(s) refused automated access\x1b[0m (check by hand)`);
+    for (const b of blocked) console.log(`  [${b.status}] ${b.topic}/${b.cardId} → ${b.url}`);
+  }
   if (bad.length === 0) {
-    console.log(`\x1b[32mlinks ok\x1b[0m all ${targets.length} resources reachable`);
+    console.log(`\x1b[32mlinks ok\x1b[0m ${targets.length - blocked.length}/${targets.length} resources reachable`);
     return;
   }
-  console.log(`\n\x1b[33m${bad.length} suspicious link(s)\x1b[0m`);
+  console.log(`\n\x1b[31m${bad.length} dead link(s)\x1b[0m`);
   for (const b of bad) console.log(`  [${b.status}] ${b.topic}/${b.cardId} → ${b.url}`);
+  process.exitCode = 1;
 }
 
 main().catch((err) => {

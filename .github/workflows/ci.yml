@@ -4,9 +4,17 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Nightly run for the network-bound link check below.
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   check:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,14 +24,37 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Needed by scripts/verify-code.mjs to execute the Python `predict-output` cards.
+      # Toolchains used by scripts/verify-code.mjs to execute `predict-output` cards.
+      # With CI set, a missing runtime fails the verify step instead of being skipped.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      # Kotlin compiler (runs on the JDK installed above), pinned to an official release.
+      - name: Install Kotlin
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/kotlin.zip" https://github.com/JetBrains/kotlin/releases/download/v2.4.20/kotlin-compiler-2.4.20.zip
+          unzip -q "$RUNNER_TEMP/kotlin.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/kotlinc/bin" >> "$GITHUB_PATH"
+      # Rust (rustc) ships preinstalled on GitHub's ubuntu runners via rustup.
 
       - run: npm ci
 
-      # Schema-validate every card and pre-highlight its code with Shiki.
+      # Schema-validate every card, reject prerequisite cycles, pre-highlight code with Shiki.
       - run: npm run content
 
       # Execute every card that documents its own output and assert it still matches.
@@ -35,8 +66,8 @@ jobs:
       - run: npx next build
 
   links:
-    # Network-bound and slow: nightly, and never blocking a pull request.
-    if: github.event_name == 'schedule'
+    # Network-bound and slow: nightly (or on demand), and never blocking a pull request.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
