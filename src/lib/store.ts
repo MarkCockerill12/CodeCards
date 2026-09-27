@@ -236,6 +236,16 @@ const initial = {
 let rewardId = 0;
 const nextRewardId = () => `r${(rewardId += 1)}`;
 
+/** True when `value` has the same JSON kind as `reference` (array, object, number, …). */
+function sameShape(value: unknown, reference: unknown): boolean {
+  if (Array.isArray(reference)) return Array.isArray(value);
+  if (reference !== null && typeof reference === 'object') {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+  if (typeof reference === 'number') return typeof value === 'number' && Number.isFinite(value);
+  return typeof value === typeof reference;
+}
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -439,12 +449,18 @@ export const useStore = create<AppState>()(
           const parsed = JSON.parse(json);
           const incoming = parsed?.state ?? parsed;
           if (!incoming || typeof incoming !== 'object') return false;
-          // Only accept keys we know about — never trust an imported file blindly.
+          // Only accept keys we know about, and only with the right shape — a hand-edited
+          // or truncated file must be rejected, not written into the store to crash later.
           const allowed = Object.keys(initial) as (keyof typeof initial)[];
           const patch: Record<string, unknown> = {};
           for (const key of allowed) {
-            if (key in incoming) patch[key] = incoming[key];
+            if (!(key in incoming)) continue;
+            if (!sameShape(incoming[key], initial[key])) return false;
+            patch[key] = incoming[key];
           }
+          const s = get();
+          patch.settings = { ...s.settings, ...(patch.settings as Partial<Settings> | undefined) };
+          patch.equipped = { ...s.equipped, ...(patch.equipped as AppState['equipped'] | undefined) };
           patch.hydrated = true;
           patch.rewardQueue = [];
           set(patch as Partial<AppState>);
@@ -489,6 +505,18 @@ export const useStore = create<AppState>()(
       partialize: (s) => {
         const { rewardQueue: _rq, hydrated: _h, ...rest } = s;
         return rest as AppState;
+      },
+      // The default merge is shallow, so a stored `settings` or `equipped` object would
+      // replace the defaults wholesale and any key added in a later release would be
+      // undefined for existing learners. Merge those two one level deeper.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppState>;
+        return {
+          ...current,
+          ...p,
+          settings: { ...current.settings, ...p.settings },
+          equipped: { ...current.equipped, ...p.equipped },
+        };
       },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

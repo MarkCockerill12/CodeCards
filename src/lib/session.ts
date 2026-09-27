@@ -31,10 +31,11 @@ export function buildQueue(opts: QueueOptions): Card[] {
     .filter((c) => isDue(reviews[c.id], now))
     .sort((a, b) => (reviews[a.id]?.due ?? 0) - (reviews[b.id]?.due ?? 0));
 
+  const available = new Set(cards.map((c) => c.id));
   const fresh = cards
     .filter((c) => !reviews[c.id] || reviews[c.id].reps === 0)
     .sort((a, b) => {
-      const readyDelta = readiness(b, reviews) - readiness(a, reviews);
+      const readyDelta = readiness(b, reviews, available) - readiness(a, reviews, available);
       if (Math.abs(readyDelta) > 0.001) return readyDelta;
       return a.difficulty - b.difficulty;
     });

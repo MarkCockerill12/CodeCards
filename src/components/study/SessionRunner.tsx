@@ -11,6 +11,7 @@ import { useStore } from '@/lib/store';
 import { GRADES, GRADE_COLOR, GRADE_HINT, GRADE_LABEL, previewIntervals } from '@/lib/scheduler';
 import { emptyReview } from '@/lib/scheduler';
 import { remedialFor, type PrereqGraph } from '@/lib/prereq';
+import { CHECKPOINT_PASS } from '@/lib/session';
 import { play } from '@/lib/sound';
 import { formatDuration } from '@/lib/utils';
 import { SessionSummaryView } from './SessionSummaryView';
@@ -105,7 +106,7 @@ export function SessionRunner({
       if (mode === 'calibration') finishCalibration();
       if (mode === 'checkpoint' && moduleId) {
         const correct = finalResults.filter((r) => r.grade !== 'again').length;
-        if (finalResults.length > 0 && correct / finalResults.length >= 0.85) {
+        if (finalResults.length > 0 && correct / finalResults.length >= CHECKPOINT_PASS) {
           passCheckpoint(moduleId);
         }
       }
@@ -183,6 +184,11 @@ export function SessionRunner({
       // otherwise Space would dismiss it *and* flip the card underneath, and 1-4 would
       // grade a card the learner cannot currently see.
       if (rewardOpen) return;
+      // Leave browser shortcuts (Ctrl+F, Ctrl+R, Cmd+E…) alone, ignore auto-repeat so a
+      // held key cannot flip or grade repeatedly, and skip keys a focused element (the
+      // flashcard itself handles Enter) has already consumed.
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.defaultPrevented) return;
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         flip();

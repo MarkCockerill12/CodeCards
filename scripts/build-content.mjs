@@ -68,6 +68,32 @@ const fail = (msg) => {
   process.exitCode = 1;
 };
 
+/** Depth-first search over the prerequisite edges of every card, returning each cycle found. */
+function prerequisiteCycles(topics) {
+  const parents = new Map();
+  for (const topic of topics)
+    for (const mod of topic.modules)
+      for (const card of mod.cards) parents.set(card.id, card.prerequisites ?? []);
+
+  const cycles = [];
+  const state = new Map(); // 1 = on the current path, 2 = finished
+  const path = [];
+  const visit = (id) => {
+    if (state.get(id) === 2) return;
+    if (state.get(id) === 1) {
+      cycles.push([...path.slice(path.indexOf(id)), id]);
+      return;
+    }
+    state.set(id, 1);
+    path.push(id);
+    for (const pre of parents.get(id) ?? []) visit(pre);
+    path.pop();
+    state.set(id, 2);
+  };
+  for (const id of parents.keys()) visit(id);
+  return cycles;
+}
+
 async function main() {
   const started = Date.now();
   const files = (await readdir(CONTENT_DIR)).filter(
@@ -118,6 +144,11 @@ async function main() {
         }
       }
     }
+  }
+
+  // ...and must form a DAG: a cycle would make every card in it permanently "not ready".
+  for (const cycle of prerequisiteCycles(topics)) {
+    fail(`prerequisite cycle: ${cycle.join(' -> ')}`);
   }
 
   if (process.exitCode === 1) {
