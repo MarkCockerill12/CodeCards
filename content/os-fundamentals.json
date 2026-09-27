@@ -15,121 +15,66 @@
           "id": "os-user-kernel-mode",
           "type": "flip",
           "difficulty": 3,
-          "tags": [
-            "os.kernel",
-            "os.fundamentals"
-          ],
+          "tags": ["os.kernel", "os.fundamentals"],
           "prompt": "What is the difference between user mode and kernel mode, and how do you cross the boundary?",
           "answer": "User mode restricts access to hardware and privileged instructions; kernel mode has full access. You cross deliberately with a system call (a trap instruction), or involuntarily via an interrupt or fault.",
           "explanation": "The boundary is what makes isolation possible: a user process cannot touch another's memory or the disk directly, only ask the kernel to. Each crossing costs hundreds of cycles plus cache effects, which is why batching syscalls (io_uring, writev) matters in hot I/O paths.",
           "resources": [
-            {
-              "title": "Wikipedia — Protection ring",
-              "url": "https://en.wikipedia.org/wiki/Protection_ring",
-              "kind": "article"
-            }
+            { "title": "Wikipedia — Protection ring", "url": "https://en.wikipedia.org/wiki/Protection_ring", "kind": "article" }
           ]
         },
         {
           "id": "os-syscall-examples",
           "type": "cloze",
           "difficulty": 2,
-          "tags": [
-            "os.syscalls",
-            "linux"
-          ],
+          "tags": ["os.syscalls", "linux"],
           "prompt": "On Linux, you can see exactly which system calls a program makes by running `___ ./program`.",
           "answer": "strace",
           "explanation": "`strace` traces syscalls and signals, `ltrace` library calls, and `perf` gives sampled profiles. Reaching for strace when a process 'hangs' usually answers the question in seconds — it is almost always blocked in a read, a poll or a futex.",
           "resources": [
-            {
-              "title": "man7 — strace(1)",
-              "url": "https://man7.org/linux/man-pages/man1/strace.1.html",
-              "kind": "docs"
-            }
+            { "title": "man7 — strace(1)", "url": "https://man7.org/linux/man-pages/man1/strace.1.html", "kind": "docs" }
           ]
         },
         {
           "id": "os-fork-exec",
           "type": "flip",
           "difficulty": 4,
-          "tags": [
-            "os.processes",
-            "unix"
-          ],
+          "tags": ["os.processes", "unix"],
           "prompt": "What do `fork` and `exec` do, and why are they separate?",
           "answer": "`fork` duplicates the current process (copy-on-write); `exec` replaces the process image with a new program. Separating them lets the child adjust its environment — redirect file descriptors, change user, set limits — between the two.",
           "explanation": "That gap is how shells implement pipes and redirection. The cost is that fork copies page tables of a large parent; `posix_spawn` and `vfork` exist for the common spawn-and-exec case, and `fork` in a multithreaded process is a well-known footgun.",
-          "prerequisites": [
-            "os-user-kernel-mode"
-          ],
+          "prerequisites": ["os-user-kernel-mode"],
           "resources": [
-            {
-              "title": "man7 — fork(2)",
-              "url": "https://man7.org/linux/man-pages/man2/fork.2.html",
-              "kind": "docs"
-            }
+            { "title": "man7 — fork(2)", "url": "https://man7.org/linux/man-pages/man2/fork.2.html", "kind": "docs" }
           ]
         },
         {
           "id": "os-context-switch",
           "type": "flip",
           "difficulty": 4,
-          "tags": [
-            "os.scheduling",
-            "performance"
-          ],
+          "tags": ["os.scheduling", "performance"],
           "prompt": "What does a context switch cost?",
           "answer": "Saving and restoring registers is a microsecond or so, but the real cost is indirect: cold caches and TLB entries for the incoming task. A process switch also changes the address space, flushing more state than a thread switch.",
           "explanation": "This is why oversubscribing threads hurts throughput, why pinning threads to cores helps latency-sensitive systems, and why green threads or async I/O — which switch in user space without touching the kernel — scale so much better for I/O-bound concurrency.",
           "resources": [
-            {
-              "title": "Wikipedia — Context switch",
-              "url": "https://en.wikipedia.org/wiki/Context_switch",
-              "kind": "article"
-            }
+            { "title": "Wikipedia — Context switch", "url": "https://en.wikipedia.org/wiki/Context_switch", "kind": "article" }
           ]
         },
         {
           "id": "os-zombie-orphan",
           "type": "compare",
           "difficulty": 4,
-          "tags": [
-            "os.processes",
-            "unix"
-          ],
+          "tags": ["os.processes", "unix"],
           "prompt": "Zombie process vs orphan process",
           "answer": "A zombie has exited but its exit status has not been reaped by its parent; an orphan is still running but its parent died.",
           "columns": {
-            "left": {
-              "title": "Zombie",
-              "points": [
-                "State Z in ps output",
-                "Holds only a PID and exit status",
-                "Caused by a parent that never calls wait()",
-                "Leaks PIDs — eventually fatal"
-              ]
-            },
-            "right": {
-              "title": "Orphan",
-              "points": [
-                "Still alive and running",
-                "Re-parented to init/systemd (PID 1)",
-                "Reaped automatically when it exits",
-                "Normal for daemons"
-              ]
-            }
+            "left": { "title": "Zombie", "points": ["State Z in ps output", "Holds only a PID and exit status", "Caused by a parent that never calls wait()", "Leaks PIDs — eventually fatal"] },
+            "right": { "title": "Orphan", "points": ["Still alive and running", "Re-parented to init/systemd (PID 1)", "Reaped automatically when it exits", "Normal for daemons"] }
           },
           "explanation": "This matters in containers: PID 1 in a container is your app, and if it does not reap adopted children you accumulate zombies. That is why `--init` or a tiny init like tini exists.",
-          "prerequisites": [
-            "os-fork-exec"
-          ],
+          "prerequisites": ["os-fork-exec"],
           "resources": [
-            {
-              "title": "man7 — wait(2)",
-              "url": "https://man7.org/linux/man-pages/man2/wait.2.html",
-              "kind": "docs"
-            }
+            { "title": "man7 — wait(2)", "url": "https://man7.org/linux/man-pages/man2/wait.2.html", "kind": "docs" }
           ]
         }
       ]
@@ -143,99 +88,53 @@
           "id": "os-paging-swap",
           "type": "flip",
           "difficulty": 4,
-          "tags": [
-            "os.memory",
-            "memory.virtual"
-          ],
+          "tags": ["os.memory", "memory.virtual"],
           "prompt": "What is a page fault, and when is it expensive?",
           "answer": "A page fault occurs when a process touches a virtual page with no valid mapping. Minor faults are resolved from memory (page cache, copy-on-write) and are cheap; major faults require disk I/O and cost milliseconds.",
           "explanation": "Watch major faults, not total faults. Thrashing — where the working set exceeds RAM and every access faults — turns a healthy system into an unresponsive one, which is why the OOM killer often beats swapping to death.",
           "resources": [
-            {
-              "title": "Wikipedia — Page fault",
-              "url": "https://en.wikipedia.org/wiki/Page_fault",
-              "kind": "article"
-            }
+            { "title": "Wikipedia — Page fault", "url": "https://en.wikipedia.org/wiki/Page_fault", "kind": "article" }
           ]
         },
         {
           "id": "os-file-descriptor",
           "type": "flip",
           "difficulty": 3,
-          "tags": [
-            "os.io",
-            "unix"
-          ],
+          "tags": ["os.io", "unix"],
           "prompt": "What is a file descriptor, and why is 'everything is a file' useful?",
           "answer": "A small integer indexing the kernel's per-process table of open resources. Because files, sockets, pipes, devices and timers all appear as descriptors, the same `read`/`write`/`poll` calls work on all of them.",
           "explanation": "That uniformity is why shell pipelines, `select`/`epoll` event loops and redirection compose so well. The limit (`ulimit -n`) is a classic production ceiling — 'too many open files' usually means leaked sockets, not too many files.",
           "resources": [
-            {
-              "title": "man7 — open(2)",
-              "url": "https://man7.org/linux/man-pages/man2/open.2.html",
-              "kind": "docs"
-            }
+            { "title": "man7 — open(2)", "url": "https://man7.org/linux/man-pages/man2/open.2.html", "kind": "docs" }
           ]
         },
         {
           "id": "os-blocking-models",
           "type": "compare",
           "difficulty": 4,
-          "tags": [
-            "os.io",
-            "concurrency.async"
-          ],
+          "tags": ["os.io", "concurrency.async"],
           "prompt": "Blocking I/O vs non-blocking with an event loop",
           "answer": "Blocking parks the thread until data is ready; non-blocking returns immediately and you multiplex readiness with epoll/kqueue/IOCP.",
           "columns": {
-            "left": {
-              "title": "Blocking",
-              "points": [
-                "Simple, linear code",
-                "One thread per connection",
-                "Memory and switching cost scales with connections",
-                "Fine up to a few thousand"
-              ]
-            },
-            "right": {
-              "title": "Non-blocking + poller",
-              "points": [
-                "One thread handles thousands of sockets",
-                "epoll/kqueue/IOCP or io_uring",
-                "Any blocking call poisons the loop",
-                "More complex error and lifecycle handling"
-              ]
-            }
+            "left": { "title": "Blocking", "points": ["Simple, linear code", "One thread per connection", "Memory and switching cost scales with connections", "Fine up to a few thousand"] },
+            "right": { "title": "Non-blocking + poller", "points": ["One thread handles thousands of sockets", "epoll/kqueue/IOCP or io_uring", "Any blocking call poisons the loop", "More complex error and lifecycle handling"] }
           },
           "explanation": "`select` is O(n) per call and capped at FD_SETSIZE; `epoll` is O(1) with edge- or level-triggered notification. `io_uring` goes further with submission/completion rings that avoid syscalls per operation entirely.",
-          "prerequisites": [
-            "os-file-descriptor"
-          ],
+          "prerequisites": ["os-file-descriptor"],
           "resources": [
-            {
-              "title": "man7 — epoll(7)",
-              "url": "https://man7.org/linux/man-pages/man7/epoll.7.html",
-              "kind": "docs"
-            }
+            { "title": "man7 — epoll(7)", "url": "https://man7.org/linux/man-pages/man7/epoll.7.html", "kind": "docs" }
           ]
         },
         {
           "id": "os-buffering",
           "type": "spot-bug",
           "difficulty": 3,
-          "tags": [
-            "os.io",
-            "debugging"
-          ],
+          "tags": ["os.io", "debugging"],
           "prompt": "Your program's log output vanishes when it crashes, but appears when run in a terminal. Why?",
           "answer": "stdout is line-buffered on a TTY and block-buffered when redirected to a file or pipe. On a crash the userspace buffer is never flushed. Flush explicitly, or switch to unbuffered/line-buffered mode.",
           "explanation": "In Python, `python -u` or `flush=True`; in C, `setvbuf`; in containers, this is why logs appear in bursts. stderr is unbuffered by default — which is exactly why diagnostics belong there.",
           "resources": [
-            {
-              "title": "man7 — setvbuf(3)",
-              "url": "https://man7.org/linux/man-pages/man3/setvbuf.3.html",
-              "kind": "docs"
-            }
+            { "title": "man7 — setvbuf(3)", "url": "https://man7.org/linux/man-pages/man3/setvbuf.3.html", "kind": "docs" }
           ],
           "code": "$ ./app > app.log      # crashes after printing 10,000 lines\n$ wc -l app.log\n0 app.log\n\n$ ./app                # same binary, straight to the terminal\nstarting up...\nprocessing batch 1",
           "lang": "bash"
@@ -244,19 +143,149 @@
           "id": "os-signals",
           "type": "scenario",
           "difficulty": 4,
-          "tags": [
-            "os.signals",
-            "devops.deploy"
-          ],
+          "tags": ["os.signals", "devops.deploy"],
           "prompt": "Your container is killed during deploys and drops in-flight requests. Which signals are involved and what should the app do?",
           "answer": "The orchestrator sends SIGTERM, waits a grace period, then SIGKILL (which cannot be caught). The app should catch SIGTERM, stop accepting new work, finish in-flight requests, close resources and exit before the deadline.",
           "explanation": "Two common traps: the signal goes to PID 1, so a shell-form entrypoint that does not `exec` swallows it; and the readiness probe must fail *before* shutdown starts so the load balancer stops sending traffic first.",
           "resources": [
-            {
-              "title": "Kubernetes — Pod termination",
-              "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination",
-              "kind": "docs"
-            }
+            { "title": "Kubernetes — Pod termination", "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "os-scheduling-ipc",
+      "name": "Scheduling, IPC & Storage",
+      "description": "CPU scheduling, priorities, inter-process communication, filesystems and inodes, the page cache and fsync.",
+      "cards": [
+        {
+          "id": "os-scheduling",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["os.scheduling"],
+          "prompt": "What does a CPU scheduler balance, and how does Linux's scheduler decide what runs?",
+          "answer": "Throughput, latency (responsiveness) and fairness. Linux long used CFS, which tracks each task's virtual runtime and runs the one that has had the least, weighted by its nice value; since 6.6 it uses EEVDF, which adds latency-aware deadlines. Real-time classes (`SCHED_FIFO`, `SCHED_RR`) preempt normal tasks.",
+          "explanation": "Preemptive schedulers interrupt a running task when its time slice ends or a higher-priority task wakes, so one busy loop cannot freeze the system. `nice`/`renice` adjust relative weights; CPU pinning (`taskset`) and cgroup CPU limits shape where and how much a process may run.",
+          "prerequisites": ["os-context-switch"],
+          "resources": [
+            { "title": "OSTEP — Scheduling: introduction", "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf", "kind": "book" }
+          ]
+        },
+        {
+          "id": "os-ipc",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["os.ipc"],
+          "prompt": "What mechanisms can processes use to communicate?",
+          "answer": "Pipes (a byte stream between related processes) and named pipes (FIFOs); Unix domain sockets (bidirectional, local, can pass file descriptors); TCP/UDP sockets (local or remote); shared memory (fastest, but needs separate synchronisation); message queues; signals (tiny notifications); and files or memory-mapped files.",
+          "explanation": "Unix sockets are the workhorse for local services — Docker, Postgres and systemd all expose them — and are faster than loopback TCP. Shared memory avoids copying but brings every concurrency hazard of threads to processes.",
+          "prerequisites": ["conc-process-thread"],
+          "resources": [
+            { "title": "Wikipedia — Inter-process communication", "url": "https://en.wikipedia.org/wiki/Inter-process_communication", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-inodes",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["os.filesystems"],
+          "prompt": "What is an inode, and what does a directory actually contain?",
+          "answer": "An inode stores a file's metadata — owner, permissions, size, timestamps, link count — and pointers to its data blocks, but not its name. A directory is a table mapping names to inode numbers.",
+          "explanation": "That separation explains hard links (two names, one inode), why renaming within a filesystem is instant (only a directory entry changes), and why a filesystem can run out of inodes with free space remaining. `ls -i` shows inode numbers; `stat` shows the metadata.",
+          "prerequisites": ["linux-links"],
+          "resources": [
+            { "title": "OSTEP — File system implementation", "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf", "kind": "book" }
+          ]
+        },
+        {
+          "id": "os-fsync",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["os.durability", "os.io"],
+          "prompt": "This \"safe\" config save can leave an empty or truncated file after a power cut. Why, and what is the correct pattern?",
+          "code": "with open('config.json', 'w') as f:   # truncates immediately\n    f.write(json.dumps(config))\n# returns before the data is on disk",
+          "lang": "python",
+          "answer": "`write` returns once data is in the kernel page cache, not on disk; a crash before writeback loses it, and truncating the file first means a crash mid-write leaves it empty. Write to a temporary file in the same directory, `fsync` it, atomically `rename` it over the original, then `fsync` the directory.",
+          "explanation": "`rename` within one filesystem is atomic, so readers see either the old or the new file, never half of each. Databases, package managers and editors all use this write–fsync–rename dance; skipping any step has caused real data loss.",
+          "prerequisites": ["os-buffering"],
+          "resources": [
+            { "title": "LWN — Ensuring data reaches disk", "url": "https://lwn.net/Articles/457667/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-page-cache",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["os.memory", "os.io"],
+          "prompt": "What is the page cache, and why does `free` show so little \"free\" memory on a healthy server?",
+          "answer": "The kernel caches file data in otherwise unused RAM, so repeated reads come from memory and writes are buffered before reaching disk. This memory is reclaimed instantly when applications need it, so \"available\" — not \"free\" — is the number that matters.",
+          "explanation": "Unused RAM is wasted RAM, so Linux fills it with cache. It is also why the second run of a job is faster, why benchmarks must control for a warm cache, and why databases tune how they share memory with the page cache.",
+          "prerequisites": ["os-paging-swap"],
+          "resources": [
+            { "title": "Linux Ate My RAM!", "url": "https://www.linuxatemyram.com/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "os-platform-internals",
+      "name": "Boot, Interrupts & Virtualisation",
+      "description": "The boot sequence, interrupts and drivers, hypervisor types, capabilities and the security model.",
+      "cards": [
+        {
+          "id": "os-boot",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["os.boot"],
+          "prompt": "What happens between pressing the power button and a login prompt on a Linux machine?",
+          "answer": "Firmware (UEFI) initialises hardware and loads a bootloader (GRUB, systemd-boot) from the EFI partition; the bootloader loads the kernel and an initramfs; the kernel initialises drivers, mounts the real root filesystem with help from the initramfs, and starts PID 1 (systemd), which brings up services in dependency order up to a login target.",
+          "explanation": "Secure Boot verifies signatures along this chain so tampered bootloaders or kernels refuse to run. `systemd-analyze blame` shows which services slow boot; failures before PID 1 usually point at the initramfs or root filesystem mount.",
+          "prerequisites": ["linux-systemd"],
+          "resources": [
+            { "title": "Arch Wiki — Arch boot process", "url": "https://wiki.archlinux.org/title/Arch_boot_process", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "os-interrupts",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["os.kernel", "os.io"],
+          "prompt": "What is an interrupt, and how does it differ from polling?",
+          "answer": "A hardware signal that makes the CPU pause its current work and run the kernel's handler — a key press, a packet arriving, a disk request completing. Polling instead repeatedly checks a device's status. Interrupts avoid wasted cycles when events are rare; polling wins when they are constant.",
+          "explanation": "At very high rates interrupts themselves become the overhead, so network drivers switch between interrupts and polling (Linux NAPI), and high-performance stacks such as DPDK and io_uring polling mode poll deliberately. Handlers do minimal work immediately and defer the rest.",
+          "prerequisites": ["os-user-kernel-mode"],
+          "resources": [
+            { "title": "Wikipedia — Interrupt", "url": "https://en.wikipedia.org/wiki/Interrupt", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-hypervisors",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["os.virtualisation"],
+          "prompt": "Type 1 vs type 2 hypervisors",
+          "answer": "A type 1 (bare-metal) hypervisor runs directly on hardware and hosts guest VMs; a type 2 hypervisor runs as an application on a normal host OS.",
+          "columns": {
+            "left": { "title": "Type 1 (bare metal)", "points": ["Runs directly on the hardware", "ESXi, Hyper-V, Xen, KVM", "Data centres and clouds", "Lower overhead, stronger isolation"] },
+            "right": { "title": "Type 2 (hosted)", "points": ["Runs on top of a host OS", "VirtualBox, VMware Workstation, Parallels", "Developer desktops", "Convenient; more overhead"] }
+          },
+          "explanation": "Hardware virtualisation extensions (Intel VT-x, AMD-V) and nested page tables made VMs nearly native speed. The lines blur: KVM turns Linux itself into a type 1 hypervisor, and Hyper-V runs underneath Windows when WSL2 is enabled. MicroVMs (Firecracker) boot in milliseconds for serverless isolation.",
+          "prerequisites": ["ctr-vs-vm"],
+          "resources": [
+            { "title": "Wikipedia — Hypervisor", "url": "https://en.wikipedia.org/wiki/Hypervisor", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-capabilities",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["os.security", "security.privilege"],
+          "prompt": "What are Linux capabilities and seccomp, and why do containers use them?",
+          "answer": "Capabilities split root's powers into units (`CAP_NET_ADMIN`, `CAP_SYS_ADMIN`, `CAP_NET_BIND_SERVICE`…) that can be granted or dropped individually. seccomp filters which system calls a process may make at all. Container runtimes drop most capabilities and apply a default seccomp profile.",
+          "explanation": "Least privilege at the kernel boundary means a compromised process can do far less. `--privileged` re-grants everything and disables these protections, so it should almost never appear in production. `CAP_SYS_ADMIN` is nearly equivalent to full root.",
+          "prerequisites": ["linux-special-bits", "ctr-namespaces-cgroups"],
+          "resources": [
+            { "title": "man7.org — capabilities(7)", "url": "https://man7.org/linux/man-pages/man7/capabilities.7.html", "kind": "docs" }
           ]
         }
       ]

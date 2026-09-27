@@ -134,7 +134,212 @@
           "answer": "Training is dominated by large matrix multiplications — thousands of identical independent operations. GPUs have thousands of simple cores and very high memory bandwidth, which is exactly that workload; CPUs optimise for latency on a few complex sequential threads.",
           "explanation": "The usual bottleneck is memory bandwidth, not arithmetic. That is why VRAM capacity limits model size, why quantisation (int8, 4-bit) makes inference so much cheaper, and why batching improves throughput dramatically at the cost of per-request latency.",
           "resources": [
-            { "title": "NVIDIA — CUDA programming guide", "url": "https://docs.nvidia.com/cuda/cuda-c-programming-guide/", "kind": "docs" }
+            { "title": "NVIDIA — CUDA programming guide", "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-classic-ml",
+      "name": "Classical Machine Learning",
+      "description": "Regression and classification models, trees and ensembles, clustering, dimensionality reduction and feature preparation.",
+      "cards": [
+        {
+          "id": "ai-linear-logistic",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["ml.models", "ml.supervised"],
+          "prompt": "Linear regression vs logistic regression",
+          "answer": "Linear regression predicts a continuous number as a weighted sum of features, trained by minimising squared error. Logistic regression predicts a probability of a class by passing that weighted sum through a sigmoid, trained by minimising cross-entropy (log loss).",
+          "columns": {
+            "left": { "title": "Linear regression", "points": ["Output: any real number", "Loss: mean squared error", "House prices, demand forecasts", "Coefficients = effect per unit"] },
+            "right": { "title": "Logistic regression", "points": ["Output: probability 0–1 via sigmoid", "Loss: cross-entropy (log loss)", "Spam or not, churn or not", "Threshold turns probability into a class"] }
+          },
+          "explanation": "Despite the name, logistic regression is a classifier. Both are fast, interpretable baselines — coefficients show each feature's effect — and should be tried before anything deep. They assume roughly linear relationships unless you engineer features.",
+          "resources": [
+            { "title": "scikit-learn — Linear models", "url": "https://scikit-learn.org/stable/modules/linear_model.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-trees-ensembles",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.models", "ml.ensembles"],
+          "prompt": "Why do random forests and gradient-boosted trees dominate tabular data?",
+          "answer": "Decision trees capture non-linear interactions without feature scaling but overfit alone. Random forests average many trees trained on random samples and feature subsets (reducing variance); gradient boosting (XGBoost, LightGBM, CatBoost) adds trees sequentially, each correcting the previous ensemble's errors (reducing bias).",
+          "explanation": "On structured, tabular business data, boosted trees routinely beat neural networks with far less tuning and compute. They handle missing values and mixed feature types well, and offer feature-importance measures — though importance is not causation.",
+          "prerequisites": ["ai-overfitting"],
+          "resources": [
+            { "title": "scikit-learn — Ensembles", "url": "https://scikit-learn.org/stable/modules/ensemble.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-bias-variance",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.theory", "ml.generalisation"],
+          "prompt": "What is the bias–variance trade-off?",
+          "answer": "Bias is error from overly simple assumptions (underfitting: consistently wrong); variance is error from sensitivity to the particular training data (overfitting: wildly different models from different samples). Making a model more flexible lowers bias but raises variance.",
+          "explanation": "Diagnose with learning curves: high error on both training and validation means bias — use a richer model or better features; low training error but high validation error means variance — add data, regularise, or simplify. Ensembles attack one or the other.",
+          "prerequisites": ["ai-overfitting"],
+          "resources": [
+            { "title": "Google ML Crash Course — Overfitting", "url": "https://developers.google.com/machine-learning/crash-course/overfitting", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-kmeans",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ml.unsupervised", "ml.clustering"],
+          "prompt": "How does k-means clustering work, and what are its limits?",
+          "answer": "Choose k, place k centroids, then repeat: assign each point to its nearest centroid and move each centroid to the mean of its points, until assignments stop changing. It finds k compact, roughly spherical groups.",
+          "explanation": "You must pick k (the elbow method or silhouette score help), results depend on initialisation (k-means++ improves it), features must be scaled, and it fails on elongated or density-based clusters — DBSCAN or Gaussian mixtures handle those.",
+          "prerequisites": ["ai-supervision-types"],
+          "resources": [
+            { "title": "scikit-learn — Clustering — k-means", "url": "https://scikit-learn.org/stable/modules/clustering.html#k-means", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-pca",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.unsupervised", "ml.dimensionality"],
+          "prompt": "What does PCA do, and when would you use it?",
+          "answer": "Principal component analysis finds the orthogonal directions along which the data varies most and projects it onto the top few, compressing many correlated features into fewer uncorrelated ones while keeping most of the variance.",
+          "explanation": "Uses: visualising high-dimensional data in 2-D, removing noise and redundancy, and speeding up downstream models. Components are linear mixtures of features and hard to interpret; scale features first, or large-valued features dominate. t-SNE and UMAP are better for visualising clusters.",
+          "prerequisites": ["ai-embeddings"],
+          "resources": [
+            { "title": "scikit-learn — Decomposition — PCA", "url": "https://scikit-learn.org/stable/modules/decomposition.html#pca", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-feature-scaling",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["ml.features", "ml.preprocessing"],
+          "prompt": "Why does this k-nearest-neighbours model effectively ignore age?",
+          "code": "X = df[['income', 'age']]      # income ~ 20,000–200,000; age ~ 18–90\nmodel = KNeighborsClassifier(n_neighbors=5).fit(X, y)",
+          "lang": "python",
+          "answer": "Distances are dominated by the feature with the largest range: income varies by tens of thousands, age by tens, so age barely affects which neighbours are nearest. Standardise features (zero mean, unit variance) or min-max scale them — inside a pipeline fitted only on training data.",
+          "explanation": "Scale-sensitive methods include k-NN, k-means, SVMs, PCA, and neural networks and linear models trained with gradient descent; tree-based models are not affected. Encode categories with one-hot or target encoding rather than arbitrary integers.",
+          "prerequisites": ["ai-train-val-test"],
+          "resources": [
+            { "title": "scikit-learn — Preprocessing data", "url": "https://scikit-learn.org/stable/modules/preprocessing.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-cross-validation",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.evaluation"],
+          "prompt": "What is k-fold cross-validation, and when is a plain random split wrong?",
+          "answer": "Split the training data into k folds, train k times each holding out a different fold for validation, and average the scores — a more reliable estimate than one split, especially with little data. Keep the final test set untouched until the very end.",
+          "explanation": "Random splits are wrong for time series (the model would learn from the future — use forward-chaining splits) and for grouped data such as several rows per patient or user (use group-aware splits so the same entity never appears on both sides). Both mistakes are forms of leakage.",
+          "prerequisites": ["ai-train-val-test"],
+          "resources": [
+            { "title": "scikit-learn — Cross-validation", "url": "https://scikit-learn.org/stable/modules/cross_validation.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-deep-learning",
+      "name": "Neural Networks & MLOps",
+      "description": "Activations and loss functions, architectures, training hyperparameters, confusion matrices and ROC, transfer learning and drift.",
+      "cards": [
+        {
+          "id": "ai-activations-loss",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.neural-networks"],
+          "prompt": "What do activation functions and loss functions do in a neural network?",
+          "answer": "Activations (ReLU, GELU, sigmoid, softmax) add non-linearity after each layer — without them, any stack of layers collapses into one linear function. The loss function turns predictions into a single number to minimise: mean squared error for regression, cross-entropy for classification.",
+          "explanation": "Softmax at the output turns scores into class probabilities, paired with cross-entropy loss. The choice of loss defines what \"good\" means to the optimiser, so it must match the real objective — mismatches produce models that optimise the wrong thing well.",
+          "prerequisites": ["ai-gradient-descent"],
+          "resources": [
+            { "title": "Google ML Crash Course — Neural networks", "url": "https://developers.google.com/machine-learning/crash-course/neural-networks", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-architectures",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["ml.neural-networks", "ml.architectures"],
+          "prompt": "CNNs vs RNNs vs transformers",
+          "answer": "CNNs slide learned filters over grids, exploiting local patterns and translation invariance — images, audio spectrograms. RNNs process sequences step by step with a hidden state — historically text and time series. Transformers use attention over the whole sequence in parallel and now dominate language and increasingly vision.",
+          "columns": {
+            "left": { "title": "CNN / RNN", "points": ["CNN: convolutions over local neighbourhoods", "CNN: images, video, audio", "RNN/LSTM: sequential hidden state", "RNN: slow to train, weak on long context"] },
+            "right": { "title": "Transformer", "points": ["Self-attention across all positions", "Parallel training on GPUs", "Language, code, vision, audio, multimodal", "Cost grows quadratically with sequence length"] }
+          },
+          "explanation": "Architecture encodes assumptions (inductive bias) about the data. RNNs struggle with long-range dependencies and cannot parallelise across time steps, which is why transformers replaced them for most sequence tasks.",
+          "prerequisites": ["ai-transformer-attention"],
+          "resources": [
+            { "title": "Dive into Deep Learning (free textbook)", "url": "https://d2l.ai/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "ai-training-hyperparams",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.training"],
+          "prompt": "What are epochs, batch size and learning-rate schedules?",
+          "answer": "An epoch is one full pass over the training data. Batch size is how many examples are averaged per gradient step — larger batches use GPUs efficiently and give smoother gradient estimates, but can generalise slightly worse. Learning-rate schedules (warm-up, cosine decay) start small, rise, then decay for stable convergence.",
+          "explanation": "Use early stopping on validation loss to choose how many epochs to train. When changing batch size, the learning rate usually needs retuning. Log training and validation curves for every run — experiment tracking makes results reproducible.",
+          "prerequisites": ["ai-gradient-descent"],
+          "resources": [
+            { "title": "Google ML Crash Course — Linear regression — hyperparameters", "url": "https://developers.google.com/machine-learning/crash-course/linear-regression/hyperparameters", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-confusion-roc",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.evaluation", "ml.metrics"],
+          "prompt": "What does a confusion matrix show, and what do ROC-AUC and PR-AUC summarise?",
+          "answer": "A confusion matrix counts true positives, false positives, true negatives and false negatives at a chosen threshold. ROC-AUC measures how well the model ranks positives above negatives across all thresholds; PR-AUC summarises the precision–recall trade-off and is more informative when positives are rare.",
+          "explanation": "With 1% positives, ROC-AUC can look excellent while precision is poor, because false positives are drowned out by the huge number of true negatives. Choose the operating threshold from the business cost of each error type, not the default 0.5.",
+          "prerequisites": ["ai-metrics"],
+          "resources": [
+            { "title": "Google ML Crash Course — Classification — ROC and AUC", "url": "https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-class-imbalance",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ml.data", "ml.evaluation"],
+          "prompt": "Only 0.5% of your training examples are the positive class. How do you train a useful classifier?",
+          "answer": "Evaluate with precision, recall, F1 or PR-AUC instead of accuracy; use class weights in the loss (or resample — undersample the majority, oversample the minority, carefully only within training folds); tune the decision threshold; and consider anomaly-detection framing. Collecting more positive examples beats every trick.",
+          "explanation": "Oversampling before the train/test split leaks duplicated examples into evaluation. Resampling changes predicted probabilities, so recalibrate if downstream decisions use them as probabilities.",
+          "prerequisites": ["ai-metrics", "ai-train-val-test"],
+          "resources": [
+            { "title": "imbalanced-learn — User guide", "url": "https://imbalanced-learn.org/stable/user_guide.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-transfer-learning",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ml.transfer-learning"],
+          "prompt": "What is transfer learning, and why is it the default approach today?",
+          "answer": "Starting from a model pre-trained on a huge general dataset and adapting it to your task — by training a small head on its frozen features, or fine-tuning some or all of its weights on your data. The pre-trained model already encodes general features (edges, shapes, language structure).",
+          "explanation": "It needs far less labelled data and compute than training from scratch, which is why most practical vision and language work fine-tunes or prompts foundation models. Parameter-efficient methods such as LoRA fine-tune large models by training small adapter matrices.",
+          "prerequisites": ["ai-weights"],
+          "resources": [
+            { "title": "Hugging Face — Fine-tuning a pretrained model", "url": "https://huggingface.co/docs/transformers/training", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ai-mlops-drift",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ml.ops", "ml.monitoring"],
+          "prompt": "A fraud model that tested well six months ago is now missing most fraud. What happened, and what should have been in place?",
+          "answer": "Drift: the input distribution (data drift) or the relationship between inputs and outcomes (concept drift — fraudsters adapted) changed. Production ML needs monitoring of input feature distributions, prediction distributions and, once labels arrive, live accuracy — plus a retraining pipeline and versioned models for rollback.",
+          "explanation": "Training–serving skew is a related failure: features computed differently in training and in production. A shared feature pipeline or feature store, reproducible training (versioned data, code and configuration), and staged rollouts (shadow mode, canaries) are the MLOps basics.",
+          "prerequisites": ["ai-train-val-test", "obs-alert-quality"],
+          "resources": [
+            { "title": "Google Cloud — MLOps: continuous delivery and automation pipelines in machine learning", "url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning", "kind": "article" }
           ]
         }
       ]

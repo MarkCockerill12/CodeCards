@@ -141,6 +141,184 @@
           ]
         }
       ]
+    },
+    {
+      "id": "gd-systems",
+      "name": "Core Game Systems",
+      "description": "Input, cameras, scene graphs, physics engines, animation, audio, save systems and asset pipelines.",
+      "cards": [
+        {
+          "id": "gd-input",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["gamedev.input"],
+          "prompt": "How should a game handle input so it is responsive and rebindable?",
+          "answer": "Map raw device events to abstract actions (\"jump\", \"move\") through a binding layer, so controls can be rebound and multiple devices supported. Poll or collect input once per frame, buffer short presses so a quick tap between frames is not lost, and apply dead zones to analogue sticks.",
+          "explanation": "Input buffering and \"coyote time\" (allowing a jump a few frames after leaving a ledge) make controls feel fair rather than strictly accurate. Engines provide action-mapping systems — Unity's Input System, Unreal's Enhanced Input, Godot's InputMap.",
+          "prerequisites": ["gd-game-loop"],
+          "resources": [
+            { "title": "Game Programming Patterns — Command", "url": "https://gameprogrammingpatterns.com/command.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-camera",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["gamedev.camera"],
+          "prompt": "What makes a third-person or platformer camera feel good?",
+          "answer": "Smooth follow with damping rather than rigid attachment, look-ahead in the direction of movement, dead zones so small movements do not jiggle the view, collision handling so walls do not block the view, and framing that shows what the player needs to see next.",
+          "explanation": "Use frame-rate-independent smoothing (exponential decay with delta time) or the camera will behave differently at different frame rates. Screen shake and zoom should be subtle and optional — they cause motion sickness for some players.",
+          "prerequisites": ["gd-delta-time"],
+          "resources": [
+            { "title": "GDC — 50 Game Camera Mistakes (talk)", "url": "https://www.gdcvault.com/play/1022018/50-Game-Camera", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gd-scene-graph",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["gamedev.architecture", "graphics.transforms"],
+          "prompt": "What is a scene graph, and how do parent–child transforms work?",
+          "answer": "A tree of objects where each node's transform (position, rotation, scale) is relative to its parent. A node's world transform is its parent's world transform multiplied by its own local one, so moving a ship moves everything attached to it.",
+          "explanation": "Hierarchies simplify attaching weapons to hands or wheels to cars, but deep hierarchies cost CPU to update every frame, and non-uniform scaling on parents can skew children. Engines cache world transforms and recompute only when something changes (a dirty flag).",
+          "prerequisites": ["gm-transform-order"],
+          "resources": [
+            { "title": "Game Programming Patterns — Dirty flag", "url": "https://gameprogrammingpatterns.com/dirty-flag.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-physics-engine",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["gamedev.physics"],
+          "prompt": "What does a rigid-body physics engine do each step?",
+          "answer": "Integrates forces into velocities and positions, detects collisions (broad then narrow phase), and resolves them by solving contact and joint constraints — applying impulses so objects bounce, slide and stack plausibly — at a fixed timestep.",
+          "explanation": "Physics engines trade accuracy for speed and stability. Moving objects by setting positions directly bypasses the solver and causes tunnelling and jitter — move physics objects through forces or velocities. Keep mass ratios reasonable; very light objects on very heavy ones destabilise stacks.",
+          "prerequisites": ["gd-collision-detection", "gd-game-loop"],
+          "resources": [
+            { "title": "Box2D documentation — Simulation", "url": "https://box2d.org/documentation/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "gd-animation",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["gamedev.animation"],
+          "prompt": "How do skeletal animation, blending and animation state machines work together?",
+          "answer": "A mesh is skinned to a skeleton of bones; animation clips store bone transforms over time. Blending interpolates between clips (walk into run by speed, via blend trees) and transitions crossfade between states in an animation state machine driven by gameplay parameters.",
+          "explanation": "Root motion lets the animation drive the character's movement, trading control for realism. Inverse kinematics adjusts limbs at runtime (feet on uneven ground, hands on ledges). Keep gameplay logic authoritative and let animation follow it, or controls feel sluggish.",
+          "prerequisites": ["gd-state-machine"],
+          "resources": [
+            { "title": "Unity Manual — Animation state machines", "url": "https://docs.unity3d.com/Manual/AnimationStateMachines.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "gd-save-systems",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["gamedev.persistence"],
+          "prompt": "How should a game save and load player progress safely?",
+          "answer": "Serialise a versioned data model of the game state (not engine objects) to a stable format; write to a temporary file and atomically rename it over the old save; keep a backup slot; and migrate old versions forward when loading. Saved references use stable IDs rather than memory pointers.",
+          "explanation": "Players lose saves to crashes during writing and to updates that change the format — both are preventable. Validate loaded data, since saves can be edited, and treat save-file parsing like any untrusted input in multiplayer or shared contexts.",
+          "prerequisites": ["os-fsync"],
+          "resources": [
+            { "title": "Game Programming Patterns — Data locality", "url": "https://gameprogrammingpatterns.com/data-locality.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "gd-asset-pipeline",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["gamedev.assets", "gamedev.tooling"],
+          "prompt": "What does an asset pipeline do?",
+          "answer": "It converts source assets — models, textures, audio, levels — from authoring formats into optimised runtime formats per platform: compressed textures with mipmaps, optimised meshes and LODs, compressed audio, packed bundles. It tracks dependencies so only changed assets rebuild.",
+          "explanation": "Import settings are as important as code: a 4K texture on a small prop, or uncompressed audio, silently blows memory budgets. Large binary assets need Git LFS or a dedicated version-control system (Perforce is common in games).",
+          "prerequisites": ["git-large-files"],
+          "resources": [
+            { "title": "Unity Manual — Asset workflow", "url": "https://docs.unity3d.com/Manual/AssetWorkflow.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gd-advanced",
+      "name": "Multiplayer, AI & Generation",
+      "description": "Networked game architectures, lag compensation and rollback, behaviour trees and utility AI, procedural generation and determinism.",
+      "cards": [
+        {
+          "id": "gd-netcode-authority",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["gamedev.networking"],
+          "prompt": "Authoritative server vs peer-to-peer lockstep",
+          "answer": "With an authoritative server, clients send inputs and the server simulates the true game state, sending results back — cheat-resistant and scalable to many players. Peer-to-peer lockstep has every peer simulate the same deterministic game from shared inputs — little bandwidth, but it needs perfect determinism and waits for the slowest peer.",
+          "columns": {
+            "left": { "title": "Authoritative server", "points": ["Server owns the truth", "Clients predict, server reconciles", "Cheat-resistant", "Server hosting costs"] },
+            "right": { "title": "P2P lockstep", "points": ["Every peer runs the same simulation", "Only inputs are exchanged", "Requires bit-exact determinism", "Desyncs and waiting on slow peers"] }
+          },
+          "explanation": "Competitive action games use authoritative servers with client-side prediction and interpolation to hide latency; strategy games with thousands of units traditionally use lockstep. Never trust the client for anything that matters — that is where cheats live.",
+          "prerequisites": ["net-tcp-vs-udp"],
+          "resources": [
+            { "title": "Gabriel Gambetta — Fast-paced multiplayer", "url": "https://www.gabrielgambetta.com/client-server-game-architecture.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gd-lag-compensation",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["gamedev.networking", "networking.latency"],
+          "prompt": "What are client-side prediction, server reconciliation and rollback netcode?",
+          "answer": "Prediction applies the player's own input immediately instead of waiting for the server; reconciliation corrects the local state when the authoritative update arrives, replaying unacknowledged inputs. Rollback (fighting games) predicts the opponent's input, and when the real input differs, rewinds to that frame and re-simulates forward.",
+          "explanation": "All three hide latency by guessing and correcting. Rollback requires cheap save/restore of full game state and deterministic simulation. Server-side lag compensation rewinds hitboxes to what the shooter saw, which is why you sometimes get hit after reaching cover.",
+          "prerequisites": ["gd-netcode-authority"],
+          "resources": [
+            { "title": "Gabriel Gambetta — Client-side prediction and server reconciliation", "url": "https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gd-behaviour-trees",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["gamedev.ai"],
+          "prompt": "Finite state machines vs behaviour trees vs utility AI for game characters",
+          "answer": "FSMs switch between explicit states with transitions; behaviour trees compose reusable tasks with selectors (try alternatives) and sequences (do in order), re-evaluated each tick; utility AI scores every possible action by weighted considerations and picks the best.",
+          "columns": {
+            "left": { "title": "FSM / behaviour tree", "points": ["FSM: explicit states and transitions", "FSM: simple, becomes spaghetti at scale", "BT: selectors, sequences, decorators", "BT: modular, reusable, designer-friendly"] },
+            "right": { "title": "Utility AI", "points": ["Scores every action each decision", "Weighted considerations and curves", "Emergent, context-aware behaviour", "Harder to predict and tune"] }
+          },
+          "explanation": "FSMs get tangled as states multiply; behaviour trees scale to complex, modular behaviours and are standard in engines; utility AI produces more emergent, context-sensitive choices at the cost of tuning curves. Many games mix them — a tree whose leaves use utility scoring.",
+          "prerequisites": ["gd-state-machine"],
+          "resources": [
+            { "title": "Game AI Pro (free chapters)", "url": "https://www.gameaipro.com/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gd-procedural",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["gamedev.procedural"],
+          "prompt": "How is procedural content generated, and why use noise rather than plain randomness?",
+          "answer": "Algorithms create content from rules and randomness: terrain from layered gradient noise (Perlin, simplex) at several frequencies (octaves), dungeons from room placement plus corridors or cellular automata, and variety from seeded random number generators.",
+          "explanation": "Pure randomness looks like static; coherent noise varies smoothly, producing natural hills and coastlines. Seeding makes worlds reproducible — same seed, same world — which enables sharing, debugging and generating on demand instead of storing everything.",
+          "prerequisites": ["crypto-random"],
+          "resources": [
+            { "title": "Red Blob Games — Making maps with noise functions", "url": "https://www.redblobgames.com/maps/terrain-from-noise/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gd-determinism",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["gamedev.determinism", "num.float"],
+          "prompt": "Your lockstep multiplayer game desyncs between a Windows PC and a Mac after a few minutes. What are the usual causes?",
+          "answer": "Non-determinism: floating-point results that differ across compilers, CPU instruction sets or maths libraries; iteration over unordered hash maps; random number generators seeded or called differently; time-based logic using the wall clock; and frame-rate-dependent updates.",
+          "explanation": "Deterministic simulations use fixed timesteps, seeded RNGs advanced identically, ordered containers, and often fixed-point maths for the simulation. Hash the game state each tick and compare across peers to detect the exact frame a desync began.",
+          "prerequisites": ["gd-netcode-authority", "num-float-precision"],
+          "resources": [
+            { "title": "Gaffer On Games — Floating point determinism", "url": "https://gafferongames.com/post/floating_point_determinism/", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

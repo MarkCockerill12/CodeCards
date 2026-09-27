@@ -33,8 +33,8 @@
           "difficulty": 3,
           "tags": ["csharp.memory", "csharp.performance"],
           "prompt": "What is boxing, and where does it sneak in?",
-          "answer": "Boxing wraps a value type in a heap object so it can be treated as `object` or an interface. It appears in non-generic collections, `object` parameters, string interpolation of value types, and calling an interface method on a struct through the interface.",
-          "explanation": "Each box is an allocation plus a copy plus later GC pressure. Generics avoid it — `List<int>` stores ints inline while `ArrayList` boxes each one. Constrained generic calls (`where T : IComparable<T>`) also avoid boxing that an `IComparable` parameter would cause.",
+          "answer": "Boxing wraps a value type in a heap object so it can be treated as `object` or an interface. It appears in non-generic collections, `object` parameters (including `string.Format` and older `params object[]` APIs), and calling an interface method on a struct through the interface.",
+          "explanation": "Each box is an allocation plus a copy plus later GC pressure. Generics avoid it — `List<int>` stores ints inline while `ArrayList` boxes each one. Since C# 10, string interpolation uses interpolated string handlers that format value types without boxing. Constrained generic calls (`where T : IComparable<T>`) also avoid the box an `IComparable` parameter would cause.",
           "prerequisites": ["cs-struct-vs-class"],
           "resources": [
             { "title": "Microsoft Learn — Boxing and unboxing", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/types/boxing-and-unboxing", "kind": "docs" }
@@ -121,8 +121,9 @@
           "answer": "2,3,4",
           "explanation": "LINQ query operators are deferred — `Where` builds an iterator and executes only when enumerated, at which point it sees the current contents of the list. Call `.ToList()` to snapshot, and beware enumerating an expensive query twice by accident.",
           "resources": [
-            { "title": "Microsoft Learn — Deferred execution", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/linq/deferred-execution-and-lazy-evaluation-in-linq-to-objects", "kind": "docs" }
-          ]
+            { "title": "Microsoft Learn — Deferred execution", "url": "https://learn.microsoft.com/en-us/dotnet/standard/linq/deferred-execution-lazy-evaluation", "kind": "docs" }
+          ],
+          "verify": { "runtime": "csharp", "expectedOutput": "2,3,4" }
         },
         {
           "id": "cs-ienumerable-vs-iqueryable",
@@ -162,6 +163,252 @@
           "explanation": "`Span<T>` is a ref struct: stack-only, so it cannot be stored in a field or captured by an async method. `Memory<T>` is the heap-storable equivalent for async paths. Together they eliminate most parsing allocations in hot code.",
           "resources": [
             { "title": "Microsoft Learn — Memory and span usage guidelines", "url": "https://learn.microsoft.com/en-us/dotnet/standard/memory-and-spans/memory-t-usage-guidelines", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cs-language",
+      "name": "Language Essentials",
+      "description": "Parameters, equality, pattern matching, delegates, generics variance and modern syntax.",
+      "cards": [
+        {
+          "id": "cs-ref-out-in",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["csharp.parameters", "csharp.types"],
+          "prompt": "`ref` vs `out` vs `in` parameters",
+          "answer": "All three pass by reference. `ref` requires an initialised argument and allows reading and writing; `out` need not be initialised but must be assigned by the method; `in` is a read-only reference.",
+          "columns": {
+            "left": { "title": "ref / out", "points": ["`ref`: caller must initialise; callee may read and write", "`out`: callee must assign before returning", "`out` powers `TryParse` and `TryGetValue`", "Both visible at the call site"] },
+            "right": { "title": "in / by value", "points": ["`in`: read-only reference, no copy", "Best with `readonly struct`", "By value (default): a copy of the value or reference", "Reassigning a by-value parameter is invisible to the caller"] }
+          },
+          "explanation": "Without a modifier, C# passes by value — for reference types, the reference is copied, exactly like Java. `out` powers the `TryParse` pattern (`if (int.TryParse(s, out var n))`). `in` avoids copying large structs but can cause hidden defensive copies unless the struct is `readonly`.",
+          "prerequisites": ["cs-struct-vs-class"],
+          "resources": [
+            { "title": "Microsoft Learn — Method parameters", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/method-parameters", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-throw-vs-throw-ex",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["csharp.exceptions"],
+          "prompt": "What is lost when this rethrows?",
+          "code": "try\n{\n    ProcessOrder(order);\n}\ncatch (Exception ex)\n{\n    _logger.LogError(ex, \"failed\");\n    throw ex;\n}",
+          "lang": "csharp",
+          "answer": "`throw ex;` resets the stack trace to this line, so you lose where the error really happened. Use a bare `throw;` to rethrow with the original trace, or wrap it: `throw new OrderException(\"...\", ex)` to add context while keeping the inner exception.",
+          "explanation": "Also avoid catching `Exception` just to log and rethrow at every layer — logs fill with duplicates. Catch where you can handle or add context; let everything else bubble to one top-level handler. Exception filters (`catch (HttpRequestException e) when (e.StatusCode == 404)`) avoid unwinding for cases you will not handle.",
+          "resources": [
+            { "title": "Microsoft Learn — Exception-handling statements", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/exception-handling-statements", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-equality",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["csharp.equality", "csharp.types"],
+          "prompt": "What does this print?",
+          "code": "var a = new Point(1, 2);\nvar b = new Point(1, 2);\nvar r1 = new PointRecord(1, 2);\nvar r2 = new PointRecord(1, 2);\nConsole.WriteLine($\"{a == b} {r1 == r2} {r1.Equals(r2)}\");\n\nclass Point(int x, int y) { public int X = x; public int Y = y; }\nrecord PointRecord(int X, int Y);",
+          "lang": "csharp",
+          "answer": "False True True",
+          "explanation": "For classes, `==` is reference equality unless the type overloads it; `Equals` is virtual and may be overridden. Records generate value-based `Equals` and `==`. Strings overload `==` to compare contents. When overriding `Equals`, override `GetHashCode` too — the same contract as Java.",
+          "prerequisites": ["cs-record-vs-class"],
+          "resources": [
+            { "title": "Microsoft Learn — Equality comparisons", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/equality-comparisons", "kind": "docs" }
+          ],
+          "verify": { "runtime": "csharp", "expectedOutput": "False True True" }
+        },
+        {
+          "id": "cs-pattern-matching",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["csharp.pattern-matching"],
+          "prompt": "What kinds of patterns can a C# switch expression use?",
+          "answer": "Type patterns (`Circle c`), property patterns (`{ Status: \"open\", Total: > 100 }`), positional patterns for deconstructable types (`(0, 0)`), relational and logical patterns (`>= 18 and < 65`, `not null`), list patterns (`[1, .., var last]`), and the discard `_`.",
+          "explanation": "Switch expressions warn when a closed set of cases is not exhausted and return a value, so they replace long if/else chains. `is not null` is the idiomatic null check — it cannot be hijacked by an overloaded `==` operator.",
+          "resources": [
+            { "title": "Microsoft Learn — Patterns", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/patterns", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-delegates-events",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["csharp.delegates", "csharp.events"],
+          "prompt": "What are delegates, `Func`/`Action`, and events?",
+          "answer": "A delegate is a type-safe function reference. `Func<T, TResult>` returns a value, `Action<T>` returns void, and `Predicate<T>` returns bool. An `event` is a delegate field that outside code can only subscribe to (`+=`) or unsubscribe from (`-=`), never invoke or overwrite.",
+          "explanation": "Event subscriptions keep the subscriber alive as long as the publisher lives — a common leak when a short-lived object subscribes to a long-lived one and never unsubscribes. Raise events with `Handler?.Invoke(this, args)` to avoid a null race.",
+          "resources": [
+            { "title": "Microsoft Learn — Delegates and events", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/delegates-overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-extension-methods",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["csharp.language"],
+          "prompt": "What is an extension method, and what is LINQ's relationship to them?",
+          "answer": "A static method in a static class whose first parameter is marked `this` (`public static bool IsBlank(this string s)`), callable as if it were an instance method. LINQ operators such as `Where` and `Select` are extension methods on `IEnumerable<T>`.",
+          "explanation": "Extension methods cannot access private members and are resolved statically at compile time, so they cannot be overridden. C# 14 extension members extend the idea to properties and static members. Keep them discoverable in a clearly named namespace.",
+          "resources": [
+            { "title": "Microsoft Learn — Extension members", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-generic-variance",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["csharp.generics"],
+          "prompt": "What do `out T` and `in T` mean on a generic interface?",
+          "answer": "`out T` makes the interface covariant — `IEnumerable<string>` can be used as `IEnumerable<object>` because T only comes out. `in T` makes it contravariant — `IComparer<object>` can be used as `IComparer<string>` because T only goes in.",
+          "explanation": "Variance applies only to interfaces and delegates, and only to reference types. `List<T>` is invariant because it both accepts and returns T. Arrays are unsafely covariant — assigning a `string[]` to `object[]` compiles, and storing an `int` in it throws at runtime.",
+          "prerequisites": ["java-generics-wildcards"],
+          "resources": [
+            { "title": "Microsoft Learn — Covariance and contravariance in generics", "url": "https://learn.microsoft.com/en-us/dotnet/standard/generics/covariance-and-contravariance", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-const-readonly",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["csharp.language", "csharp.immutability"],
+          "prompt": "`const` vs `readonly` (and `static readonly`)",
+          "answer": "`const` is a compile-time constant baked into every assembly that uses it; `readonly` is a field assigned once, at declaration or in the constructor, evaluated at runtime.",
+          "columns": {
+            "left": { "title": "const", "points": ["Compile-time value, implicitly static", "Only primitives, strings, enums, null", "Inlined into calling assemblies", "Changing it needs consumers to recompile"] },
+            "right": { "title": "readonly / static readonly", "points": ["Assigned once at runtime", "Any type, including objects", "Referenced, not inlined", "Readonly reference ≠ immutable object"] }
+          },
+          "explanation": "Because const values are copied into consumers at compile time, changing a public const in a library does not affect callers until they recompile. Use `const` for true constants (mathematical, protocol numbers) and `static readonly` for everything else.",
+          "resources": [
+            { "title": "Microsoft Learn — readonly keyword", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/readonly", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-modern-syntax",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["csharp.language"],
+          "prompt": "What do primary constructors, collection expressions, `required` members and file-scoped namespaces add?",
+          "answer": "Primary constructors declare constructor parameters on the type itself (`class Service(ILogger log)`); collection expressions build collections with `[1, 2, ..others]`; `required` members force initialisation in object initialisers; and `namespace X;` saves a level of indentation for the whole file.",
+          "explanation": "Together with records, pattern matching and top-level statements, they strip much of the ceremony from C#. Note that primary-constructor parameters in classes are captured mutable variables, not readonly fields — assign them to a `readonly` field if that matters.",
+          "resources": [
+            { "title": "Microsoft Learn — What's new in C# 12", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-12", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cs-runtime",
+      "name": "The .NET Runtime & Ecosystem",
+      "description": "The CLR and GC, Task vs ValueTask, async streams, dependency injection lifetimes, EF Core and tooling.",
+      "cards": [
+        {
+          "id": "cs-clr-il",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["csharp.runtime", "compilers.jit"],
+          "prompt": "How does C# code become machine code?",
+          "answer": "The C# compiler (Roslyn) emits IL (intermediate language) into an assembly. At runtime the CLR JIT-compiles IL to native code per method on first call, with tiered compilation re-optimising hot methods. Native AOT compiles ahead of time instead.",
+          "explanation": "Tiered compilation plus dynamic PGO give fast startup and fast steady state. Native AOT trades reflection-heavy features for instant startup and small self-contained binaries — ideal for CLIs, containers and serverless.",
+          "prerequisites": ["comp-jit-vs-aot"],
+          "resources": [
+            { "title": "Microsoft Learn — Managed execution process", "url": "https://learn.microsoft.com/en-us/dotnet/standard/managed-execution-process", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-gc-generations",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["csharp.runtime", "memory.gc"],
+          "prompt": "How does the .NET garbage collector organise the heap?",
+          "answer": "Into generations 0, 1 and 2, where short-lived objects die cheaply in gen 0, plus the large object heap (LOH) for objects of 85,000 bytes or more, which is collected with gen 2 and not compacted by default.",
+          "explanation": "Frequent large allocations — big arrays and strings — cause expensive gen 2 collections and LOH fragmentation. `ArrayPool<T>.Shared` and `Span<T>` reduce them. Server GC (the ASP.NET Core default) uses a heap per core for throughput; workstation GC favours latency.",
+          "prerequisites": ["java-gc-generational"],
+          "resources": [
+            { "title": "Microsoft Learn — Fundamentals of garbage collection", "url": "https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/fundamentals", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-task-valuetask",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["csharp.async"],
+          "prompt": "`Task<T>` vs `ValueTask<T>`",
+          "answer": "Task is a reference type that is always allocated (except cached results); ValueTask is a struct that avoids allocation when the result is usually available synchronously.",
+          "columns": {
+            "left": { "title": "Task<T>", "points": ["Heap-allocated reference type", "Await it many times, store it, combine it", "Safe default for every async API", "`Task.WhenAll`, `WhenAny` work directly"] },
+            "right": { "title": "ValueTask<T>", "points": ["Struct — no allocation on the sync path", "Await exactly once", "Hot paths that usually complete synchronously", "Convert with `.AsTask()` to reuse"] }
+          },
+          "explanation": "ValueTask is an optimisation for hot paths that usually complete synchronously, such as a cached read. It has rules: await it exactly once, never await it concurrently, and call `.AsTask()` if you need to store or reuse it. Default to `Task`.",
+          "prerequisites": ["cs-async-void"],
+          "resources": [
+            { "title": "Microsoft Learn — ValueTask<TResult> struct", "url": "https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-async-streams",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["csharp.async", "csharp.linq"],
+          "prompt": "What is `IAsyncEnumerable<T>` for?",
+          "answer": "Streaming results that arrive asynchronously: the producer is an `async` iterator using `yield return`, and the consumer uses `await foreach`. Each item is awaited as it arrives instead of buffering the whole list.",
+          "explanation": "Use it for paging through APIs, reading database results, or processing message streams with bounded memory. Pass cancellation with `[EnumeratorCancellation]` on the token parameter, and `.WithCancellation(ct)` on the consuming side.",
+          "resources": [
+            { "title": "Microsoft Learn — Generate and consume async streams", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/generate-consume-asynchronous-stream", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-di-lifetimes",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["csharp.aspnet", "patterns.di"],
+          "prompt": "This registration causes intermittent data corruption under load. Why?",
+          "code": "builder.Services.AddDbContext<AppDb>();          // scoped\nbuilder.Services.AddSingleton<OrderCache>();    // singleton\n\npublic class OrderCache(AppDb db)\n{\n    public Task<Order?> Get(int id) => db.Orders.FindAsync(id).AsTask();\n}",
+          "lang": "csharp",
+          "answer": "A captive dependency: a singleton service captures a scoped `DbContext`, so one context — which is not thread-safe — is shared by every request forever. A service may depend only on services with equal or longer lifetimes. Make the consumer scoped, or inject `IServiceScopeFactory` and create a scope per operation.",
+          "explanation": "Lifetimes: transient (new every resolution), scoped (one per request), singleton (one for the app). ASP.NET Core validates scopes in Development and throws on this exact mistake — enable `ValidateScopes` and `ValidateOnBuild` everywhere, including tests.",
+          "prerequisites": ["dp-composition-root"],
+          "resources": [
+            { "title": "Microsoft Learn — Dependency injection — service lifetimes", "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-ef-core",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["csharp.ef-core", "db.orm"],
+          "prompt": "An EF Core list page runs 101 queries and is slow even with one query. What do you check?",
+          "answer": "N+1 from lazy loading or per-row navigation access — load related data with `Include` or project with `Select` into a DTO. For read-only pages add `AsNoTracking()` to skip change tracking. Log the generated SQL to see what actually runs.",
+          "explanation": "Projections (`Select(o => new OrderRow(o.Id, o.Customer.Name))`) fetch only needed columns and never track. Watch for client evaluation, cartesian explosion from several `Include`s (use `AsSplitQuery`), and calling `ToList()` too early, which moves filtering into memory.",
+          "prerequisites": ["sql-n-plus-one", "cs-ienumerable-vs-iqueryable"],
+          "resources": [
+            { "title": "Microsoft Learn — EF Core — efficient querying", "url": "https://learn.microsoft.com/en-us/ef/core/performance/efficient-querying", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-tooling",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["csharp.tooling"],
+          "prompt": "What do the `dotnet` CLI, NuGet and SDK-style projects give you?",
+          "answer": "One CLI for everything — `dotnet new`, `build`, `test`, `run`, `publish`, `format`. NuGet is the package registry, referenced by `<PackageReference>` in SDK-style `.csproj` files. `Directory.Packages.props` centralises versions across a solution.",
+          "explanation": "Enable `<Nullable>enable</Nullable>`, `<TreatWarningsAsErrors>` and analyzers in CI. Use a lock file (`RestorePackagesWithLockFile`) for reproducible restores, and `global.json` to pin the SDK version the team builds with.",
+          "resources": [
+            { "title": "Microsoft Learn — .NET CLI overview", "url": "https://learn.microsoft.com/en-us/dotnet/core/tools/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cs-xunit",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["csharp.testing", "testing.unit"],
+          "prompt": "How do xUnit tests differ from NUnit/MSTest, and what are `[Fact]` and `[Theory]`?",
+          "answer": "`[Fact]` is a test with no parameters; `[Theory]` with `[InlineData]` or `[MemberData]` runs one test over many inputs. xUnit creates a new class instance per test, so the constructor is setup and `IDisposable` is teardown — no shared mutable state by accident.",
+          "explanation": "Shared expensive setup goes in class or collection fixtures. For ASP.NET Core, `WebApplicationFactory<T>` runs the real app in memory for integration tests; Testcontainers provides real databases. The per-test instance model is the main philosophical difference from NUnit.",
+          "prerequisites": ["test-aaa"],
+          "resources": [
+            { "title": "Microsoft Learn — Unit testing C# with xUnit", "url": "https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-csharp-with-xunit", "kind": "docs" }
           ]
         }
       ]

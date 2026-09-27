@@ -142,6 +142,190 @@
           ]
         }
       ]
+    },
+    {
+      "id": "crypto-building-blocks",
+      "name": "Hashes, Keys & Exchange",
+      "description": "Hash properties and broken algorithms, HMAC, key derivation, salts and peppers, nonces, Diffie–Hellman and ECC.",
+      "cards": [
+        {
+          "id": "crypto-hash-properties",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["crypto.hashing"],
+          "prompt": "What security properties must a cryptographic hash have, and which common hashes are broken?",
+          "answer": "Preimage resistance (cannot find an input for a given hash), second-preimage resistance (cannot find another input with the same hash as a given one), and collision resistance (cannot find any two inputs with the same hash). MD5 and SHA-1 have practical collision attacks and must not be used for signatures or integrity against attackers.",
+          "explanation": "SHA-256/SHA-3/BLAKE2/BLAKE3 are current choices. Collisions let an attacker produce two documents with one signature — the SHAttered attack did this to SHA-1 in 2017. Non-security checksums (CRC32) only detect accidents.",
+          "prerequisites": ["crypto-hash-vs-encrypt"],
+          "resources": [
+            { "title": "Wikipedia — Cryptographic hash function", "url": "https://en.wikipedia.org/wiki/Cryptographic_hash_function", "kind": "article" }
+          ]
+        },
+        {
+          "id": "crypto-hmac-length-extension",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["crypto.mac", "crypto.hashing"],
+          "prompt": "Why is this homemade MAC forgeable?",
+          "code": "sig = sha256(SECRET + message).hexdigest()\n\ndef verify(message, sig):\n    return sha256(SECRET + message).hexdigest() == sig",
+          "lang": "python",
+          "answer": "With Merkle–Damgård hashes (SHA-256, SHA-1, MD5), `H(secret || message)` is vulnerable to length extension: knowing the hash lets an attacker compute `H(secret || message || padding || extra)` without the secret. Use HMAC (`hmac.new(key, msg, sha256)`), which is built to be immune, and compare in constant time.",
+          "explanation": "This is a textbook example of why primitives should not be assembled by hand. SHA-3 and BLAKE2 are not vulnerable to length extension, but HMAC remains the standard, well-analysed construction.",
+          "prerequisites": ["crypto-signatures", "crypto-timing-attack"],
+          "resources": [
+            { "title": "Wikipedia — Length extension attack", "url": "https://en.wikipedia.org/wiki/Length_extension_attack", "kind": "article" }
+          ]
+        },
+        {
+          "id": "crypto-kdf",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["crypto.kdf", "crypto.passwords"],
+          "prompt": "Password hashing (Argon2id, bcrypt, scrypt, PBKDF2) vs HKDF",
+          "answer": "Password-based functions are deliberately slow (and ideally memory-hard) to make guessing low-entropy passwords expensive. HKDF is fast — it derives several strong keys from input that is already high-entropy, such as a Diffie–Hellman shared secret.",
+          "columns": {
+            "left": { "title": "Password KDFs", "points": ["Input: a human password (low entropy)", "Tunable cost: time and memory", "Argon2id preferred; bcrypt and scrypt OK", "Also derive keys from passphrases"] },
+            "right": { "title": "HKDF", "points": ["Input: a secret with high entropy", "Fast by design — extract then expand", "Derive separate keys per purpose", "Used inside TLS 1.3 and Signal"] }
+          },
+          "explanation": "Using a fast hash or HKDF on passwords lets attackers try billions of guesses per second; using Argon2 on a random 256-bit key only wastes CPU. Match the tool to the input's entropy.",
+          "prerequisites": ["sec-password-storage"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Password Storage", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-salt-pepper",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["crypto.passwords"],
+          "prompt": "What are a salt and a pepper in password hashing?",
+          "answer": "A salt is a unique random value per password, stored alongside the hash, so identical passwords hash differently and precomputed rainbow tables are useless. A pepper is a secret shared across all hashes, kept outside the database (in a secret manager or HSM), so a stolen database alone cannot be cracked.",
+          "explanation": "Modern password hashes generate and embed the salt automatically — you do not manage it yourself. A pepper is optional defence in depth; if you add one, plan how to rotate it.",
+          "prerequisites": ["sec-password-storage"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Password Storage — salting and peppering", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-nonce-iv",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.symmetric", "crypto.nonces"],
+          "prompt": "What is a nonce or IV, and what happens if one is reused?",
+          "answer": "A per-message value that makes encrypting the same plaintext twice produce different ciphertexts. With stream-like modes (AES-GCM, ChaCha20, CTR), reusing a nonce with the same key produces the same keystream: XORing two ciphertexts cancels it and exposes the XOR of the plaintexts, and for GCM also leaks the authentication key.",
+          "explanation": "Nonces need uniqueness, not secrecy. With random 96-bit GCM nonces, rotate keys well before about 2³² messages; or use XChaCha20-Poly1305 or AES-GCM-SIV, whose larger nonces or misuse resistance reduce the risk.",
+          "prerequisites": ["crypto-aead"],
+          "resources": [
+            { "title": "Wikipedia — Cryptographic nonce", "url": "https://en.wikipedia.org/wiki/Cryptographic_nonce", "kind": "article" }
+          ]
+        },
+        {
+          "id": "crypto-diffie-hellman",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.key-exchange"],
+          "prompt": "How can two parties agree on a shared secret over a public channel?",
+          "answer": "Diffie–Hellman: each picks a private value and publishes a derived public value; each combines its own private value with the other's public one and both arrive at the same secret, which an eavesdropper cannot compute. Modern systems use the elliptic-curve variant (X25519).",
+          "explanation": "Plain DH is unauthenticated, so a man-in-the-middle can run it separately with each side — which is why TLS signs the exchange with the server's certificate key. Fresh (ephemeral) DH per session provides forward secrecy.",
+          "prerequisites": ["crypto-symmetric-asymmetric", "net-tls-handshake"],
+          "resources": [
+            { "title": "Wikipedia — Diffie–Hellman key exchange", "url": "https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange", "kind": "article" }
+          ]
+        },
+        {
+          "id": "crypto-ecc-vs-rsa",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["crypto.asymmetric"],
+          "prompt": "Elliptic-curve cryptography vs RSA",
+          "answer": "ECC achieves the same security as RSA with far smaller keys — a 256-bit curve roughly matches 3072-bit RSA — giving faster operations and smaller signatures. RSA is older, simpler to explain and universally supported.",
+          "columns": {
+            "left": { "title": "ECC", "points": ["Small keys: 256-bit ≈ 3072-bit RSA", "Fast signing and key exchange", "Ed25519, X25519, P-256", "Implementation details matter (curves, nonces)"] },
+            "right": { "title": "RSA", "points": ["Large keys: 3072–4096 bits", "Slow key generation and signing; fast verification", "Needs OAEP / PSS padding", "Universal legacy support"] }
+          },
+          "explanation": "Prefer modern curves with safe implementations: Ed25519 for signatures, X25519 for key exchange. RSA remains fine at adequate sizes with proper padding (OAEP for encryption, PSS for signatures). Both are broken by large quantum computers, hence post-quantum migration.",
+          "prerequisites": ["crypto-symmetric-asymmetric"],
+          "resources": [
+            { "title": "Wikipedia — Elliptic-curve cryptography", "url": "https://en.wikipedia.org/wiki/Elliptic-curve_cryptography", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crypto-operations",
+      "name": "Crypto in Production",
+      "description": "Envelope encryption and KMS, rotation, certificate automation, encryption at rest and in transit, and end-to-end encryption.",
+      "cards": [
+        {
+          "id": "crypto-envelope",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.kms", "crypto.key-management"],
+          "prompt": "What is envelope encryption?",
+          "answer": "Data is encrypted with a data encryption key (DEK); the DEK is encrypted with a key-encryption key (KEK) held in a KMS or HSM that never releases it. You store the encrypted DEK next to the data and ask the KMS to unwrap it when needed.",
+          "explanation": "It keeps bulk encryption fast and local while the master key stays in hardware with access control and audit logs. Rotating the KEK only requires re-wrapping small DEKs, not re-encrypting all the data — this is how cloud storage encryption works.",
+          "prerequisites": ["crypto-dont-roll-own"],
+          "resources": [
+            { "title": "Google Cloud KMS — Envelope encryption", "url": "https://cloud.google.com/kms/docs/envelope-encryption", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-key-rotation",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["crypto.key-management", "ops.secrets"],
+          "prompt": "Why rotate keys, and how do you rotate without breaking decryption of old data?",
+          "answer": "Rotation limits how much data a compromised key exposes and how long it stays useful. Tag each ciphertext with a key ID; encrypt new data with the new key while keeping old keys available for decryption; optionally re-encrypt old data in the background; retire the old key once nothing references it.",
+          "explanation": "Rotation that has never been practised usually fails during the real incident. Automate it, and alert if any data still depends on a retired key. For signing keys, publish the new public key (e.g. in a JWKS) before signing with it so verifiers are ready.",
+          "prerequisites": ["crypto-envelope"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Key Management", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-acme",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["crypto.pki", "ops.tls"],
+          "prompt": "How do Let's Encrypt and ACME automate TLS certificates?",
+          "answer": "The ACME protocol lets a client prove control of a domain — by serving a token over HTTP (HTTP-01) or publishing a DNS record (DNS-01) — and then obtain a certificate automatically. Certificates are short-lived (90 days, trending shorter), so renewal must be automated.",
+          "explanation": "Short lifetimes limit the damage of a key compromise and force automation, which removes the classic outage of a forgotten manual renewal. DNS-01 is required for wildcard certificates. Monitor expiry anyway: automation fails silently too.",
+          "prerequisites": ["crypto-pki"],
+          "resources": [
+            { "title": "Let's Encrypt — How it works", "url": "https://letsencrypt.org/how-it-works/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-at-rest-transit",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["crypto.practice", "security.data"],
+          "prompt": "Encryption in transit vs encryption at rest",
+          "answer": "In transit protects data moving across networks (TLS, mTLS, SSH, VPNs) against eavesdropping and tampering; at rest protects stored data (disk, database, backups) against stolen media or snapshots.",
+          "columns": {
+            "left": { "title": "In transit", "points": ["TLS 1.2+ everywhere, including internal hops", "Protects against sniffing and MITM", "Certificates authenticate the endpoint", "mTLS authenticates both sides"] },
+            "right": { "title": "At rest", "points": ["Disk, volume, database, backups", "Protects stolen media and snapshots", "Transparent to the running app", "Field-level encryption for app-level threats"] }
+          },
+          "explanation": "Disk-level encryption at rest does nothing against an attacker who compromises the running application or database — it decrypts transparently for them. For that threat you need application-level or field-level encryption with keys the database never sees. Encrypt internal traffic too; \"the internal network is safe\" is the perimeter fallacy.",
+          "prerequisites": ["net-tls-handshake"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Cryptographic Storage", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "crypto-e2ee",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["crypto.e2ee", "crypto.protocols"],
+          "prompt": "What does end-to-end encryption guarantee that TLS to a server does not?",
+          "answer": "With E2EE only the communicating endpoints hold the keys; the service relaying messages cannot read them. With TLS the server decrypts everything it receives. Protocols such as Signal's add forward secrecy and post-compromise security by ratcheting keys on every message.",
+          "explanation": "The hard problems are key verification (proving you have the right person's key — safety numbers), multi-device support, backups and metadata, which E2EE does not hide. It also means the service cannot moderate or recover content, a deliberate trade-off.",
+          "prerequisites": ["crypto-diffie-hellman"],
+          "resources": [
+            { "title": "Signal — Documentation (Double Ratchet)", "url": "https://signal.org/docs/", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

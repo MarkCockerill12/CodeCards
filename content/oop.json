@@ -122,7 +122,7 @@
           "difficulty": 3,
           "tags": ["oop.types", "oop.design"],
           "prompt": "Abstract class vs interface",
-          "answer": "An abstract class can hold state and partial implementation but only one may be inherited; an interface is a contract that many can be implemented.",
+          "answer": "An abstract class can hold state and partial implementation, but a class can extend only one; an interface is a contract, and a class can implement many.",
           "columns": {
             "left": { "title": "Abstract class", "points": ["Fields, constructors, shared implementation", "Single inheritance only", "Template-method style reuse", "Versioning: adding a method is safe"] },
             "right": { "title": "Interface", "points": ["Capability contract, no state", "A type can implement many", "Default methods soften versioning (Java 8+, C# 8+)", "Enables mocking and multiple roles"] }
@@ -137,9 +137,9 @@
           "type": "cloze",
           "difficulty": 3,
           "tags": ["oop.design", "design.principles"],
-          "prompt": "The Law of Demeter says a method should only talk to its immediate collaborators — avoid chains like `a.getB().getC().___()`.",
-          "answer": "doThing",
-          "explanation": "Every link in a train wreck is a dependency you did not declare and cannot refactor around. Ask the collaborator to do the work (`a.doThing()`) rather than reaching through it. Fluent builders are the deliberate exception — they return `this`.",
+          "prompt": "The Law of Demeter is often summarised as \"only talk to your immediate ___\" — avoid chains like `order.getCustomer().getAddress().getCity()`.",
+          "answer": "friends",
+          "explanation": "Every link in a train wreck is a dependency you did not declare and cannot refactor around. Ask the collaborator to do the work (`order.shippingCity()`) rather than reaching through it. Fluent builders and stream pipelines are the deliberate exception — they return objects of the same abstraction.",
           "resources": [
             { "title": "Wikipedia — Law of Demeter", "url": "https://en.wikipedia.org/wiki/Law_of_Demeter", "kind": "article" }
           ]
@@ -166,6 +166,189 @@
           "explanation": "The expression problem frames it: OO makes adding new *types* easy and new *operations* hard; FP makes adding operations easy and types hard. Most modern codebases mix both — immutable values and pure transforms inside, objects at the boundaries.",
           "resources": [
             { "title": "Wikipedia — Expression problem", "url": "https://en.wikipedia.org/wiki/Expression_problem", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oop-design-principles",
+      "name": "Design Principles in Practice",
+      "description": "Cohesion and coupling, SOLID in detail, DRY, tell-don't-ask, value objects and invariants.",
+      "cards": [
+        {
+          "id": "oop-cohesion-coupling",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["oop.design", "design.coupling"],
+          "prompt": "Cohesion vs coupling",
+          "answer": "Cohesion is how strongly the parts inside a module belong together; coupling is how much a module depends on others. Aim for high cohesion and low coupling.",
+          "columns": {
+            "left": { "title": "Cohesion (inside)", "points": ["Things that change together live together", "High: one clear purpose", "Low: a grab-bag \"utils\" class", "Raise it by splitting by responsibility"] },
+            "right": { "title": "Coupling (between)", "points": ["How much A must know about B", "Low: small, stable interfaces", "High: shared globals, reaching into internals", "Lower it with interfaces and events"] }
+          },
+          "explanation": "Nearly every design principle is a special case of this pair. A change that ripples across many modules signals high coupling; a class whose methods share no fields signals low cohesion and wants splitting. Measure design by how many places a typical change touches.",
+          "resources": [
+            { "title": "Wikipedia — Coupling (computer programming)", "url": "https://en.wikipedia.org/wiki/Coupling_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-srp",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["oop.solid"],
+          "prompt": "An `Invoice` class calculates totals, renders a PDF and saves itself to the database. What does the single responsibility principle say, and how do you split it?",
+          "answer": "A class should have one reason to change — here three: pricing rules, document layout and persistence, each owned by a different person or team. Keep `Invoice` for the domain calculations, and move rendering to an `InvoicePdfRenderer` and storage to an `InvoiceRepository`.",
+          "explanation": "SRP is about axes of change, not about a class doing \"one thing\" in the tiniest sense. Over-applying it produces dozens of one-method classes that are harder to follow. Split when two responsibilities actually change for different reasons.",
+          "prerequisites": ["oop-solid"],
+          "resources": [
+            { "title": "Robert C. Martin — The Single Responsibility Principle", "url": "https://blog.cleancoder.com/uncle-bob/2014/05/08/SingleReponsibilityPrinciple.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-isp",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["oop.solid", "oop.interfaces"],
+          "prompt": "What principle does this violate, and what is the symptom?",
+          "code": "interface Storage {\n    Data load(Id id);\n    void save(Data d);\n    void delete(Id id);\n}\n\nclass ReadOnlyReport implements Storage {\n    public Data load(Id id) { ... }\n    public void save(Data d) { throw new UnsupportedOperationException(); }\n    public void delete(Id id) { throw new UnsupportedOperationException(); }\n}",
+          "lang": "java",
+          "answer": "Interface segregation: `ReadOnlyReport` is forced to implement write methods it cannot support, so it throws. Split the fat interface into role interfaces — `Readable`, `Writable` — and let classes implement only what they can honour.",
+          "explanation": "Throwing `UnsupportedOperationException` from an interface method is the tell. It also breaks Liskov substitution, since callers of `Storage.save` cannot trust it. Small interfaces defined by what the *client* needs are easier to implement, mock and evolve.",
+          "prerequisites": ["oop-solid", "oop-liskov-violation"],
+          "resources": [
+            { "title": "Wikipedia — Interface segregation principle", "url": "https://en.wikipedia.org/wiki/Interface_segregation_principle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-ocp",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["oop.solid"],
+          "prompt": "What does the open/closed principle mean in practice?",
+          "answer": "Code should be open for extension but closed for modification: add new behaviour by adding new code (a new strategy, handler or subclass) rather than editing tested code — typically by depending on an abstraction the new code can implement.",
+          "explanation": "The practical form is \"don't make every new case an edit to the same switch statement\". Apply it at the points that actually vary; making everything extensible up front is speculative generality. The first time a switch gains its third case is a good moment.",
+          "prerequisites": ["dp-strategy"],
+          "resources": [
+            { "title": "Wikipedia — Open–closed principle", "url": "https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-dry",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["oop.design", "craft.duplication"],
+          "prompt": "Two functions look identical today. Should you merge them?",
+          "answer": "Only if they represent the same knowledge — the same business rule that must change together. DRY is about not duplicating knowledge, not about deduplicating similar-looking code. Coincidental similarity merged into one function becomes a tangle of flags once the two uses diverge.",
+          "explanation": "The rule of three is a useful brake: tolerate duplication until the third occurrence reveals what actually varies. \"Duplication is far cheaper than the wrong abstraction\" — undoing a bad shared helper is harder than extracting a good one later.",
+          "resources": [
+            { "title": "Sandi Metz — The Wrong Abstraction", "url": "https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-tell-dont-ask",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["oop.encapsulation"],
+          "prompt": "What design smell is this, and how do you fix it?",
+          "code": "if (account.getBalance() >= amount && !account.isFrozen()) {\n    account.setBalance(account.getBalance() - amount);\n}",
+          "lang": "java",
+          "answer": "\"Ask\" style: the caller pulls data out of `account` and makes the decision itself, so the rule lives outside the object that owns the data — and gets duplicated wherever withdrawals happen. Tell the object what to do: `account.withdraw(amount)`, which enforces the rule internally.",
+          "explanation": "Tell-don't-ask keeps behaviour next to the data it governs, so invariants are enforced in one place. Getters are not evil, but a caller that reads several fields to decide something is usually doing the object's job.",
+          "prerequisites": ["oop-encapsulation-leak"],
+          "resources": [
+            { "title": "Martin Fowler — Tell Don't Ask", "url": "https://martinfowler.com/bliki/TellDontAsk.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-value-objects",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["oop.value-objects", "ddd"],
+          "prompt": "What is a value object, and why use one instead of primitives?",
+          "answer": "An immutable object defined entirely by its values, with no identity — `Money(10, \"GBP\")`, `EmailAddress`, `DateRange`. Two with equal values are interchangeable. It validates itself on construction, so an invalid one cannot exist.",
+          "explanation": "Replacing primitives (primitive obsession) with value objects moves validation to one place and makes signatures self-documenting: `transfer(Money, AccountId)` cannot be called with arguments swapped the way `transfer(double, String)` can. Records and data classes make them cheap to write.",
+          "prerequisites": ["java-record"],
+          "resources": [
+            { "title": "Martin Fowler — Value Object", "url": "https://martinfowler.com/bliki/ValueObject.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-invariants",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["oop.encapsulation", "oop.design"],
+          "prompt": "What is a class invariant, and where should it be enforced?",
+          "answer": "A condition that must hold for every valid instance at every public boundary — `start <= end`, `balance >= 0` for this account type, \"an order has at least one line\". Establish it in the constructor and preserve it in every mutating method; reject operations that would break it.",
+          "explanation": "If invalid objects can be constructed, every consumer must re-validate defensively. Factories and constructors that fail fast, plus immutability where possible, make invariants hold by construction rather than by convention.",
+          "prerequisites": ["oop-four-pillars"],
+          "resources": [
+            { "title": "Wikipedia — Class invariant", "url": "https://en.wikipedia.org/wiki/Class_invariant", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oop-polymorphism",
+      "name": "Polymorphism & Type Relationships",
+      "description": "Kinds of polymorphism, overloading versus overriding, multiple inheritance and mixins, identity versus equality.",
+      "cards": [
+        {
+          "id": "oop-polymorphism-kinds",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["oop.polymorphism", "types.generics"],
+          "prompt": "What are the three main kinds of polymorphism?",
+          "answer": "Subtype polymorphism — code works with a base type and runs the subclass's override (virtual methods, interfaces). Parametric polymorphism — code is generic over types (`List<T>`, generics). Ad-hoc polymorphism — the same name does different things per type (overloading, operator overloading, type classes and traits).",
+          "explanation": "OOP tends to mean only the first, but modern languages lean heavily on the second and third: Rust traits and Haskell type classes give ad-hoc polymorphism without inheritance; Go interfaces give subtype polymorphism structurally.",
+          "prerequisites": ["oop-static-dynamic-dispatch"],
+          "resources": [
+            { "title": "Wikipedia — Polymorphism (computer science)", "url": "https://en.wikipedia.org/wiki/Polymorphism_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-overload-override",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["oop.dispatch", "java.core"],
+          "prompt": "What does this print?",
+          "code": "public class Main {\n    static class Animal { String name() { return \"Animal\"; } }\n    static class Dog extends Animal { @Override String name() { return \"Dog\"; } }\n\n    static String describe(Animal a) { return \"Animal\"; }\n    static String describe(Dog d) { return \"Dog\"; }\n\n    public static void main(String[] args) {\n        Animal a = new Dog();\n        System.out.println(describe(a) + \" \" + a.name());\n    }\n}",
+          "lang": "java",
+          "answer": "Animal Dog",
+          "explanation": "`describe(a)` picks the overload at compile time from the declared type `Animal`, so it prints \"Animal\" even though the object is a Dog. `a.name()` is an override, chosen at runtime from the actual object, so it prints \"Dog\". Overloading is static; overriding is dynamic.",
+          "prerequisites": ["oop-static-dynamic-dispatch"],
+          "resources": [
+            { "title": "Java Tutorials — Overriding and hiding methods", "url": "https://docs.oracle.com/javase/tutorial/java/IandI/override.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "java", "expectedOutput": "Animal Dog" }
+        },
+        {
+          "id": "oop-diamond-mixins",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["oop.inheritance"],
+          "prompt": "What is the diamond problem, and how do different languages handle it?",
+          "answer": "When a class inherits from two classes that share a base, which version of an inherited method or field wins, and is the base duplicated? C++ requires `virtual` inheritance to share the base; Python linearises with C3 MRO; Java and C# allow multiple inheritance only of interfaces (default-method conflicts must be resolved explicitly).",
+          "explanation": "Mixins and traits are the pragmatic middle ground: small bundles of behaviour composed into a class without an \"is-a\" claim. Most designs never need multiple implementation inheritance — composition covers it more clearly.",
+          "prerequisites": ["py-mro"],
+          "resources": [
+            { "title": "Wikipedia — Multiple inheritance — the diamond problem", "url": "https://en.wikipedia.org/wiki/Multiple_inheritance#The_diamond_problem", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-identity-equality",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["oop.equality"],
+          "prompt": "Identity vs equality",
+          "answer": "Identity asks \"are these the same object?\" (same reference); equality asks \"do these represent the same value?\" (as defined by `equals`/`__eq__`).",
+          "columns": {
+            "left": { "title": "Identity", "points": ["Same object in memory", "`is` / `===` / `==` on references", "Entities: a stable ID across changes", "Cannot be overridden"] },
+            "right": { "title": "Equality", "points": ["Same value by some definition", "`==` / `equals()` / `__eq__`", "Value objects: all fields match", "Must be consistent with hashing"] }
+          },
+          "explanation": "Entities (a customer, an order) have identity that persists as their attributes change — compare them by ID. Value objects (money, dates) have no identity — compare them by value. Mixing the two up leads to duplicate rows or objects that vanish from hash sets.",
+          "prerequisites": ["py-is-vs-eq", "java-equals-hashcode"],
+          "resources": [
+            { "title": "Martin Fowler — Value Object", "url": "https://martinfowler.com/bliki/ValueObject.html", "kind": "article" }
           ]
         }
       ]

@@ -138,6 +138,196 @@
           ]
         }
       ]
+    },
+    {
+      "id": "gm-foundations",
+      "name": "Vectors, Matrices & Interpolation",
+      "description": "Normalisation, homogeneous coordinates, projection, handedness, lerp and easing.",
+      "cards": [
+        {
+          "id": "gm-normalize",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["graphics.vectors", "math.linear-algebra"],
+          "prompt": "What does this print?",
+          "code": "import math\nv = (3.0, 4.0)\nlength = math.hypot(*v)\nunit = tuple(round(x / length, 2) for x in v)\nprint(length)\nprint(unit)\nprint(round(math.hypot(*unit), 6))",
+          "lang": "python",
+          "answer": "5.0\n(0.6, 0.8)\n1.0",
+          "explanation": "A vector's length (magnitude) is the square root of the sum of squared components — 3-4-5 here. Normalising divides by the length to get a unit vector: same direction, length 1. Directions for lighting, movement and dot-product tests should be normalised; normalising a zero vector divides by zero, so guard it.",
+          "prerequisites": ["gm-dot-product"],
+          "resources": [
+            { "title": "LearnOpenGL — Transformations — vectors", "url": "https://learnopengl.com/Getting-started/Transformations", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "5.0\n(0.6, 0.8)\n1.0" }
+        },
+        {
+          "id": "gm-homogeneous",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["graphics.matrices"],
+          "prompt": "Why do graphics use 4×4 matrices and homogeneous coordinates for 3-D?",
+          "answer": "A 3×3 matrix can rotate and scale but cannot translate. Adding a fourth coordinate w lets translation be expressed as a matrix multiplication too, so any chain of translate, rotate, scale and projection collapses into one 4×4 matrix. Points use w = 1 (affected by translation); directions use w = 0 (not affected).",
+          "explanation": "The w component also makes perspective projection possible: the projection matrix puts depth into w, and dividing by w afterwards shrinks distant objects. Getting w wrong for normals or directions is a classic lighting bug.",
+          "prerequisites": ["gm-transform-order"],
+          "resources": [
+            { "title": "LearnOpenGL — Transformations", "url": "https://learnopengl.com/Getting-started/Transformations", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-projection",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["graphics.cameras", "graphics.projection"],
+          "prompt": "Perspective vs orthographic projection",
+          "answer": "Perspective projection makes distant objects smaller, converging towards vanishing points, like a real camera or eye; orthographic projection keeps sizes constant regardless of distance, with parallel lines staying parallel.",
+          "columns": {
+            "left": { "title": "Perspective", "points": ["Size shrinks with distance", "Defined by field of view and aspect ratio", "Realistic 3-D views", "Depth precision concentrated near the camera"] },
+            "right": { "title": "Orthographic", "points": ["Size independent of distance", "Defined by a box: left, right, top, bottom", "2-D, isometric, UI, CAD", "Used for directional-light shadow maps"] }
+          },
+          "explanation": "Perspective suits first- and third-person 3-D views; orthographic suits 2-D games, isometric views, UI, CAD and shadow-map rendering for directional lights. The near and far planes of a perspective projection affect depth precision — keep the near plane as far out as you can.",
+          "prerequisites": ["gm-spaces"],
+          "resources": [
+            { "title": "LearnOpenGL — Coordinate systems", "url": "https://learnopengl.com/Getting-started/Coordinate-Systems", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-handedness",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["graphics.coordinates"],
+          "prompt": "Why do assets sometimes appear mirrored or face the wrong way between engines?",
+          "answer": "Engines disagree on coordinate conventions: right-handed (OpenGL, Blender, Godot) versus left-handed (Unity, Direct3D by convention, Unreal), and which axis points up (Y-up versus Z-up). Importing without converting flips geometry, reverses triangle winding (so faces are culled wrongly) and mixes up rotations.",
+          "explanation": "Exporters and importers convert these when configured correctly — always check the axis and handedness settings. The cross product's direction and rotation signs both depend on handedness, so maths copied between engines can silently flip.",
+          "prerequisites": ["gm-cross-product"],
+          "resources": [
+            { "title": "LearnOpenGL — Coordinate systems — right-handed system", "url": "https://learnopengl.com/Getting-started/Coordinate-Systems", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-lerp-easing",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["graphics.interpolation", "gamedev.animation"],
+          "prompt": "What does this print?",
+          "code": "def lerp(a, b, t):\n    return a + (b - a) * t\n\nprint(lerp(10, 20, 0.5))\nease_in = lambda t: t * t\nprint([lerp(0.0, 1.0, ease_in(t)) for t in (0.0, 0.5, 1.0)])",
+          "lang": "python",
+          "answer": "15.0\n[0.0, 0.25, 1.0]",
+          "explanation": "`lerp(a, b, t) = a + (b − a)·t` blends linearly between two values for t from 0 to 1. Easing functions reshape t before lerping — ease-in-quad (t²) starts slow and accelerates — to make motion feel natural. Slerp does the same on the sphere for rotations.",
+          "prerequisites": ["gm-quaternions"],
+          "resources": [
+            { "title": "easings.net — Easing functions cheat sheet", "url": "https://easings.net/", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "15.0\n[0.0, 0.25, 1.0]" }
+        }
+      ]
+    },
+    {
+      "id": "gm-rendering-2",
+      "name": "Lighting, Textures & Techniques",
+      "description": "Lighting models and PBR, textures, UVs and mipmaps, normal mapping, depth buffers, shadows, anti-aliasing and ray tracing.",
+      "cards": [
+        {
+          "id": "gm-lighting-models",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["graphics.lighting"],
+          "prompt": "How do the Phong/Blinn–Phong model and physically based rendering (PBR) differ?",
+          "answer": "Blinn–Phong sums ambient, diffuse (N·L) and specular highlight terms with artist-tuned constants — cheap and intuitive but not energy-conserving. PBR models surfaces with physical parameters (albedo, metallic, roughness) and microfacet BRDFs that conserve energy, so materials look right under any lighting.",
+          "explanation": "PBR is the standard in modern engines because one material works in every environment. Image-based lighting — environment maps for reflections and ambient light — is a large part of what makes PBR scenes convincing.",
+          "prerequisites": ["gm-dot-product", "gm-color-space"],
+          "resources": [
+            { "title": "LearnOpenGL — PBR — Theory", "url": "https://learnopengl.com/PBR/Theory", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-textures-mipmaps",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["graphics.textures"],
+          "prompt": "What are UV coordinates and mipmaps?",
+          "answer": "UVs map each vertex to a position in a 2-D texture (0–1 range), and the rasteriser interpolates them across each triangle. Mipmaps are precomputed, progressively halved versions of a texture; the GPU samples the level matching the on-screen size.",
+          "explanation": "Without mipmaps, distant textures shimmer and alias because many texels fall inside one pixel, and cache use is poor. A full mip chain costs about one third more memory. Anisotropic filtering keeps textures sharp at glancing angles.",
+          "prerequisites": ["gm-pipeline"],
+          "resources": [
+            { "title": "LearnOpenGL — Textures", "url": "https://learnopengl.com/Getting-started/Textures", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-normal-mapping",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["graphics.textures", "graphics.lighting"],
+          "prompt": "What does a normal map do?",
+          "answer": "It stores per-pixel surface normals in a texture (RGB = XYZ, usually in tangent space), so lighting responds to fine detail — bricks, scratches, pores — on a low-polygon mesh without adding geometry.",
+          "explanation": "Normal maps change shading only, not silhouettes, so edges still look flat; displacement or parallax techniques add depth. The tangent basis must match between the baking tool and the engine, or lighting looks subtly wrong — the green channel convention (OpenGL versus DirectX) is a common mismatch.",
+          "prerequisites": ["gm-lighting-models"],
+          "resources": [
+            { "title": "LearnOpenGL — Normal mapping", "url": "https://learnopengl.com/Advanced-Lighting/Normal-Mapping", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-depth-buffer",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["graphics.depth"],
+          "prompt": "Two overlapping surfaces flicker as the camera moves. What is happening, and how do you fix it?",
+          "code": "camera.near = 0.001;   // \"so nothing gets clipped\"\ncamera.far  = 100000;\n\n// decal quad placed exactly on the wall surface\ndecal.position = wall.position;",
+          "lang": "javascript",
+          "answer": "Z-fighting: the surfaces are at nearly the same depth, and the depth buffer lacks the precision to decide consistently which is in front. Separate the geometry, push the near plane further out (precision is concentrated near it), use a polygon offset for decals, or use a reversed-Z floating-point depth buffer.",
+          "explanation": "The depth buffer stores, per pixel, the depth of the nearest surface drawn so far; each fragment is kept only if it is nearer. With perspective projection its precision is non-linear, so a tiny near plane such as 0.001 wastes most of the precision close to the camera.",
+          "prerequisites": ["gm-projection"],
+          "resources": [
+            { "title": "LearnOpenGL — Depth testing", "url": "https://learnopengl.com/Advanced-OpenGL/Depth-testing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-shadow-mapping",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["graphics.shadows"],
+          "prompt": "How does shadow mapping work, and what are its typical artefacts?",
+          "answer": "First render the scene from the light's point of view, storing depths in a shadow map. Then, when shading each pixel from the camera, transform it into the light's space and compare its depth with the stored one: if something nearer to the light was recorded, the pixel is in shadow.",
+          "explanation": "Artefacts: shadow acne (self-shadowing stripes, fixed with a depth bias), peter-panning (shadows detached when the bias is too large), and jagged edges from limited resolution — addressed with cascaded shadow maps for large scenes and filtering (PCF) for soft edges.",
+          "prerequisites": ["gm-depth-buffer"],
+          "resources": [
+            { "title": "LearnOpenGL — Shadow mapping", "url": "https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-anti-aliasing",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["graphics.anti-aliasing"],
+          "prompt": "MSAA vs post-process anti-aliasing (FXAA) vs temporal anti-aliasing (TAA)",
+          "answer": "MSAA takes several coverage samples per pixel at geometry edges; FXAA blurs detected edges in a single post-process pass; TAA reuses jittered samples from previous frames, resolving detail over time.",
+          "columns": {
+            "left": { "title": "MSAA / FXAA", "points": ["MSAA: extra samples at triangle edges", "MSAA: sharp, costly with deferred shading", "FXAA: one post-process pass", "FXAA: cheap, blurs detail"] },
+            "right": { "title": "TAA", "points": ["Jitters and accumulates across frames", "Handles edges and shader aliasing", "Ghosting and softness in motion", "Basis for DLSS/FSR upscaling"] }
+          },
+          "explanation": "Deferred renderers make MSAA expensive, which is why TAA became the default in modern engines — and why upscalers (DLSS, FSR, XeSS) build on its temporal accumulation. TAA's cost is ghosting and softness in motion; FXAA is cheap but blurs texture detail.",
+          "prerequisites": ["gm-pipeline"],
+          "resources": [
+            { "title": "LearnOpenGL — Anti aliasing", "url": "https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "gm-raytracing",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["graphics.ray-tracing"],
+          "prompt": "Rasterisation vs ray tracing",
+          "answer": "Rasterisation projects triangles onto the screen and shades the pixels they cover — extremely fast, but reflections, shadows and global illumination need approximations. Ray tracing follows rays from the camera into the scene, bouncing to other surfaces and lights, producing those effects physically.",
+          "columns": {
+            "left": { "title": "Rasterisation", "points": ["Triangles projected to screen", "Massively parallel, very fast", "Reflections and GI need tricks", "Screen-space effects miss off-screen data"] },
+            "right": { "title": "Ray tracing", "points": ["Rays traced into the scene", "Accurate shadows, reflections, GI", "Needs acceleration structures (BVH)", "Few rays per pixel → denoising"] }
+          },
+          "explanation": "Hardware ray tracing made hybrid rendering practical: rasterise the primary view, then trace rays for reflections, shadows or global illumination, with denoisers cleaning up the few rays affordable per pixel. Film rendering path-traces everything offline.",
+          "prerequisites": ["gm-pipeline", "gd-collision-detection"],
+          "resources": [
+            { "title": "Ray Tracing in One Weekend (free book series)", "url": "https://raytracing.github.io/", "kind": "book" }
+          ]
+        }
+      ]
     }
   ]
 }

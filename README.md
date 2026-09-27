@@ -1,6 +1,6 @@
 # CodeCards 🃏
 
-A gamified, spaced-repetition study platform for software engineering. 492 cards across 47
+A gamified, spaced-repetition study platform for software engineering. 1,203 cards across 54
 topics — languages, computer science, databases, web, systems, networking, security, cloud,
 architecture, AI, game development and process — scheduled by FSRS-5 so you revise each card
 just before you would have forgotten it.
@@ -37,14 +37,14 @@ Deliberately absent, by design: streaks, daily quests, leaderboards and XP throt
 
 ```
 content/*.json ──▶ zod schema validation
-               ──▶ prerequisite + duplicate-id resolution
+               ──▶ prerequisite resolution, cycle and duplicate-id checks
                ──▶ Shiki highlighting for every purchasable syntax theme
                ──▶ public/content/**  (fetched lazily, one file per topic)
 ```
 
-The part worth stealing: **`npm run verify` executes every `predict-output` card** in Node or
-Python and asserts the documented output still matches. A card whose answer drifts fails CI.
-It has already caught one wrong answer in this repo.
+The part worth stealing: **`npm run verify` executes every self-verifying card** — in Node,
+Python, Go, Rust, Java, C#, PHP or Kotlin — and asserts the documented output still matches.
+A card whose answer drifts fails CI. It has caught wrong answers in this repo more than once.
 
 ## Getting started
 
@@ -57,7 +57,7 @@ npm run dev        # builds content, then starts Next.js on :3000
 |---|---|
 | `npm run content` | Validate + highlight the card library into `public/content` |
 | `npm run verify` | Execute every self-verifying card and assert its output |
-| `npm run links` | HEAD every resource URL (slow, network-bound) |
+| `npm run links` | Check every resource URL (slow, network-bound; runs nightly in CI) |
 | `npm run lint` | oxlint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run check` | All of the above |
@@ -86,7 +86,8 @@ you precisely what is wrong. A card needs at minimum:
 ```
 
 Add `"verify": { "runtime": "python", "expectedOutput": "…" }` to any card with runnable code
-and CI will keep it honest.
+and CI will keep it honest. Runtimes: `node`, `python`, `go`, `rust`, `java`, `csharp`, `php`,
+`kotlin`. Locally, missing toolchains are skipped; in CI a missing one fails the run.
 
 ## Stack
 

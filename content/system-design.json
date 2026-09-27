@@ -158,6 +158,201 @@
           ]
         }
       ]
+    },
+    {
+      "id": "sd-building-blocks",
+      "name": "Building Blocks",
+      "description": "Log-based messaging, event-driven architecture, CQRS and event sourcing, ID generation, leader election, batch versus stream, and backpressure.",
+      "cards": [
+        {
+          "id": "sd-kafka-log",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["distributed.messaging", "sd.kafka"],
+          "prompt": "How does a log-based broker such as Kafka differ from a traditional queue?",
+          "answer": "Messages are appended to partitioned, replicated logs and retained for a configured time rather than deleted when read. Consumers track their own offsets, so many independent consumer groups can read the same stream, and any of them can replay history. Within a consumer group, each partition goes to one consumer.",
+          "explanation": "Ordering is guaranteed only within a partition, so choose the partition key for the ordering you need (all events of one order together). Partition count caps a group's parallelism. Replay makes logs ideal for event sourcing, CDC pipelines and rebuilding read models.",
+          "prerequisites": ["cloud-messaging", "nosql-partition-key"],
+          "resources": [
+            { "title": "Apache Kafka — Introduction", "url": "https://kafka.apache.org/intro", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sd-event-driven",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["architecture.event-driven"],
+          "prompt": "Event notification vs event-carried state transfer",
+          "answer": "An event notification says something happened (\"OrderPlaced id=42\") and consumers call back for details; event-carried state transfer includes the data consumers need, so they can keep their own copy and never call back.",
+          "columns": {
+            "left": { "title": "Event notification", "points": ["Thin: an ID and a type", "Consumers query the source for details", "Source stays the single owner of data", "Adds runtime coupling via callbacks"] },
+            "right": { "title": "Event-carried state transfer", "points": ["Fat: includes the relevant data", "Consumers keep local replicas", "Consumers work even when the source is down", "Duplicated data, eventual consistency"] }
+          },
+          "explanation": "Event-driven systems decouple in time and ownership but make flows harder to see — invest in tracing and a catalogue of events. Treat event schemas as public contracts with versioning, exactly like APIs.",
+          "prerequisites": ["ms-sync-async"],
+          "resources": [
+            { "title": "Martin Fowler — What do you mean by \"Event-Driven\"?", "url": "https://martinfowler.com/articles/201701-event-driven.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-cqrs-event-sourcing",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["architecture.cqrs", "architecture.event-sourcing"],
+          "prompt": "What are CQRS and event sourcing, and should they be used together?",
+          "answer": "CQRS separates the write model (commands enforcing invariants) from read models optimised for queries, often updated asynchronously. Event sourcing stores the sequence of domain events as the source of truth and derives current state by replaying them.",
+          "explanation": "They pair naturally — events feed the read models — but each is a large complexity cost: eventual consistency in reads, event schema evolution forever, and replay tooling. Use them where an audit trail, temporal queries or very different read and write shapes justify it, not as a default architecture.",
+          "prerequisites": ["sd-event-driven", "dp-command"],
+          "resources": [
+            { "title": "Martin Fowler — CQRS", "url": "https://martinfowler.com/bliki/CQRS.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-id-generation",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["distributed.ids"],
+          "prompt": "Auto-increment IDs vs UUIDv4 vs time-ordered IDs (UUIDv7, Snowflake)",
+          "answer": "Auto-increment is compact and ordered but needs one central sequence and leaks counts; UUIDv4 is random, generated anywhere without coordination, but scatters B-tree inserts; UUIDv7 and Snowflake-style IDs are generated anywhere and roughly time-ordered, keeping index inserts local.",
+          "columns": {
+            "left": { "title": "Auto-increment / UUIDv4", "points": ["Sequence: compact, ordered, central", "Sequence: leaks business volume", "UUIDv4: no coordination needed", "UUIDv4: random inserts fragment indexes"] },
+            "right": { "title": "UUIDv7 / Snowflake", "points": ["Generated anywhere", "Time-ordered: index-friendly", "Sortable by creation time", "Embeds a timestamp — mild information leak"] }
+          },
+          "explanation": "Time-ordered IDs are the modern default for distributed systems: no coordination, good index locality, and sortable by creation time. Never expose sequential IDs where enumeration matters (they reveal volume and invite IDOR probing) — and never rely on unguessable IDs as access control.",
+          "prerequisites": ["sql-surrogate-natural"],
+          "resources": [
+            { "title": "RFC 9562 — Universally Unique IDentifiers (UUIDv7)", "url": "https://www.rfc-editor.org/rfc/rfc9562", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "sd-leader-election",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["distributed.coordination"],
+          "prompt": "How do you ensure only one instance runs a scheduled job or acts as leader?",
+          "answer": "Use a lease from a strongly consistent coordinator — etcd, ZooKeeper, Consul, a Kubernetes Lease object, or a database row with an expiry — renewed while the leader is healthy. If the leader stops renewing, another instance acquires the lease.",
+          "explanation": "A paused leader (GC pause, network partition) may still believe it leads after its lease expired, so two leaders can act at once. Fencing tokens — a monotonically increasing number checked by the resource being written — reject the stale leader's writes.",
+          "prerequisites": ["sd-consensus", "nosql-redis-patterns"],
+          "resources": [
+            { "title": "Martin Kleppmann — How to do distributed locking", "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-batch-stream",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["data.processing"],
+          "prompt": "Batch processing vs stream processing",
+          "answer": "Batch processes a bounded dataset at intervals (nightly jobs, Spark, SQL over a warehouse); streaming processes unbounded events continuously as they arrive (Flink, Kafka Streams), producing results with seconds of latency.",
+          "columns": {
+            "left": { "title": "Batch", "points": ["Bounded input, periodic runs", "High throughput, high latency", "Easy to rerun on corrected data", "Reports, ETL, training data"] },
+            "right": { "title": "Stream", "points": ["Unbounded input, continuous", "Low latency results", "Windows, watermarks, late data", "Fraud detection, alerting, live metrics"] }
+          },
+          "explanation": "Batch is simpler, easier to reprocess and fine when hours of latency are acceptable. Streaming handles fraud detection, live dashboards and alerts, but brings windowing, late-arriving events and exactly-once-processing complexity. Many systems combine them.",
+          "prerequisites": ["sd-kafka-log"],
+          "resources": [
+            { "title": "Designing Data-Intensive Applications (Kleppmann)", "url": "https://dataintensive.net/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "sd-backpressure",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["distributed.resilience", "concurrency.backpressure"],
+          "prompt": "A downstream service can handle 1,000 requests per second, and upstream traffic spikes to 5,000. What should the system do?",
+          "answer": "Apply backpressure and load shedding rather than queueing without limit: bounded queues and concurrency limits, fast rejection (429/503 with `Retry-After`) of excess or low-priority work, and clients that back off. Queue only what can be processed within an acceptable latency.",
+          "explanation": "Unbounded queues turn overload into huge latency and memory exhaustion — requests are processed long after users gave up. Adaptive concurrency limits and prioritising critical traffic keep the system useful under load instead of uniformly failing.",
+          "prerequisites": ["conc-producer-consumer", "sd-circuit-breaker"],
+          "resources": [
+            { "title": "AWS Builders' Library — Using load shedding to avoid overload", "url": "https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sd-case-studies",
+      "name": "Design Walkthroughs",
+      "description": "Worked designs: URL shortener, rate limiter, news feed, chat, notification and file storage systems.",
+      "cards": [
+        {
+          "id": "sd-url-shortener",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["sd.case-study"],
+          "prompt": "Design a URL shortener. What are the key decisions?",
+          "answer": "Generate short codes by base62-encoding a unique ID (from a sequence, or a pre-allocated range per server) or by hashing with collision checks; store code → URL in a key-value store; serve redirects (302 if you need click analytics, 301 to let browsers cache) with a heavy cache in front, since reads vastly outnumber writes.",
+          "explanation": "Extras interviewers probe: custom aliases (uniqueness checks), expiry, abuse prevention (malicious URL scanning, rate limits), and analytics recorded asynchronously so redirects stay fast. Seven base62 characters give about 3.5 trillion codes.",
+          "prerequisites": ["sd-interview-framework", "web-redirects"],
+          "resources": [
+            { "title": "System Design Primer — Design Pastebin / URL shortener", "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/pastebin/README.md", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-rate-limiter-design",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sd.case-study", "api.rate-limiting"],
+          "prompt": "Design a distributed rate limiter for an API gateway handling 100k requests per second.",
+          "answer": "Keep per-key counters (user, API key, IP) in a fast shared store such as Redis using a token bucket or sliding-window counter updated atomically (Lua scripts), evaluated in the gateway. Return 429 with `Retry-After` and rate-limit headers.",
+          "explanation": "Trade-offs: a central store adds latency and a failure point, so decide whether to fail open or closed when it is unavailable. Local in-memory limits with periodic synchronisation scale further but are approximate. Sliding-window counters avoid the burst-at-boundary problem of fixed windows.",
+          "prerequisites": ["api-rate-limit", "nosql-redis-patterns"],
+          "resources": [
+            { "title": "Cloudflare blog — How we built rate limiting capable of scaling to millions of domains", "url": "https://blog.cloudflare.com/counting-things-a-lot-of-different-things/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-news-feed",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["sd.case-study"],
+          "prompt": "Design a social news feed. Fan-out on write or fan-out on read?",
+          "answer": "Fan-out on write pushes each new post into every follower's precomputed feed (fast reads, expensive writes); fan-out on read assembles the feed from followed accounts at request time (cheap writes, slow reads). Real systems use a hybrid: push for normal accounts, pull for celebrities with millions of followers.",
+          "explanation": "A celebrity post fanned out on write would mean millions of writes at once — the \"hot key\" case. Feeds are stored as lists of post IDs in a cache, with post contents fetched and ranked separately.",
+          "prerequisites": ["sd-caching-layers", "sd-queue-decoupling"],
+          "resources": [
+            { "title": "System Design Primer — Design the Twitter timeline and search", "url": "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/twitter/README.md", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-chat-system",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sd.case-study", "web.realtime"],
+          "prompt": "Design a one-to-one and group chat service. What are the core components?",
+          "answer": "Persistent WebSocket connections to stateless chat servers, a presence/routing service mapping users to the server holding their connection, a message store partitioned by conversation (ordered by a per-conversation sequence), a queue for delivery to offline users with push notifications, and acknowledgements for delivered and read receipts.",
+          "explanation": "Ordering per conversation, idempotent delivery with client message IDs (to survive retries), and efficient history sync after reconnecting are the subtle parts. End-to-end encryption changes what the server can do — it can route but not read or search.",
+          "prerequisites": ["web-realtime", "sd-idempotency-key"],
+          "resources": [
+            { "title": "System Design Primer — Design a chat system (exercises index)", "url": "https://github.com/donnemartin/system-design-primer#system-design-interview-questions-with-solutions", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-notifications",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sd.case-study"],
+          "prompt": "Design a notification system that sends email, SMS and push notifications for many products.",
+          "answer": "Producers publish notification requests to a queue; a service applies user preferences, rate limits and deduplication, renders templates, and routes to per-channel workers that call providers (email, SMS, APNs/FCM) with retries, backoff and dead-letter queues. Record delivery status and support idempotency keys.",
+          "explanation": "The hard parts are not sending: respecting opt-outs and quiet hours, avoiding duplicate or storm notifications during incidents, provider failover, and tracking delivery for support. Separate channels so an SMS provider outage does not delay email.",
+          "prerequisites": ["cloud-messaging", "sd-backpressure"],
+          "resources": [
+            { "title": "Uber engineering — Uber's real-time push platform", "url": "https://www.uber.com/en-GB/blog/real-time-push-platform/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sd-file-storage",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sd.case-study", "cloud.storage"],
+          "prompt": "Design a file-sharing service like Dropbox. How do uploads and sync work?",
+          "answer": "Clients upload directly to object storage using presigned URLs (bypassing app servers), splitting large files into chunks identified by content hash for resumable uploads and deduplication. A metadata database tracks files, versions, chunks and sharing; a notification channel tells other devices to sync the changed chunks.",
+          "explanation": "Chunking with content hashes means editing one part of a large file re-uploads only the changed chunks, and identical content is stored once. Conflicts from offline edits are resolved by keeping both versions rather than guessing.",
+          "prerequisites": ["cloud-object-storage"],
+          "resources": [
+            { "title": "System Design Primer — Object storage and CDN notes", "url": "https://github.com/donnemartin/system-design-primer#content-delivery-network", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,319 @@
+{
+  "id": "frontend",
+  "name": "Front-end Engineering",
+  "icon": "🖼️",
+  "category": "Web",
+  "color": "#61DAFB",
+  "description": "Component-based UI: state and rendering, effects and data fetching, state management, performance, accessibility and testing — framework-neutral, with React examples.",
+  "modules": [
+    {
+      "id": "fe-components",
+      "name": "Components, State & Rendering",
+      "description": "The component model, props versus state, immutable updates, keys, reconciliation and where state should live.",
+      "cards": [
+        {
+          "id": "fe-component-model",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["frontend.components"],
+          "prompt": "What is the core idea behind component-based UI frameworks (React, Vue, Svelte, Angular)?",
+          "answer": "The UI is a tree of reusable components, each a function of its inputs (props) and its own state that describes what the screen should look like. When data changes, the framework re-renders and updates the real DOM for you; data flows down through props, and events flow up through callbacks.",
+          "explanation": "Declarative rendering replaces hand-written DOM manipulation, which is where most UI bugs used to live — forgotten updates and inconsistent screens. Keep components small, give each one job, and compose them like functions.",
+          "prerequisites": ["web-url-to-pixels"],
+          "resources": [
+            { "title": "react.dev — Thinking in React", "url": "https://react.dev/learn/thinking-in-react", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-props-vs-state",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["frontend.state"],
+          "prompt": "Props vs state",
+          "answer": "Props are inputs passed in by the parent and read-only inside the component; state is data the component owns and changes over time, triggering a re-render when updated.",
+          "columns": {
+            "left": { "title": "Props", "points": ["Passed from the parent", "Read-only in the child", "Change when the parent re-renders", "Configure a component"] },
+            "right": { "title": "State", "points": ["Owned by the component", "Changed via the setter / assignment", "Persists between renders", "Changes schedule a re-render"] }
+          },
+          "explanation": "Rule of thumb: if a value can be computed from props or other state, it is neither — compute it during render. Keep state minimal and in the lowest common owner of the components that need it.",
+          "prerequisites": ["fe-component-model"],
+          "resources": [
+            { "title": "react.dev — State: a component's memory", "url": "https://react.dev/learn/state-a-components-memory", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-state-immutability",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["frontend.state", "frontend.react"],
+          "prompt": "Clicking \"Add\" does nothing on screen, although `todos` really grows. Why?",
+          "code": "function TodoList() {\n  const [todos, setTodos] = useState([]);\n\n  function add(text) {\n    todos.push({ id: crypto.randomUUID(), text });\n    setTodos(todos);\n  }\n  // ...\n}",
+          "lang": "jsx",
+          "answer": "The array is mutated in place and then set to the *same* reference, so the framework sees no change and skips the re-render. Create a new array: `setTodos([...todos, newTodo])` (or `setTodos(t => [...t, newTodo])`).",
+          "explanation": "React and most stores detect changes by reference equality, which makes immutable updates mandatory: spread for arrays and objects, `map`/`filter` instead of in-place edits, `structuredClone` or Immer for deep updates. It also makes change detection cheap and time-travel debugging possible.",
+          "prerequisites": ["fe-props-vs-state", "js-spread-shallow"],
+          "resources": [
+            { "title": "react.dev — Updating arrays in state", "url": "https://react.dev/learn/updating-arrays-in-state", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-keys",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["frontend.lists", "frontend.react"],
+          "prompt": "After deleting the first row, the text typed into the second row's input appears in the wrong row. Why?",
+          "code": "{rows.map((row, i) => (\n  <li key={i}>\n    {row.label} <input placeholder=\"note\" />\n    <button onClick={() => remove(row.id)}>×</button>\n  </li>\n))}",
+          "lang": "jsx",
+          "answer": "Using the array index as `key` ties component identity to position. When a row is removed, every later row shifts index, so the framework reuses the wrong component instances — and their internal state, such as input contents. Use a stable ID from the data: `key={row.id}`.",
+          "explanation": "Keys tell the reconciler which item is which between renders. Index keys are only safe for static lists that never reorder, insert or delete. Random keys (`Math.random()`) are worse still: every render destroys and recreates every item.",
+          "prerequisites": ["fe-state-immutability"],
+          "resources": [
+            { "title": "react.dev — Rendering lists — keeping list items in order with key", "url": "https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-vdom-vs-signals",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["frontend.rendering", "frontend.reactivity"],
+          "prompt": "Virtual-DOM re-rendering (React) vs fine-grained reactivity (signals — Solid, Svelte 5 runes, Vue, Angular signals)",
+          "answer": "React re-runs a component function when its state changes, then diffs the new virtual tree against the old one and patches the DOM. Signal-based frameworks track exactly which DOM nodes read which values, and update only those nodes when a signal changes.",
+          "columns": {
+            "left": { "title": "Virtual DOM (React)", "points": ["Component re-renders on state change", "Diff new tree vs old, patch the DOM", "Memoisation to skip unneeded work", "Simple mental model: UI = f(state)"] },
+            "right": { "title": "Signals", "points": ["Dependencies tracked per value", "Only affected DOM nodes update", "Components run once to set up", "Little manual memoisation needed"] }
+          },
+          "explanation": "Both are declarative for the developer. Fine-grained reactivity avoids re-running whole components, so it needs less manual memoisation; the virtual-DOM model is simpler to reason about (\"the UI is a function of state\") and React's compiler now automates much of its memoisation.",
+          "prerequisites": ["fe-component-model"],
+          "resources": [
+            { "title": "Solid docs — Signals", "url": "https://docs.solidjs.com/concepts/signals", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-lifting-state",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["frontend.state", "frontend.architecture"],
+          "prompt": "A search box and a results list are sibling components, and both need the current query. Where should the query state live?",
+          "answer": "Lift it to their closest common parent, which owns the state and passes the value down to both, plus a setter (or callback) to the search box. When the tree between owner and consumers gets deep, use context (or a store) instead of threading props through every level.",
+          "explanation": "Duplicating the state in both siblings and syncing them with effects is the classic mistake — they drift apart. There should be a single source of truth for each piece of state, living as low in the tree as it can while still reaching every consumer.",
+          "prerequisites": ["fe-props-vs-state"],
+          "resources": [
+            { "title": "react.dev — Sharing state between components", "url": "https://react.dev/learn/sharing-state-between-components", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-derived-state",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["frontend.state", "frontend.effects"],
+          "prompt": "What is wrong with how `visible` is managed here?",
+          "code": "const [todos, setTodos] = useState(initial);\nconst [showDone, setShowDone] = useState(false);\nconst [visible, setVisible] = useState([]);\n\nuseEffect(() => {\n  setVisible(todos.filter(t => showDone || !t.done));\n}, [todos, showDone]);",
+          "lang": "jsx",
+          "answer": "It is derived data stored as extra state and synchronised with an effect: every change renders once with stale `visible`, then again after the effect — and it can drift out of sync. Compute it during render: `const visible = todos.filter(t => showDone || !t.done);` (wrapped in `useMemo` only if it is measurably expensive).",
+          "explanation": "If a value can be calculated from existing props or state, do not store it. Redundant state is one of the most common sources of UI bugs, and \"you might not need an effect\" applies to most effects that just copy data around.",
+          "prerequisites": ["fe-props-vs-state"],
+          "resources": [
+            { "title": "react.dev — You might not need an effect", "url": "https://react.dev/learn/you-might-not-need-an-effect", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fe-effects-data",
+      "name": "Effects, Data & State Management",
+      "description": "Effects and cleanup, stale closures, fetch races, server versus client state, global stores, forms and routing.",
+      "cards": [
+        {
+          "id": "fe-effects",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["frontend.effects", "frontend.react"],
+          "prompt": "What are effects for, and what does the cleanup function do?",
+          "answer": "Effects synchronise a component with something outside the framework — subscriptions, timers, WebSocket connections, imperative widgets, the document title. The cleanup function undoes the setup (unsubscribe, clear the timer, close the socket) and runs before the effect re-runs and when the component unmounts.",
+          "explanation": "Effects are not for transforming data or responding to user events — do those during render or in the event handler. List every reactive value the effect uses as a dependency; React's Strict Mode deliberately runs setup and cleanup twice in development to expose missing cleanups.",
+          "prerequisites": ["fe-derived-state"],
+          "resources": [
+            { "title": "react.dev — Synchronizing with effects", "url": "https://react.dev/learn/synchronizing-with-effects", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-stale-closure",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["frontend.effects", "js.closures"],
+          "prompt": "This counter goes from 0 to 1 and then stays at 1. Why?",
+          "code": "function Ticker() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    const id = setInterval(() => setCount(count + 1), 1000);\n    return () => clearInterval(id);\n  }, []);\n\n  return <span>{count}</span>;\n}",
+          "lang": "jsx",
+          "answer": "The interval callback closes over `count` from the first render, which is always 0, so it keeps setting 0 + 1. Use the functional update `setCount(c => c + 1)`, which always receives the latest value, and keep the empty dependency array.",
+          "explanation": "Every render creates new closures over that render's values; long-lived callbacks (timers, subscriptions, event listeners registered once) keep seeing the values from when they were created. The exhaustive-deps lint rule flags most of these mistakes.",
+          "prerequisites": ["fe-effects", "js-closure-definition"],
+          "resources": [
+            { "title": "react.dev — Queueing a series of state updates", "url": "https://react.dev/learn/queueing-a-series-of-state-updates", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-fetch-race",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["frontend.data-fetching", "frontend.effects"],
+          "prompt": "Typing quickly in the user picker sometimes shows the profile of a user you no longer have selected. Why, and how do you fix it?",
+          "code": "useEffect(() => {\n  fetch(`/api/users/${userId}`)\n    .then(r => r.json())\n    .then(setProfile);\n}, [userId]);",
+          "lang": "jsx",
+          "answer": "Requests can resolve out of order: an older, slower response arrives after the newer one and overwrites it. In the effect's cleanup, abort the request (`AbortController`) or set an `ignore` flag so stale responses are discarded.",
+          "explanation": "This race exists for any async work started by changing inputs. Data-fetching libraries (TanStack Query, SWR, framework loaders) handle cancellation, caching, deduplication and retries for you, which is why hand-rolled fetch-in-effect code is discouraged in production apps.",
+          "prerequisites": ["fe-effects", "js-abort-controller"],
+          "resources": [
+            { "title": "react.dev — Synchronizing with effects — fetching data", "url": "https://react.dev/learn/synchronizing-with-effects#fetching-data", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-server-vs-client-state",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["frontend.state", "frontend.data-fetching"],
+          "prompt": "Server state vs client state",
+          "answer": "Server state is a cached copy of data owned by the backend — it can be stale, shared with other users and needs fetching, caching, invalidation and refetching. Client state is owned by the UI alone — which tab is open, form drafts, whether a modal is visible.",
+          "columns": {
+            "left": { "title": "Server state", "points": ["Owned remotely; you hold a snapshot", "Can go stale; needs refetch and invalidation", "Shared across components and users", "TanStack Query, SWR, framework loaders"] },
+            "right": { "title": "Client state", "points": ["Owned by the UI", "Always current by definition", "UI concerns: open panels, drafts, selection", "Local state, context, small stores"] }
+          },
+          "explanation": "Treating server data as ordinary global client state (copying API responses into a store by hand) is behind much state-management pain. Let a query cache own server state, and keep what remains in local state, context or a small store.",
+          "prerequisites": ["sd-caching-layers"],
+          "resources": [
+            { "title": "TanStack Query — Overview", "url": "https://tanstack.com/query/latest/docs/framework/react/overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-global-state",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["frontend.state", "frontend.architecture"],
+          "prompt": "A team puts every piece of state into one global store \"to keep things consistent\". What goes wrong, and what is a better default?",
+          "answer": "Everything becomes coupled to everything: components re-render on unrelated changes, ownership is unclear, and any code can modify anything. Default to local state, lift it when shared, use context for low-frequency app-wide values (theme, current user), a query cache for server data, and a store only for genuinely global, frequently updated client state.",
+          "explanation": "Global stores (Redux, Zustand, Pinia) are useful for cross-cutting client state with many readers and writers, especially with devtools and undo. The question for each piece of state is \"who owns it, and who needs it?\" — not \"where do we put all state?\".",
+          "prerequisites": ["fe-lifting-state", "fe-server-vs-client-state"],
+          "resources": [
+            { "title": "react.dev — Passing data deeply with context", "url": "https://react.dev/learn/passing-data-deeply-with-context", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-controlled-forms",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["frontend.forms"],
+          "prompt": "Controlled vs uncontrolled form inputs",
+          "answer": "A controlled input's value lives in component state and is set on every keystroke via `value` + `onChange`; an uncontrolled input keeps its own value in the DOM, read when needed through a ref or the form's `FormData`.",
+          "columns": {
+            "left": { "title": "Controlled", "points": ["Value stored in state", "Re-render on every keystroke", "Easy live validation and formatting", "Single source of truth"] },
+            "right": { "title": "Uncontrolled", "points": ["Value stored in the DOM", "Read on submit via ref or FormData", "Less code, fewer re-renders", "Works with progressive enhancement"] }
+          },
+          "explanation": "Controlled inputs make instant validation, formatting and dependent fields easy; uncontrolled ones are simpler and faster for large forms and work with plain HTML form submission. Form libraries (React Hook Form) and framework form actions combine the benefits.",
+          "prerequisites": ["html-forms-validation"],
+          "resources": [
+            { "title": "react.dev — <input> — controlling an input with a state variable", "url": "https://react.dev/reference/react-dom/components/input#controlling-an-input-with-a-state-variable", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-client-routing",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["frontend.routing", "web.spa"],
+          "prompt": "How does client-side routing work in a single-page app, and what must the server do?",
+          "answer": "The router intercepts link clicks, updates the URL with the History API (`pushState`) without a full page load, and renders the matching components; it listens for `popstate` to handle back and forward. The server must return the app shell for every route path, or deep links and refreshes 404.",
+          "explanation": "Routes should be real URLs so they can be bookmarked, shared and opened in new tabs. After navigation, move focus and announce the new page for screen-reader users, and restore scroll position — browsers do this automatically only for full page loads.",
+          "prerequisites": ["web-ssr-csr"],
+          "resources": [
+            { "title": "MDN — History API", "url": "https://developer.mozilla.org/en-US/docs/Web/API/History_API", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fe-quality",
+      "name": "Performance, Accessibility & Testing",
+      "description": "Re-render performance, long lists, accessible components, behaviour-focused tests, design systems and hydration.",
+      "cards": [
+        {
+          "id": "fe-rerender-performance",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["frontend.performance"],
+          "prompt": "What causes unnecessary re-renders, and how should you deal with them?",
+          "answer": "A component re-renders when its state changes or its parent re-renders; new object, array or function props created every render make memoised children re-render anyway. Fix only measured problems: move state down closer to where it is used, pass children as props, split context, and memoise (`memo`, `useMemo`, `useCallback`) the genuinely expensive parts.",
+          "explanation": "Most re-renders are cheap; the ones that hurt re-render large subtrees or do heavy computation. Measure with the framework profiler before optimising — premature memoisation adds complexity and bugs from stale dependencies. The React Compiler memoises automatically.",
+          "prerequisites": ["fe-vdom-vs-signals", "craft-premature-optimisation"],
+          "resources": [
+            { "title": "react.dev — memo", "url": "https://react.dev/reference/react/memo", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-list-virtualisation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["frontend.performance", "web.rendering"],
+          "prompt": "A table with 20,000 rows makes the page freeze on load and scroll. What is the fix?",
+          "answer": "Virtualise (window) the list: render only the rows visible in the viewport plus a small buffer, positioned inside a container sized for the full list, and swap rows as the user scrolls. DOM size drops from 20,000 rows to a few dozen.",
+          "explanation": "Large DOMs slow layout, style recalculation and memory for every interaction. Alternatives are pagination or incremental loading. Virtualisation complicates in-page find, accessibility and variable row heights, so use a well-tested library (TanStack Virtual, react-window).",
+          "prerequisites": ["css-layout-vs-paint"],
+          "resources": [
+            { "title": "web.dev — Virtualize large lists with react-window", "url": "https://web.dev/articles/virtualize-long-lists-react-window", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fe-accessible-components",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["frontend.a11y", "a11y.patterns"],
+          "prompt": "What must a custom interactive component (dropdown, tabs, combobox) provide to be accessible?",
+          "answer": "The right roles and states for assistive technology (`role=\"tab\"`, `aria-selected`, `aria-expanded`), full keyboard support matching the expected pattern (arrow keys within tabs, Escape to close), visible focus, focus management when opening and closing, and accessible names for every control.",
+          "explanation": "The WAI-ARIA Authoring Practices describe the expected behaviour for each widget. Prefer native elements (`<select>`, `<dialog>`, `<details>`) or headless component libraries that already implement these patterns — hand-rolled widgets are the most common source of accessibility failures.",
+          "prerequisites": ["html-aria-first-rule", "a11y-keyboard-focus"],
+          "resources": [
+            { "title": "W3C — ARIA Authoring Practices Guide", "url": "https://www.w3.org/WAI/ARIA/apg/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-testing-behaviour",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["frontend.testing", "testing.unit"],
+          "prompt": "How should UI components be tested?",
+          "answer": "Through what users see and do: render the component, find elements by role, label or text, simulate user events (typing, clicking), and assert on visible output — not on internal state, props or component instances. Testing Library is built around this principle.",
+          "explanation": "\"The more your tests resemble the way your software is used, the more confidence they can give you.\" Behaviour-level tests survive refactors (switching state libraries, splitting components) that implementation-detail tests break on, and role-based queries double as accessibility checks.",
+          "prerequisites": ["test-brittle", "test-e2e"],
+          "resources": [
+            { "title": "Testing Library — Guiding principles", "url": "https://testing-library.com/docs/guiding-principles", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-design-system",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["frontend.design-systems", "css.architecture"],
+          "prompt": "What is a design system, and what are design tokens?",
+          "answer": "A shared set of reusable components, patterns and guidelines that keeps an interface consistent across teams and products. Design tokens are its named primitive values — colours, spacing, type scale, radii, motion — defined once and consumed by code (as CSS custom properties) and design tools alike.",
+          "explanation": "Tokens make themes (dark mode, brands) a matter of swapping values, and keep design and code from drifting. Build components on accessible headless primitives, document them with live examples (Storybook), and version the system like any other library.",
+          "prerequisites": ["css-architecture"],
+          "resources": [
+            { "title": "Design Tokens Community Group (W3C)", "url": "https://www.w3.org/community/design-tokens/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fe-hydration-mismatch",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["frontend.ssr", "web.rendering"],
+          "prompt": "Server-rendered pages show a \"hydration mismatch\" warning and the timestamp flickers. Why?",
+          "code": "export default function Footer() {\n  return <p>Page generated at {new Date().toLocaleTimeString()}</p>;\n}",
+          "lang": "jsx",
+          "answer": "Hydration expects the first client render to produce exactly the HTML the server sent. `new Date()` (like `Math.random()`, `window` checks or locale-dependent formatting) returns a different value on the client, so the trees disagree. Render stable output first, then update in an effect after hydration — or pass the server's value down as data.",
+          "explanation": "Mismatches can make the framework discard server HTML and re-render from scratch, losing the benefit of SSR, and can attach event handlers to the wrong elements. Browser extensions that modify the DOM cause spurious mismatches too.",
+          "prerequisites": ["web-ssr-csr"],
+          "resources": [
+            { "title": "react.dev — hydrateRoot — handling different client and server content", "url": "https://react.dev/reference/react-dom/client/hydrateRoot#handling-different-client-and-server-content", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

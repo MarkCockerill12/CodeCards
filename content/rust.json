@@ -124,7 +124,7 @@
           "answer": "Traits can be implemented for types you did not define, support default methods and associated types, and dispatch statically by default.",
           "columns": {
             "left": { "title": "Rust trait", "points": ["Implement for foreign types (subject to orphan rules)", "Static dispatch via generics — monomorphised, inlinable", "`dyn Trait` opts into dynamic dispatch", "Associated types and consts"] },
-            "right": { "title": "Interface", "points": ["Must be declared on the type itself", "Always dynamic dispatch through a vtable", "Widely supported tooling and reflection", "Generic variance rules differ"] }
+            "right": { "title": "Interface", "points": ["Must be declared on the type itself", "Virtual dispatch by default (the JIT may devirtualise)", "Widely supported tooling and reflection", "Generic variance rules differ"] }
           },
           "explanation": "`impl Trait` / generics compile to a specialised copy per concrete type — zero-cost but larger binaries. `dyn Trait` is one vtable-based copy, smaller and slower. Choose per call site, not per codebase.",
           "resources": [
@@ -185,6 +185,252 @@
           "explanation": "Take `&str` in parameters and return `String` when producing owned data. Both are guaranteed valid UTF-8 — which is why indexing by byte position can panic on a char boundary, and why you iterate with `.chars()`.",
           "resources": [
             { "title": "Rust std — str", "url": "https://doc.rust-lang.org/std/primitive.str.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rust-core",
+      "name": "Enums, Patterns & Smart Pointers",
+      "description": "Algebraic data types, exhaustive matching, closures, trait objects, smart pointers and drop order.",
+      "cards": [
+        {
+          "id": "rs-enums-match",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["rust.enums", "rust.pattern-matching"],
+          "prompt": "What makes Rust enums and `match` more powerful than enums in C or Java?",
+          "answer": "Each variant can carry its own data (`enum Shape { Circle { r: f64 }, Rect(f64, f64) }`) — a sum type — and `match` must be exhaustive, so the compiler rejects code that forgets a variant.",
+          "explanation": "This is how Rust models states and messages without nulls or invalid combinations: make illegal states unrepresentable. Adding a variant turns every non-exhaustive `match` into a compile error pointing at code to update. Avoid a catch-all `_` arm when you want that safety.",
+          "resources": [
+            { "title": "The Rust Book — Enums and pattern matching", "url": "https://doc.rust-lang.org/book/ch06-00-enums.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-if-let-else",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["rust.pattern-matching"],
+          "prompt": "When do you use `if let`, `let ... else` and `matches!` instead of a full `match`?",
+          "answer": "`if let Some(x) = opt { ... }` handles one pattern and ignores the rest. `let Some(x) = opt else { return Err(...) };` binds on success and forces the else branch to diverge — flattening early-return code. `matches!(v, Pattern)` returns a bool.",
+          "explanation": "`let ... else` keeps the happy path unindented, the same way guard clauses do in other languages. Use a full `match` when several arms carry meaningful logic, so exhaustiveness checking still protects you.",
+          "prerequisites": ["rs-option-result"],
+          "resources": [
+            { "title": "Rust Reference — let-else statements", "url": "https://doc.rust-lang.org/reference/statements.html#let-else-statements", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "rs-shadowing",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["rust.bindings", "rust.core"],
+          "prompt": "What does this print?",
+          "code": "fn main() {\n    let x = 5;\n    let x = x + 1;\n    {\n        let x = x * 2;\n        println!(\"{}\", x);\n    }\n    println!(\"{}\", x);\n    let spaces = \"     \";\n    let spaces = spaces.len();\n    println!(\"{}\", spaces);\n}",
+          "lang": "rust",
+          "answer": "12\n6\n5",
+          "explanation": "`let x = x + 1` creates a *new* binding that shadows the old one — unlike `mut`, it can even change type. The inner block's shadow ends with the block, so the outer `x` is 6 again afterwards. `spaces` changing from `&str` to `usize` would be impossible with `mut`.",
+          "resources": [
+            { "title": "The Rust Book — Variables and mutability — shadowing", "url": "https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html#shadowing", "kind": "book" }
+          ],
+          "verify": { "runtime": "rust", "expectedOutput": "12\n6\n5" }
+        },
+        {
+          "id": "rs-closures-fn-traits",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["rust.closures", "rust.traits"],
+          "prompt": "`Fn` vs `FnMut` vs `FnOnce`",
+          "answer": "The three closure traits describe how a closure uses its captures: `Fn` only reads them, `FnMut` mutates them, and `FnOnce` consumes (moves out of) them and can therefore be called only once.",
+          "columns": {
+            "left": { "title": "Fn / FnMut", "points": ["`Fn`: shared borrow of captures", "`Fn`: callable many times, even concurrently", "`FnMut`: mutable borrow of captures", "`FnMut`: iterator adaptors like `for_each`"] },
+            "right": { "title": "FnOnce", "points": ["Takes ownership of what it captured", "Callable exactly once", "Every closure implements it", "Needed by `thread::spawn`, `unwrap_or_else`"] }
+          },
+          "explanation": "Every `Fn` is also `FnMut` and `FnOnce`, so accept the loosest bound your function needs: `FnOnce` for a callback run once (`thread::spawn`, `Option::map`), `FnMut` for repeated calls that accumulate, `Fn` for shared concurrent use. `move` controls how captures are taken, not which trait is implemented.",
+          "resources": [
+            { "title": "The Rust Book — Closures", "url": "https://doc.rust-lang.org/book/ch13-01-closures.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-box-dyn",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["rust.traits", "rust.dispatch"],
+          "prompt": "Generics (`impl Trait`) vs trait objects (`Box<dyn Trait>`)",
+          "answer": "Generics are resolved at compile time with a specialised copy per type; trait objects are resolved at runtime through a vtable, allowing different concrete types behind one pointer.",
+          "columns": {
+            "left": { "title": "impl Trait / <T: Trait>", "points": ["Monomorphised: one copy per concrete type", "Static dispatch, fully inlinable", "One concrete type per call site", "Larger binaries, longer compiles"] },
+            "right": { "title": "Box<dyn Trait>", "points": ["One copy, vtable dispatch", "Mix different types in one collection", "Heap allocation plus a fat pointer", "Only for dyn-compatible traits"] }
+          },
+          "explanation": "You need `dyn` for heterogeneous collections (`Vec<Box<dyn Shape>>`) and to keep binary size down; generics when performance and inlining matter. A trait must be \"dyn compatible\" (object safe) — no generic methods or `Self`-returning methods — to be used as a trait object.",
+          "prerequisites": ["rs-traits-vs-interfaces"],
+          "resources": [
+            { "title": "The Rust Book — Using trait objects", "url": "https://doc.rust-lang.org/book/ch18-02-trait-objects.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-smart-pointers",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["rust.smart-pointers", "rust.ownership"],
+          "prompt": "What are `Box<T>`, `Rc<T>` and `Arc<T>` for?",
+          "answer": "`Box<T>` is single-owner heap allocation — for recursive types, large values and trait objects. `Rc<T>` is shared ownership via a non-atomic reference count, single-threaded only. `Arc<T>` is the atomic, thread-safe equivalent.",
+          "explanation": "Rc and Arc give shared *immutable* access; add `RefCell` or `Mutex` for mutation. Reference cycles leak, just as in any refcounting scheme — break them with `Weak<T>`, typically for parent pointers in trees.",
+          "prerequisites": ["rs-interior-mutability"],
+          "resources": [
+            { "title": "The Rust Book — Smart pointers", "url": "https://doc.rust-lang.org/book/ch15-00-smart-pointers.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-drop-order",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["rust.ownership", "rust.raii"],
+          "prompt": "What does this print?",
+          "code": "struct Noisy(&'static str);\n\nimpl Drop for Noisy {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\n\nfn main() {\n    let _a = Noisy(\"a\");\n    let _b = Noisy(\"b\");\n    println!(\"end of main\");\n}",
+          "lang": "rust",
+          "answer": "end of main\ndrop b\ndrop a",
+          "explanation": "Values are dropped when their owner goes out of scope, in reverse order of declaration — like C++ destructors. Implementing `Drop` gives RAII: files close, locks release and guards restore state automatically. `std::mem::drop(x)` ends a value early; you cannot call `x.drop()` directly.",
+          "prerequisites": ["rs-ownership-rules"],
+          "resources": [
+            { "title": "The Rust Book — Running code on cleanup with the Drop trait", "url": "https://doc.rust-lang.org/book/ch15-03-drop.html", "kind": "book" }
+          ],
+          "verify": { "runtime": "rust", "expectedOutput": "end of main\ndrop b\ndrop a" }
+        },
+        {
+          "id": "rs-derive",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["rust.traits"],
+          "prompt": "What does `#[derive(Debug, Clone, PartialEq, Eq, Hash)]` do, and when should you derive `Copy`?",
+          "answer": "It generates standard trait implementations from the fields: `Debug` for `{:?}` printing, `Clone` for explicit copies, `PartialEq`/`Eq` for `==`, `Hash` for use as a map key, plus `Default`, `PartialOrd`/`Ord` and others.",
+          "explanation": "Derive `Copy` only for small, plain values whose fields are all Copy (numbers, ids, small coordinate structs): it makes assignment an implicit bitwise copy. Once a type owns a heap resource it cannot be Copy, and adding Copy later is easy while removing it is a breaking change.",
+          "prerequisites": ["rs-move-vs-copy"],
+          "resources": [
+            { "title": "The Rust Book — Derivable traits", "url": "https://doc.rust-lang.org/book/appendix-03-derivable-traits.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-overflow",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["rust.integers", "num.integers"],
+          "prompt": "What happens on integer overflow in Rust, and how do you choose the behaviour explicitly?",
+          "answer": "Debug builds panic; release builds wrap in two's complement (unless `overflow-checks` is enabled). Choose explicitly with `checked_add` (returns `Option`), `wrapping_add`, `saturating_add` or `overflowing_add`.",
+          "explanation": "Overflow is never undefined behaviour in Rust, unlike signed overflow in C. For values derived from untrusted input — sizes, lengths, offsets — use `checked_*` and handle `None`, or turn on overflow checks in release builds when correctness matters more than a little speed.",
+          "prerequisites": ["num-integer-overflow"],
+          "resources": [
+            { "title": "The Rust Book — Data types — integer overflow", "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-error-libraries",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["rust.errors"],
+          "prompt": "`thiserror` vs `anyhow`",
+          "answer": "thiserror derives precise error enums for libraries; anyhow provides one easy dynamic error type with context for applications.",
+          "columns": {
+            "left": { "title": "thiserror (libraries)", "points": ["`#[derive(Error)]` on your own enum", "Callers can `match` on variants", "`#[from]` wires up `?` conversions", "Part of your public API"] },
+            "right": { "title": "anyhow (applications)", "points": ["`anyhow::Result<T>` for everything", "`.context(\"loading config\")` adds a trail", "Easy to report, hard to match on", "Keeps application code terse"] }
+          },
+          "explanation": "Libraries should expose typed errors so callers can match on them; binaries mostly want to add context and report. Both work with `?`. Reserve `unwrap()` for cases that truly cannot fail, and prefer `expect(\"why this cannot fail\")` so a panic explains itself.",
+          "prerequisites": ["rs-question-mark"],
+          "resources": [
+            { "title": "docs.rs — anyhow", "url": "https://docs.rs/anyhow/latest/anyhow/", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rust-ecosystem",
+      "name": "Cargo, Async & Tooling",
+      "description": "Cargo and crates, modules and visibility, testing, clippy, async runtimes and editions.",
+      "cards": [
+        {
+          "id": "rs-cargo",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["rust.cargo", "rust.tooling"],
+          "prompt": "What does Cargo do, and what are `Cargo.toml` and `Cargo.lock`?",
+          "answer": "Cargo is Rust's build system and package manager: it resolves and downloads crates from crates.io, compiles, runs tests (`cargo test`), benchmarks, docs and binaries. `Cargo.toml` declares metadata and dependency ranges; `Cargo.lock` pins exact versions.",
+          "explanation": "Commit `Cargo.lock` for applications (and, per current guidance, for libraries too, for reproducible CI). Workspaces share one lockfile and target directory across several crates. `cargo add`, `cargo tree` and `cargo update -p` cover everyday dependency work.",
+          "resources": [
+            { "title": "The Cargo Book", "url": "https://doc.rust-lang.org/cargo/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-modules-visibility",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["rust.modules"],
+          "prompt": "How do modules and visibility work in Rust?",
+          "answer": "Everything is private to its module by default. `pub` exposes an item, `pub(crate)` exposes it within the crate only, and `pub(super)` to the parent module. Modules map to files (`mod net;` loads `net.rs` or `net/mod.rs`), and `use` brings paths into scope.",
+          "explanation": "Privacy is per module, not per type, so tests in a child `mod tests` can reach private functions. Keep the public surface small and re-export the intended API from the crate root with `pub use`, so internal layout can change without breaking users.",
+          "resources": [
+            { "title": "The Rust Book — Managing growing projects with packages, crates, and modules", "url": "https://doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-testing",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["rust.testing", "testing.unit"],
+          "prompt": "Where do unit tests, integration tests and doc tests live in a Rust crate?",
+          "answer": "Unit tests sit beside the code in a `#[cfg(test)] mod tests` with `#[test]` functions and can reach private items. Integration tests live in `tests/` and use only the public API. Doc tests are code examples in `///` comments, compiled and run by `cargo test`.",
+          "explanation": "Doc tests keep examples honest — a broken example fails the build, the same idea as verified flashcards. `#[should_panic]` tests expected panics, and tests can return `Result` to use `?`.",
+          "resources": [
+            { "title": "The Rust Book — Writing automated tests", "url": "https://doc.rust-lang.org/book/ch11-00-testing.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-clippy-fmt",
+          "type": "cloze",
+          "difficulty": 1,
+          "tags": ["rust.tooling"],
+          "prompt": "Rust's official linter, run with `cargo ___`, catches hundreds of common mistakes and non-idiomatic patterns beyond what the compiler warns about.",
+          "answer": "clippy",
+          "explanation": "Run `cargo fmt --check` and `cargo clippy -- -D warnings` in CI so style and lint regressions fail the build. Clippy lints are grouped (correctness, perf, style, pedantic); the defaults are sensible, and specific lints can be allowed per item with a justifying comment.",
+          "resources": [
+            { "title": "Clippy documentation", "url": "https://doc.rust-lang.org/clippy/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "rs-async",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["rust.async", "concurrency.async"],
+          "prompt": "How is async Rust different from async in JavaScript or C#?",
+          "answer": "A Rust future is inert: calling an `async fn` builds a state machine that does nothing until polled. There is no built-in runtime — you choose one (Tokio is the de facto standard) to drive futures, and `.await` yields control back to it.",
+          "explanation": "Futures compile to zero-allocation state machines, which is why async Rust is fast but has sharp edges: never block the executor with CPU work or blocking I/O (use `spawn_blocking`), and futures moved across threads must be `Send`. Dropping a future cancels it at its last `.await` point.",
+          "prerequisites": ["rs-send-sync"],
+          "resources": [
+            { "title": "Asynchronous Programming in Rust", "url": "https://rust-lang.github.io/async-book/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-editions",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["rust.tooling", "rust.evolution"],
+          "prompt": "What is a Rust edition, and why can crates on different editions work together?",
+          "answer": "An edition (2015, 2018, 2021, 2024) is an opt-in set of language changes that would otherwise break code — new keywords, changed defaults. Each crate declares its own edition, and all editions compile to the same internal representation, so they link together freely.",
+          "explanation": "`cargo fix --edition` automates most migrations. This is how Rust evolves without a Python 2 → 3 style split: the ecosystem never has to move in lockstep.",
+          "resources": [
+            { "title": "The Rust Edition Guide", "url": "https://doc.rust-lang.org/edition-guide/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rs-collections",
+          "type": "complexity",
+          "difficulty": 2,
+          "tags": ["rust.collections", "ds.hash-table"],
+          "prompt": "Complexity of `Vec::push`, `Vec::insert(0, x)`, `HashMap::get` and `BTreeMap::get`?",
+          "answer": "`push` amortised O(1); `insert(0, x)` O(n) because every element shifts; `HashMap::get` O(1) average; `BTreeMap::get` O(log n) with sorted iteration.",
+          "complexity": { "time": "push O(1)*, insert(0) O(n), HashMap get O(1) avg, BTreeMap get O(log n)", "space": "O(n)" },
+          "explanation": "Use `VecDeque` when you push and pop at both ends. HashMap uses SipHash by default to resist hash-flooding attacks; swap in a faster hasher (FxHash, ahash) only for trusted keys in hot paths. BTreeMap is the choice when you need ordered iteration or range queries.",
+          "prerequisites": ["ds-hash-complexity"],
+          "resources": [
+            { "title": "Rust std — collections performance", "url": "https://doc.rust-lang.org/std/collections/index.html#performance", "kind": "docs" }
           ]
         }
       ]

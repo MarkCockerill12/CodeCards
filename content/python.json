@@ -313,7 +313,7 @@
           "prompt": "Average-case complexity of `d[key]`, `d[key] = v` and `key in d` on a Python dict?",
           "answer": "All O(1) on average; O(n) in the pathological collision case.",
           "complexity": { "time": "O(1) average, O(n) worst", "space": "O(n)" },
-          "explanation": "CPython dicts are open-addressed hash tables with a compact index array (PEP 509 / 3.6 layout) that also preserves insertion order. Worst case only appears with adversarial or degenerate hashes; string hashing is randomised per process to defend against that.",
+          "explanation": "CPython dicts are open-addressed hash tables; since 3.6 they use a compact layout (a sparse index array pointing into a dense entries array) that also preserves insertion order, guaranteed by the language from 3.7. Worst case only appears with adversarial or degenerate hashes; string hashing is randomised per process to defend against that.",
           "resources": [
             { "title": "Python wiki — Time complexity", "url": "https://wiki.python.org/moin/TimeComplexity", "kind": "docs" }
           ]
@@ -356,6 +356,497 @@
           "explanation": "PEP 604 added the `X | Y` union syntax (Python 3.10+), so `Optional[int]` is `int | None` and `Union[str, bytes]` is `str | bytes`. Type hints are not enforced at runtime — they exist for readers, editors and static checkers such as mypy or pyright.",
           "resources": [
             { "title": "PEP 604 — Allow writing union types as X | Y", "url": "https://peps.python.org/pep-0604/", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "python-idioms",
+      "name": "Everyday Idioms",
+      "description": "Comprehensions, slicing, unpacking, iteration helpers and the idioms that make code Pythonic.",
+      "cards": [
+        {
+          "id": "py-comprehensions",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["python.comprehensions", "python.core"],
+          "prompt": "What does this print?",
+          "code": "print([x * x for x in range(5) if x % 2 == 0])\nprint({k: v for k, v in [('a', 1), ('b', 2)]})\nprint({n % 3 for n in [1, 4, 5]})",
+          "lang": "python",
+          "answer": "[0, 4, 16]\n{'a': 1, 'b': 2}\n{1, 2}",
+          "explanation": "List, dict and set comprehensions share one shape: `expr for x in iterable if cond`. They build the whole collection eagerly and have their own scope, so the loop variable does not leak. Prefer them over `map`/`filter` with lambdas; switch to a plain loop once there is more than one condition or a side effect.",
+          "resources": [
+            { "title": "Python docs — List comprehensions", "url": "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[0, 4, 16]\n{'a': 1, 'b': 2}\n{1, 2}" }
+        },
+        {
+          "id": "py-slicing",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["python.sequences", "python.core"],
+          "prompt": "What does this print?",
+          "code": "a = [0, 1, 2, 3, 4, 5]\nprint(a[1:4])\nprint(a[::-1])\nprint(a[::2])\nprint(a[-2:])",
+          "lang": "python",
+          "answer": "[1, 2, 3]\n[5, 4, 3, 2, 1, 0]\n[0, 2, 4]\n[4, 5]",
+          "explanation": "`seq[start:stop:step]` — start is inclusive, stop exclusive, and negative indices count from the end. A negative step walks backwards, so `[::-1]` reverses. Slicing a list always returns a new (shallow) list, which is why `a[:]` is a copy idiom. Out-of-range slice bounds are clamped rather than raising.",
+          "resources": [
+            { "title": "Python docs — Common sequence operations", "url": "https://docs.python.org/3/library/stdtypes.html#common-sequence-operations", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[1, 2, 3]\n[5, 4, 3, 2, 1, 0]\n[0, 2, 4]\n[4, 5]" }
+        },
+        {
+          "id": "py-unpacking",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.unpacking", "python.core"],
+          "prompt": "What does this print?",
+          "code": "first, *middle, last = [1, 2, 3, 4, 5]\nprint(first, middle, last)\na, b = 1, 2\na, b = b, a\nprint(a, b)",
+          "lang": "python",
+          "answer": "1 [2, 3, 4] 5\n2 1",
+          "explanation": "Extended unpacking (PEP 3132) lets one starred target absorb \"the rest\" as a list. The right-hand side is evaluated fully before any assignment, which is why `a, b = b, a` swaps without a temporary. Unpacking works on any iterable and raises `ValueError` if the counts do not match.",
+          "resources": [
+            { "title": "PEP 3132 — Extended Iterable Unpacking", "url": "https://peps.python.org/pep-3132/", "kind": "spec" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "1 [2, 3, 4] 5\n2 1" }
+        },
+        {
+          "id": "py-enumerate-zip",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["python.iteration", "python.core"],
+          "prompt": "This works, but it is not idiomatic and has a latent bug. What would you write instead?",
+          "code": "for i in range(len(names)):\n    print(i, names[i], scores[i])",
+          "lang": "python",
+          "answer": "Iterate directly: `for i, (name, score) in enumerate(zip(names, scores)):`. Index loops are noisy, and if the lists differ in length this raises `IndexError` — while plain `zip` silently truncates. Use `zip(names, scores, strict=True)` (3.10+) to make a length mismatch an error.",
+          "explanation": "`enumerate` gives the index and the item together; `zip` walks several iterables in lockstep. Both are lazy, so they work on generators and files too. `strict=True` turns the silent truncation — a classic data-loss bug when two lists drift apart — into a loud `ValueError`.",
+          "resources": [
+            { "title": "Python docs — Built-in functions — zip", "url": "https://docs.python.org/3/library/functions.html#zip", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-fstrings",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.strings", "python.core"],
+          "prompt": "What can go inside an f-string, and what do `!r`, `:>10` and `=` do?",
+          "answer": "Any expression. `!r` uses `repr()` instead of `str()`, a format spec after `:` controls layout (`:>10` right-aligns in 10 columns, `:.2f` two decimals, `:,` thousands separators), and a trailing `=` (3.8+) prints the expression text as well as its value — `f\"{x=}\"` gives `x=42`.",
+          "explanation": "f-strings are evaluated at runtime and are the fastest and clearest formatting option. Do not use them to build SQL, shell commands or log messages: parameterise queries, pass argument lists to subprocess, and give logging a format string plus arguments so formatting is skipped for disabled levels.",
+          "resources": [
+            { "title": "Python docs — Formatted string literals", "url": "https://docs.python.org/3/reference/lexical_analysis.html#f-strings", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-walrus",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["python.syntax"],
+          "prompt": "The assignment expression operator `:=`, which assigns and returns a value inside an expression, is nicknamed the ___ operator.",
+          "answer": "walrus",
+          "explanation": "PEP 572 (3.8) added it for cases like `while (chunk := f.read(8192)):` or `if (m := pattern.match(s)):` — computing a value once and testing it in the same expression. It is deliberately not allowed as a bare statement; outside those loop-and-test shapes, a normal assignment on its own line is clearer.",
+          "resources": [
+            { "title": "PEP 572 — Assignment Expressions", "url": "https://peps.python.org/pep-0572/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "py-match",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.pattern-matching", "python.syntax"],
+          "prompt": "What does structural pattern matching (`match`/`case`) add beyond a switch statement?",
+          "answer": "It destructures: patterns match on shape and type and bind names in one step — sequences (`[x, y, *rest]`), mappings (`{\"type\": \"click\", \"pos\": (x, y)}`), class patterns (`Point(x=0, y=y)`), alternatives with `|`, and guards with `if`.",
+          "explanation": "The trap: a bare name in a pattern is a capture, not a comparison — `case RED:` binds anything to `RED`. Compare against constants with dotted names (`Color.RED`) or literals. `case _:` is the wildcard default. It shines for parsing commands, ASTs and JSON-like messages.",
+          "resources": [
+            { "title": "PEP 636 — Structural Pattern Matching tutorial", "url": "https://peps.python.org/pep-0636/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "py-eafp-lbyl",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["python.idioms", "python.errors"],
+          "prompt": "EAFP vs LBYL",
+          "answer": "EAFP — \"easier to ask forgiveness than permission\" — tries the operation and catches the failure; LBYL — \"look before you leap\" — checks first. Python idiom favours EAFP.",
+          "columns": {
+            "left": { "title": "EAFP (try/except)", "points": ["`try: v = d[k]` / `except KeyError:`", "Free of check-then-act races", "Fast when failure is rare", "Idiomatic in Python"] },
+            "right": { "title": "LBYL (check first)", "points": ["`if k in d: v = d[k]`", "Race-prone for files, locks, shared state", "Cheaper when failure is common", "Idiomatic in C and Go"] }
+          },
+          "explanation": "EAFP is not just style: `if os.path.exists(p): open(p)` has a time-of-check-to-time-of-use race, while `try: open(p)` does not. Keep the `try` block tiny so you only catch the failure you expected, and use LBYL where the check is cheap and failure is the common case.",
+          "resources": [
+            { "title": "Python glossary — EAFP", "url": "https://docs.python.org/3/glossary.html#term-EAFP", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-sorting-key",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.sorting", "algo.sorting"],
+          "prompt": "What does this print?",
+          "code": "print(sorted(['bo', 'dee', 'al', 'cy'], key=len))\nprint(sorted([('c', 2), ('b', 1), ('a', 2)], key=lambda p: (p[1], p[0])))",
+          "lang": "python",
+          "answer": "['bo', 'al', 'cy', 'dee']\n[('b', 1), ('a', 2), ('c', 2)]",
+          "explanation": "`sorted` takes a `key` function computed once per element, and Timsort is stable — equal keys keep their input order, so `bo` stays ahead of `al`. Sort by several fields with a tuple key, or in successive passes from least to most significant. `sort()` sorts in place and returns `None`, a frequent source of `NoneType` errors.",
+          "prerequisites": ["algo-stability"],
+          "resources": [
+            { "title": "Python Sorting HOWTO", "url": "https://docs.python.org/3/howto/sorting.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "['bo', 'al', 'cy', 'dee']\n[('b', 1), ('a', 2), ('c', 2)]" }
+        },
+        {
+          "id": "py-floor-division",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.numbers", "num.integers"],
+          "prompt": "What does this print?",
+          "code": "print(-7 // 2, -7 % 2)\nprint(7 / 2, 7 // 2)\nprint(10 ** 40)",
+          "lang": "python",
+          "answer": "-4 1\n3.5 3\n10000000000000000000000000000000000000000",
+          "explanation": "`//` floors toward negative infinity (so `-7 // 2` is -4, not -3 as in C or Java truncation) and `%` takes the sign of the divisor so that `(a // b) * b + a % b == a` always holds. `/` always returns a float. Python ints are arbitrary precision, so they never overflow — they just get slower as they grow.",
+          "resources": [
+            { "title": "Python docs — Numeric types", "url": "https://docs.python.org/3/library/stdtypes.html#numeric-types-int-float-complex", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "-4 1\n3.5 3\n10000000000000000000000000000000000000000" }
+        },
+        {
+          "id": "py-shallow-deep-copy",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.copying", "python.core"],
+          "prompt": "What does this print?",
+          "code": "import copy\na = [[1], [2]]\nshallow = copy.copy(a)\ndeep = copy.deepcopy(a)\nshallow[0].append(99)\nprint(a, deep)",
+          "lang": "python",
+          "answer": "[[1, 99], [2]] [[1], [2]]",
+          "explanation": "`copy.copy` (and `list(x)`, `x[:]`, `{**d}`) creates a new outer container whose elements are the same objects, so nested lists are shared. `copy.deepcopy` recursively copies, handling cycles with a memo dict. Deep copies are expensive; prefer immutable data or explicit construction where you can.",
+          "prerequisites": ["py-mutable-aliasing"],
+          "resources": [
+            { "title": "Python docs — copy — Shallow and deep copy operations", "url": "https://docs.python.org/3/library/copy.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[[1, 99], [2]] [[1], [2]]" }
+        },
+        {
+          "id": "py-main-guard",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.modules", "python.core"],
+          "prompt": "What does `if __name__ == \"__main__\":` do, and why use it?",
+          "answer": "A module's `__name__` is `\"__main__\"` only when it is run directly as a script; when imported it is the module's name. The guard runs code only in the first case, so the file can be both an importable module and a runnable script.",
+          "explanation": "Without it, importing the module (for tests, or by `multiprocessing` workers on Windows and macOS, which re-import the main module) re-runs the script's side effects. Keep the guarded block to a single `main()` call so the logic stays testable.",
+          "resources": [
+            { "title": "Python docs — __main__ — Top-level code environment", "url": "https://docs.python.org/3/library/__main__.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "python-classes",
+      "name": "Classes, Protocols & Exceptions",
+      "description": "Methods, properties, abstract bases, iteration protocols and exception design.",
+      "cards": [
+        {
+          "id": "py-method-kinds",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["python.classes", "oop.methods"],
+          "prompt": "`@classmethod` vs `@staticmethod`",
+          "answer": "A classmethod receives the class (`cls`) as its first argument; a staticmethod receives nothing implicit and is just a function namespaced in the class.",
+          "columns": {
+            "left": { "title": "@classmethod", "points": ["First argument is the class", "Alternative constructors: `Date.from_iso(s)`", "Polymorphic — sees the subclass it was called on", "Can read and set class attributes"] },
+            "right": { "title": "@staticmethod", "points": ["No implicit first argument", "A plain function grouped with the class", "Cannot see the class or instance", "Often better as a module function"] }
+          },
+          "explanation": "Classmethods respect subclassing: `Sub.from_json(...)` constructs a `Sub`, which is why alternative constructors are classmethods. If a staticmethod does not need the class at all, ask whether it should be a module-level function instead.",
+          "resources": [
+            { "title": "Python docs — Built-in functions — classmethod", "url": "https://docs.python.org/3/library/functions.html#classmethod", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-property",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["python.classes", "oop.encapsulation"],
+          "prompt": "A public `radius` attribute now needs validation, but hundreds of callers already use `circle.radius = 5`. How do you add the check without breaking them?",
+          "answer": "Turn it into a `@property` with a setter that validates. The attribute syntax stays identical for callers while the class regains control over reads and writes.",
+          "explanation": "This is why Python code does not start with Java-style getters and setters: plain attributes can be upgraded to properties later without any API change. Properties are descriptors under the hood; keep them cheap, because callers assume attribute access is fast.",
+          "resources": [
+            { "title": "Python docs — Built-in functions — property", "url": "https://docs.python.org/3/library/functions.html#property", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-new-vs-init",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["python.classes", "python.datamodel"],
+          "prompt": "What is the difference between `__new__` and `__init__`?",
+          "answer": "`__new__` is a static method that creates and returns the instance; `__init__` initialises an instance that already exists and returns `None`. `__init__` only runs if `__new__` returns an instance of the class.",
+          "explanation": "You almost never need `__new__`. Its real uses are subclassing immutable types (`int`, `str`, `tuple` — their value is fixed before `__init__` could change it), instance caching, and metaclass work. Everything else belongs in `__init__`.",
+          "resources": [
+            { "title": "Python docs — Data model — basic customisation", "url": "https://docs.python.org/3/reference/datamodel.html#basic-customization", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-repr-str",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["python.datamodel", "python.strings"],
+          "prompt": "`__repr__` vs `__str__`",
+          "answer": "`__repr__` is the unambiguous developer representation (shown in the REPL, debuggers and containers); `__str__` is the readable end-user form used by `print` and `str()`.",
+          "columns": {
+            "left": { "title": "__repr__", "points": ["For developers", "Ideally `eval`-able: `Point(x=1, y=2)`", "Used by the REPL, containers, `%r`, `!r`", "Fallback for `str()`"] },
+            "right": { "title": "__str__", "points": ["For end users", "Readable: `(1, 2)`", "Used by `print()`, `str()`, `format()`", "Optional"] }
+          },
+          "explanation": "If you implement only one, implement `__repr__` — `str()` falls back to it, and it is what appears when your object sits inside a list or a log line. Dataclasses generate a good `__repr__` automatically.",
+          "resources": [
+            { "title": "Python docs — Data model — object.__repr__", "url": "https://docs.python.org/3/reference/datamodel.html#object.__repr__", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-abc-protocol",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["python.typing", "oop.interfaces"],
+          "prompt": "`abc.ABC` vs `typing.Protocol`",
+          "answer": "An ABC is nominal — classes must inherit from it (or register) and abstract methods are enforced at instantiation. A Protocol is structural — any class with matching methods satisfies it, checked statically by the type checker.",
+          "columns": {
+            "left": { "title": "ABC", "points": ["Nominal: subclass or `register()`", "Instantiating an incomplete subclass raises TypeError", "Can carry shared concrete methods", "`isinstance` works out of the box"] },
+            "right": { "title": "Protocol", "points": ["Structural: matching methods are enough", "Checked by mypy/pyright, not at runtime", "Works with classes you do not own", "`@runtime_checkable` for basic isinstance"] }
+          },
+          "explanation": "Protocols are Python's formal duck typing: you can describe what an argument needs without forcing third-party classes to inherit anything, much like Go interfaces. Use an ABC when you want shared implementation and a runtime guarantee; a Protocol when you only want to describe a capability.",
+          "resources": [
+            { "title": "Python docs — typing — Protocol", "url": "https://docs.python.org/3/library/typing.html#typing.Protocol", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-iterator-protocol",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.iteration", "python.datamodel"],
+          "prompt": "What is the difference between an iterable and an iterator in Python?",
+          "answer": "An iterable has `__iter__` returning an iterator. An iterator has `__next__` (raising `StopIteration` when exhausted) and an `__iter__` that returns itself. Lists are iterables; `iter(list)` gives a fresh iterator each time.",
+          "explanation": "Iterators are single-pass: once exhausted they stay exhausted, which is why iterating a generator or a `map` object twice gives nothing the second time. `for` calls `iter()` then `next()` until `StopIteration`. Writing `__iter__` as a generator function is the easiest way to make a class iterable.",
+          "prerequisites": ["py-generator-lazy"],
+          "resources": [
+            { "title": "Python docs — Iterator types", "url": "https://docs.python.org/3/library/stdtypes.html#iterator-types", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-exception-hierarchy",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.errors"],
+          "prompt": "How should you design custom exceptions for a library?",
+          "answer": "Define one base exception for the library (`class PaymentError(Exception)`) and specific subclasses beneath it (`CardDeclined`, `GatewayTimeout`). Inherit from `Exception`, never `BaseException`, and attach useful context as attributes.",
+          "explanation": "A common base lets callers catch \"anything from this library\" without catching unrelated bugs; specific subclasses let them handle the cases they care about. `BaseException` is reserved for `KeyboardInterrupt`, `SystemExit` and `GeneratorExit`, which should normally propagate.",
+          "resources": [
+            { "title": "Python docs — Errors and exceptions — user-defined", "url": "https://docs.python.org/3/tutorial/errors.html#user-defined-exceptions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-exception-chaining",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["python.errors"],
+          "prompt": "What is lost here, and how do you keep it?",
+          "code": "try:\n    port = int(os.environ[\"PORT\"])\nexcept (KeyError, ValueError):\n    raise ConfigError(\"PORT must be set to an integer\")",
+          "lang": "python",
+          "answer": "Raising inside `except` without `from` still chains implicitly (\"During handling… another exception occurred\"), which reads like a second bug. Write `raise ConfigError(...) from err` to mark it as a deliberate translation and keep the original as `__cause__`.",
+          "explanation": "`raise X from err` sets `__cause__` and prints \"The above exception was the direct cause of…\". `raise X from None` suppresses the context when the original genuinely adds nothing. Never translate an exception without preserving the root cause — it is the most useful line in the traceback.",
+          "prerequisites": ["py-except-broad"],
+          "resources": [
+            { "title": "Python docs — The raise statement", "url": "https://docs.python.org/3/reference/simple_stmts.html#the-raise-statement", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-finally-else",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.errors", "python.core"],
+          "prompt": "What does this print?",
+          "code": "def f():\n    try:\n        print('try')\n    except ValueError:\n        print('except')\n    else:\n        print('else')\n    finally:\n        print('finally')\n    return 'done'\n\nprint(f())",
+          "lang": "python",
+          "answer": "try\nelse\nfinally\ndone",
+          "explanation": "Order: the `try` body; `except` only on an exception; `else` only if no exception occurred; `finally` always, even after `return` or `break`. Putting code in `else` rather than at the end of `try` keeps the `except` from accidentally catching errors raised by that follow-up code.",
+          "resources": [
+            { "title": "Python docs — The try statement", "url": "https://docs.python.org/3/reference/compound_stmts.html#the-try-statement", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "try\nelse\nfinally\ndone" }
+        },
+        {
+          "id": "py-descriptors",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["python.datamodel", "python.classes"],
+          "prompt": "What is a descriptor, and which everyday features are built from them?",
+          "answer": "An object on a class that defines `__get__` (and optionally `__set__`/`__delete__`) to customise attribute access on instances. `property`, `classmethod`, `staticmethod`, bound methods, `__slots__` and ORM fields are all descriptors.",
+          "explanation": "Data descriptors (defining `__set__`) take priority over the instance `__dict__`; non-data descriptors (only `__get__`) are shadowed by it. Functions are non-data descriptors, and `__get__` is exactly how `obj.method` becomes a bound method carrying `self`.",
+          "prerequisites": ["py-property"],
+          "resources": [
+            { "title": "Python Descriptor HowTo Guide", "url": "https://docs.python.org/3/howto/descriptor.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-class-attributes",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["python.classes", "python.gotchas"],
+          "prompt": "What does this print?",
+          "code": "class Cart:\n    items = []\n    count = 0\n\na, b = Cart(), Cart()\na.items.append('milk')\nb.items.append('eggs')\nprint(a.items, b.items)\nCart.count = 2\nb.count = 1\nprint(a.count, b.count)",
+          "lang": "python",
+          "answer": "['milk', 'eggs'] ['milk', 'eggs']\n2 1",
+          "explanation": "`items = []` in the class body is a *class* attribute: one list shared by every instance, so both carts see both items. Mutable per-instance state belongs in `__init__` (`self.items = []`). Assigning through an instance (`b.count = 1`) instead creates an instance attribute that shadows the class one, which is why the counts differ.",
+          "prerequisites": ["py-mutable-default"],
+          "resources": [
+            { "title": "Python tutorial — Class and instance variables", "url": "https://docs.python.org/3/tutorial/classes.html#class-and-instance-variables", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "['milk', 'eggs'] ['milk', 'eggs']\n2 1" }
+        }
+      ]
+    },
+    {
+      "id": "python-ecosystem",
+      "name": "Standard Library, Packaging & Tooling",
+      "description": "Collections, itertools, pathlib, logging, asyncio, environments, packaging, imports and testing.",
+      "cards": [
+        {
+          "id": "py-collections",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["python.stdlib", "ds.hash-table"],
+          "prompt": "What does this print?",
+          "code": "from collections import Counter, defaultdict, deque\nprint(Counter('abracab').most_common(2))\ng = defaultdict(list)\nfor k, v in [('x', 1), ('y', 3), ('x', 2)]:\n    g[k].append(v)\nprint(dict(sorted(g.items())))\nq = deque([1, 2])\nq.appendleft(0)\nprint(list(q))",
+          "lang": "python",
+          "answer": "[('a', 3), ('b', 2)]\n{'x': [1, 2], 'y': [3]}\n[0, 1, 2]",
+          "explanation": "`Counter` counts hashables and gives `most_common`; `defaultdict` creates missing values on first access, removing the \"if key not in d\" dance; `deque` gives O(1) appends and pops at both ends, where `list.pop(0)` is O(n). With `maxlen`, a deque becomes a bounded ring buffer.",
+          "resources": [
+            { "title": "Python docs — collections — Container datatypes", "url": "https://docs.python.org/3/library/collections.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[('a', 3), ('b', 2)]\n{'x': [1, 2], 'y': [3]}\n[0, 1, 2]" }
+        },
+        {
+          "id": "py-itertools",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.stdlib", "python.iteration"],
+          "prompt": "Which `itertools` functions are worth knowing by heart?",
+          "answer": "`chain` (concatenate iterables), `islice` (slice any iterator), `groupby` (group consecutive equal keys), `product`/`permutations`/`combinations` (combinatorics), `accumulate` (running totals), `batched` (fixed-size chunks, 3.12+), and `pairwise` (adjacent pairs, 3.10+).",
+          "explanation": "All are lazy, so they compose into memory-flat pipelines. The classic trap is `groupby`: it only groups *adjacent* equal keys, so sort by the same key first — exactly like `uniq` in the shell.",
+          "resources": [
+            { "title": "Python docs — itertools — Functions creating iterators", "url": "https://docs.python.org/3/library/itertools.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-pathlib",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["python.stdlib", "python.files"],
+          "prompt": "`pathlib.Path` vs `os.path` string handling",
+          "answer": "pathlib gives path objects with operators and methods; os.path treats paths as strings manipulated by functions.",
+          "columns": {
+            "left": { "title": "pathlib", "points": ["`Path(\"data\") / \"raw\" / \"x.csv\"`", "`.read_text()`, `.exists()`, `.glob(\"*.py\")`", "`.stem`, `.suffix`, `.parent` as attributes", "Cross-platform separators handled for you"] },
+            "right": { "title": "os.path", "points": ["`os.path.join(\"data\", \"raw\", \"x.csv\")`", "Separate modules: os, glob, shutil", "Strings everywhere — easy to mix up", "Still fine in old code, no reason for new code"] }
+          },
+          "explanation": "Always pass `encoding=\"utf-8\"` when reading or writing text: the default depends on the platform locale, which makes the same code read files differently on Windows. PEP 686 makes UTF-8 the default in a future release for exactly this reason.",
+          "resources": [
+            { "title": "Python docs — pathlib — Object-oriented filesystem paths", "url": "https://docs.python.org/3/library/pathlib.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-logging",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["python.logging", "obs.logging"],
+          "prompt": "What is wrong with this library code?",
+          "code": "import logging\nlogging.basicConfig(level=logging.DEBUG)\n\ndef login(user_id):\n    logging.info(f'user {user_id} logged in')",
+          "lang": "python",
+          "answer": "A library must never configure logging — `basicConfig` in an imported module hijacks the application's handlers and levels. Use `logger = logging.getLogger(__name__)` and let the application configure output. Also, pass arguments instead of an f-string.",
+          "explanation": "`logger.info(\"user %s logged in\", user_id)` defers formatting until the record is actually emitted, and lets aggregators group messages by template. Use `logger.exception(...)` inside `except` to include the traceback. Named per-module loggers form a hierarchy the app can tune per package.",
+          "resources": [
+            { "title": "Python Logging HOWTO", "url": "https://docs.python.org/3/howto/logging.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-asyncio-basics",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.asyncio", "concurrency.async"],
+          "prompt": "What do `async def`, `await`, `asyncio.run` and `asyncio.gather` each do?",
+          "answer": "`async def` defines a coroutine function — calling it returns a coroutine object without running it. `await` suspends until the awaited thing finishes, yielding control to the event loop. `asyncio.run` starts a loop and runs a top-level coroutine. `gather` (or a `TaskGroup`) runs several concurrently and collects the results.",
+          "explanation": "Concurrency only happens when you schedule several tasks: awaiting coroutines one after another is still sequential. Prefer `async with asyncio.TaskGroup()` (3.11+), which cancels siblings when one fails, and use `asyncio.timeout()` to bound waits.",
+          "prerequisites": ["py-async-blocking-bug"],
+          "resources": [
+            { "title": "Python docs — asyncio — Coroutines and tasks", "url": "https://docs.python.org/3/library/asyncio-task.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-venv",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["python.packaging", "python.tooling"],
+          "prompt": "Two projects need different versions of the same library. How do you isolate them, and what should you never do?",
+          "answer": "Give each project its own virtual environment (`python -m venv .venv`, or a manager like `uv` or Poetry) and install into that. Never `sudo pip install` into the system interpreter — the OS itself depends on those packages.",
+          "explanation": "A venv is a directory with its own `site-packages` and a python link; activation just adjusts `PATH`. Record dependencies in `pyproject.toml` and pin exact versions in a lockfile for applications. Modern systems mark the system Python as \"externally managed\" (PEP 668) to block the mistake entirely.",
+          "resources": [
+            { "title": "Python docs — venv — Creation of virtual environments", "url": "https://docs.python.org/3/library/venv.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-pyproject",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.packaging"],
+          "prompt": "What is `pyproject.toml`, and what replaced `setup.py`?",
+          "answer": "The standard project file: `[build-system]` names the build backend (hatchling, setuptools, poetry-core…), `[project]` holds metadata and dependencies (PEP 621), and `[tool.*]` tables configure tools such as ruff, mypy and pytest.",
+          "explanation": "Declarative metadata replaced executable `setup.py` scripts, so tools can read a project without running arbitrary code. Libraries declare compatible ranges (`requests>=2.31`); applications additionally pin exact versions in a lockfile for reproducible installs.",
+          "resources": [
+            { "title": "Python Packaging User Guide — Writing pyproject.toml", "url": "https://packaging.python.org/en/latest/guides/writing-pyproject-toml/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-imports",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.modules"],
+          "prompt": "How does `import` find a module, and what happens on the second import?",
+          "answer": "Python searches `sys.path` — the script's directory, `PYTHONPATH`, then site-packages — for a module or package (a directory, usually with `__init__.py`). The module executes once and is cached in `sys.modules`; later imports return the cached object without re-running it.",
+          "explanation": "That caching is why module-level code runs only once and why circular imports can see a half-initialised module. Naming your script `random.py` or `json.py` shadows the standard library module — a classic confusing bug. Prefer absolute imports within a package.",
+          "resources": [
+            { "title": "Python docs — The import system", "url": "https://docs.python.org/3/reference/import.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-pytest-fixtures",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["python.testing", "testing.unit"],
+          "prompt": "What does pytest give you over `unittest`, and what are fixtures?",
+          "answer": "Plain `assert` statements with rich failure introspection, test discovery by naming convention, parametrisation (`@pytest.mark.parametrize`), and fixtures — functions that provide setup to tests that name them as parameters, with `yield` for teardown and a configurable scope.",
+          "explanation": "Fixtures compose (one fixture can request another) and are injected by name, replacing inheritance-heavy `setUp` classes. Built-ins such as `tmp_path`, `monkeypatch` and `capsys` cover filesystem, environment and output capture without mocks.",
+          "resources": [
+            { "title": "pytest — How to use fixtures", "url": "https://docs.pytest.org/en/stable/how-to/fixtures.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-typing-generics",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["python.typing"],
+          "prompt": "How do you type a function generically, and what are `TypedDict` and `Callable` for?",
+          "answer": "Python 3.12 syntax: `def first[T](xs: list[T]) -> T:` (older code uses `TypeVar`). `TypedDict` types dictionaries with known keys, such as JSON payloads. `Callable[[int, str], bool]` types functions passed as arguments.",
+          "explanation": "Annotations are not enforced at runtime — they are checked by mypy or pyright in CI. Validate untrusted data at the boundary with a runtime library such as Pydantic, then rely on static types inside. `Any` switches checking off; prefer `object` and narrow it.",
+          "prerequisites": ["py-typing-optional"],
+          "resources": [
+            { "title": "Python docs — typing — Support for type hints", "url": "https://docs.python.org/3/library/typing.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "py-memory-gc",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["python.runtime", "memory.gc"],
+          "prompt": "How does CPython free memory?",
+          "answer": "Primarily by reference counting: each object tracks how many references point at it and is freed the instant the count reaches zero. A generational cycle collector (`gc` module) periodically finds reference cycles that counting alone can never free.",
+          "explanation": "Deterministic refcounting is why `with open(...)` still matters but abandoned files usually close promptly in CPython — and why that is not guaranteed in PyPy. Objects in cycles with `__del__` used to be uncollectable; since 3.4 they are collected. `weakref` references an object without keeping it alive.",
+          "prerequisites": ["mem-gc-strategies"],
+          "resources": [
+            { "title": "Python docs — gc — Garbage Collector interface", "url": "https://docs.python.org/3/library/gc.html", "kind": "docs" }
           ]
         }
       ]

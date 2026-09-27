@@ -17,13 +17,14 @@
           "difficulty": 3,
           "tags": ["java.core", "java.semantics"],
           "prompt": "What does this print?",
-          "code": "static void mutate(StringBuilder sb, String s) {\n    sb.append(\" world\");\n    s = s + \" world\";\n}\n\npublic static void main(String[] args) {\n    StringBuilder sb = new StringBuilder(\"hello\");\n    String s = \"hello\";\n    mutate(sb, s);\n    System.out.println(sb + \" | \" + s);\n}",
+          "code": "public class Main {\n    static void mutate(StringBuilder sb, String s) {\n        sb.append(\" world\");\n        s = s + \" world\";\n    }\n\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(\"hello\");\n        String s = \"hello\";\n        mutate(sb, s);\n        System.out.println(sb + \" | \" + s);\n    }\n}",
           "lang": "java",
           "answer": "hello world | hello",
           "explanation": "Java is always pass-by-value — the *reference* is copied. Mutating the object through the copied reference is visible to the caller; reassigning the parameter is not. `String` is immutable, so `s + \" world\"` creates a new object the caller never sees.",
           "resources": [
             { "title": "Oracle — Passing information to a method", "url": "https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html", "kind": "docs" }
-          ]
+          ],
+          "verify": { "runtime": "java", "expectedOutput": "hello world | hello" }
         },
         {
           "id": "java-equals-hashcode",
@@ -43,13 +44,14 @@
           "difficulty": 3,
           "tags": ["java.strings", "java.memory"],
           "prompt": "What does this print?",
-          "code": "String a = \"hi\";\nString b = \"hi\";\nString c = new String(\"hi\");\nSystem.out.println((a == b) + \" \" + (a == c) + \" \" + a.equals(c));",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        String a = \"hi\";\n        String b = \"hi\";\n        String c = new String(\"hi\");\n        System.out.println((a == b) + \" \" + (a == c) + \" \" + a.equals(c));\n    }\n}",
           "lang": "java",
           "answer": "true false true",
           "explanation": "String literals are interned in a shared pool, so `a` and `b` are the same object. `new String(...)` forces a fresh object on the heap. This is the canonical demonstration of why you compare strings with `equals`, never `==`.",
           "resources": [
             { "title": "Java SE — String.intern", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html#intern()", "kind": "docs" }
-          ]
+          ],
+          "verify": { "runtime": "java", "expectedOutput": "true false true" }
         },
         {
           "id": "java-checked-unchecked",
@@ -161,7 +163,7 @@
           "tags": ["java.concurrency", "java.threads"],
           "prompt": "Why is `new Thread(...).start()` per request a bad idea in a server, and what replaces it?",
           "answer": "Unbounded platform threads exhaust memory and thrash the scheduler. Use an `ExecutorService` with a bounded pool and a bounded queue — or virtual threads (Project Loom) for blocking I/O workloads.",
-          "explanation": "A platform thread costs ~1 MB of stack. A bounded pool applies backpressure instead of collapsing. Virtual threads (Java 21) are cheap enough to have one per request, which makes plain blocking code scale like async code — as long as you avoid pinning inside `synchronized` blocks.",
+          "explanation": "A platform thread costs ~1 MB of stack. A bounded pool applies backpressure instead of collapsing. Virtual threads (Java 21) are cheap enough to have one per request, which makes plain blocking code scale like async code. Before Java 24 (JEP 491) a virtual thread blocking inside `synchronized` pinned its carrier thread; on older JDKs prefer `ReentrantLock` in hot blocking paths.",
           "resources": [
             { "title": "JEP 444 — Virtual Threads", "url": "https://openjdk.org/jeps/444", "kind": "spec" }
           ]
@@ -178,6 +180,239 @@
           "explanation": "Intermediate operations build a pipeline; only a terminal operation runs it, pulling elements one at a time. Short-circuiting terminals (`findFirst`, `anyMatch`, `limit`) stop early, so ordering your operations matters for cost.",
           "resources": [
             { "title": "Java SE — java.util.stream", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/package-summary.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "java-modern",
+      "name": "Modern Java Language",
+      "description": "Records, sealed types, pattern matching, Optional, generics wildcards, boxing and resource handling.",
+      "cards": [
+        {
+          "id": "java-sealed-patterns",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["java.pattern-matching", "java.types"],
+          "prompt": "What do sealed interfaces and pattern-matching `switch` give you together?",
+          "answer": "A sealed interface lists its permitted implementations (`sealed interface Shape permits Circle, Square`), and a `switch` over it with record patterns (`case Circle(var r) -> ...`) is checked for exhaustiveness — no `default` needed, and adding a new permitted type breaks every incomplete switch at compile time.",
+          "explanation": "This is Java's version of algebraic data types, standard since Java 21. It replaces visitor-pattern boilerplate and `instanceof` chains for closed hierarchies such as ASTs, commands and results. Guards (`case Circle c when c.r() > 10 ->`) handle conditional cases.",
+          "prerequisites": ["java-record"],
+          "resources": [
+            { "title": "JEP 441: Pattern Matching for switch", "url": "https://openjdk.org/jeps/441", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "java-integer-cache",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["java.boxing", "java.gotchas"],
+          "prompt": "What does this print?",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        Integer a = 127, b = 127;\n        Integer c = 128, d = 128;\n        System.out.println((a == b) + \" \" + (c == d) + \" \" + c.equals(d));\n    }\n}",
+          "lang": "java",
+          "answer": "true false true",
+          "explanation": "`Integer.valueOf` caches boxed values from -128 to 127, so autoboxed 127s are the same object and `==` is true; 128s are distinct objects. `==` on boxed types compares references — always use `.equals()`, or compare primitives. Unboxing a null `Integer` throws NullPointerException, another boxing trap.",
+          "prerequisites": ["java-string-pool"],
+          "resources": [
+            { "title": "Java SE 21 API — Integer.valueOf", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int)", "kind": "docs" }
+          ],
+          "verify": { "runtime": "java", "expectedOutput": "true false true" }
+        },
+        {
+          "id": "java-optional",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["java.optional", "java.null-safety"],
+          "prompt": "Three things here misuse `Optional`. What are they?",
+          "code": "class Customer {\n    private Optional<Address> address;\n\n    void ship(Optional<Carrier> carrier) {\n        if (address.isPresent()) {\n            send(address.get(), carrier.get());\n        }\n    }\n}",
+          "lang": "java",
+          "answer": "Optional as a field and as a parameter (it is designed as a return type only), and `isPresent()` + `get()`, which is a null check with extra steps. Return `Optional<Address>` from the lookup and use `map`, `orElse`, `orElseThrow` or `ifPresent` at the call site.",
+          "explanation": "Optional exists to make \"may be absent\" explicit in method signatures. It is not serialisable, adds an allocation, and a null Optional reference defeats the purpose. Never return `null` from a method declared to return Optional.",
+          "resources": [
+            { "title": "Java SE 21 API — Optional", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-switch-expressions",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["java.syntax"],
+          "prompt": "What changed with switch expressions and text blocks?",
+          "answer": "Switch can now be an expression with arrow labels — `int days = switch (m) { case FEB -> 28; case APR, JUN, SEP, NOV -> 30; default -> 31; };` — with no fall-through and exhaustiveness checks for enums. Text blocks (`\"\"\"`) write multi-line strings without escapes.",
+          "explanation": "Arrow cases remove the classic missing-`break` bug. Use `yield` to return a value from a block case. Combined with `var` for local type inference, records and pattern matching, modern Java reads very differently from Java 8.",
+          "resources": [
+            { "title": "JEP 361: Switch Expressions", "url": "https://openjdk.org/jeps/361", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "java-generics-wildcards",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["java.generics"],
+          "prompt": "What does PECS mean for `? extends T` and `? super T`?",
+          "answer": "\"Producer extends, consumer super.\" Use `List<? extends Number>` when you only read `Number`s out of it (it produces them), and `List<? super Integer>` when you only write `Integer`s into it (it consumes them).",
+          "explanation": "Generics are invariant: a `List<Integer>` is not a `List<Number>`, because you could then add a `Double` to it. Wildcards restore flexibility safely — this is exactly why `Collections.copy(List<? super T> dest, List<? extends T> src)` is declared that way.",
+          "prerequisites": ["java-generics-erasure"],
+          "resources": [
+            { "title": "Java Tutorials — Wildcards", "url": "https://docs.oracle.com/javase/tutorial/java/generics/wildcards.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-comparable-comparator",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["java.collections", "algo.sorting"],
+          "prompt": "`Comparable` vs `Comparator`",
+          "answer": "`Comparable` defines a class's natural ordering inside the class (`compareTo`); `Comparator` is an external, pluggable ordering you can define many of.",
+          "columns": {
+            "left": { "title": "Comparable<T>", "points": ["Implemented by the class itself", "One natural ordering", "Used by `Collections.sort(list)`, TreeMap keys", "e.g. String, Integer, LocalDate"] },
+            "right": { "title": "Comparator<T>", "points": ["A separate object or lambda", "Any number of orderings", "Composable: `comparing().thenComparing()`", "Sorts classes you do not own"] }
+          },
+          "explanation": "Build comparators declaratively: `Comparator.comparing(Person::lastName).thenComparing(Person::age).reversed()`. Never compare with subtraction (`a - b`) — it overflows for large values; use `Integer.compare`. Keep `compareTo` consistent with `equals`, or sorted sets and maps will behave strangely.",
+          "resources": [
+            { "title": "Java SE 21 API — Comparator", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Comparator.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-try-with-resources",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["java.resources", "java.exceptions"],
+          "prompt": "What does try-with-resources guarantee?",
+          "answer": "Every resource declared in `try (var in = ...; var out = ...)` that implements `AutoCloseable` is closed automatically, in reverse order, whether the block completes or throws. An exception from `close()` is attached as a suppressed exception rather than masking the original.",
+          "explanation": "It replaces error-prone `finally { if (x != null) x.close(); }` blocks, which lose the original exception when close also throws. It is Java's equivalent of Python's `with` and C#'s `using`.",
+          "resources": [
+            { "title": "Java Tutorials — The try-with-resources statement", "url": "https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-enums",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["java.types"],
+          "prompt": "What can a Java enum do beyond naming constants?",
+          "answer": "Enums are full classes: constants can have fields, constructors, methods and even per-constant method bodies. `EnumMap` and `EnumSet` are compact, fast collections keyed by enum values, and enums are the simplest correct singleton.",
+          "explanation": "Switching on an enum is exhaustiveness-checked in switch expressions. Never persist `ordinal()` — reordering the constants silently corrupts stored data; persist `name()` or an explicit code field instead.",
+          "resources": [
+            { "title": "Java Tutorials — Enum types", "url": "https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-inner-classes",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["java.classes", "java.memory"],
+          "prompt": "Static nested class vs inner (non-static) class",
+          "answer": "A static nested class is just a class scoped inside another; an inner class holds a hidden reference to an instance of its enclosing class.",
+          "columns": {
+            "left": { "title": "static nested", "points": ["No reference to an outer instance", "Instantiated independently: `new Outer.Nested()`", "Cannot touch outer instance fields", "The right default"] },
+            "right": { "title": "inner", "points": ["Implicit `Outer.this` reference", "Needs an outer instance to exist", "Can access outer instance state", "Keeps the outer object alive — leak risk"] }
+          },
+          "explanation": "Default to `static` nested classes. An inner class — including anonymous classes — silently keeps its outer instance alive, which is a classic memory leak when the inner object (a listener, a task) outlives the outer one. Lambdas capture `this` only if they use it.",
+          "resources": [
+            { "title": "Java Tutorials — Nested classes", "url": "https://docs.oracle.com/javase/tutorial/java/javaOO/nested.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "java-platform",
+      "name": "JVM, Concurrency Utilities & Build",
+      "description": "The JVM and JIT, heap tuning, CompletableFuture, concurrent collections, Maven/Gradle and testing.",
+      "cards": [
+        {
+          "id": "java-jvm-jit",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["java.jvm", "compilers.jit"],
+          "prompt": "What happens between `javac` and your code running fast?",
+          "answer": "`javac` compiles to platform-neutral bytecode in `.class` files. The JVM loads classes lazily, verifies the bytecode, interprets it, and the JIT compilers (C1, then C2) compile hot methods to optimised native code using runtime profiling.",
+          "explanation": "That is why Java services warm up and why benchmarks need JMH rather than a stopwatch. The JDK contains the compiler and tools; the JVM is the runtime. For fast startup — CLIs, serverless — GraalVM native image compiles ahead of time, and CDS/AOT caches shorten warm-up.",
+          "prerequisites": ["comp-jit-vs-aot"],
+          "resources": [
+            { "title": "Oracle — Java Virtual Machine specification", "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/index.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-heap-oom",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["java.jvm", "memory.leaks"],
+          "prompt": "A Java service dies with `OutOfMemoryError: Java heap space` after a few days. How do you investigate?",
+          "answer": "Run with `-XX:+HeapDumpOnOutOfMemoryError`, then open the dump in Eclipse MAT or VisualVM and look at the dominator tree for what retains the most memory. Rising old-gen usage after each full GC means a leak; a flat baseline with spikes means undersized heap or huge requests.",
+          "explanation": "In containers set `-XX:MaxRAMPercentage` rather than a fixed `-Xmx`, so the heap tracks the container limit and leaves room for metaspace, threads and direct buffers. Usual culprits: unbounded caches, static collections, ThreadLocals on pooled threads, and listeners never removed.",
+          "prerequisites": ["mem-leak-managed"],
+          "resources": [
+            { "title": "Oracle — Troubleshooting memory leaks", "url": "https://docs.oracle.com/en/java/javase/21/troubleshoot/troubleshooting-memory-leaks.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-completablefuture",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["java.concurrency", "concurrency.async"],
+          "prompt": "What is `CompletableFuture`, and what are its sharp edges?",
+          "answer": "A composable future: chain with `thenApply`/`thenCompose`, combine with `thenCombine` and `allOf`, and handle failures with `exceptionally`/`handle`. It enables non-blocking pipelines without callbacks nested inside callbacks.",
+          "explanation": "Sharp edges: async methods without an executor run on the shared `ForkJoinPool.commonPool()`, so blocking I/O there starves everything else — pass a dedicated executor. Exceptions arrive wrapped in `CompletionException`, and `get()` without a timeout can block forever. With virtual threads, plain blocking code is often simpler.",
+          "prerequisites": ["java-executor"],
+          "resources": [
+            { "title": "Java SE 21 API — CompletableFuture", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CompletableFuture.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-concurrent-collections",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["java.concurrency", "java.collections"],
+          "prompt": "Several threads update a shared `HashMap` of counters and counts go missing. What do you use instead?",
+          "answer": "`ConcurrentHashMap` with atomic compound operations: `counts.merge(key, 1, Integer::sum)` or `compute`. Wrapping a HashMap in `Collections.synchronizedMap` works too but serialises every access.",
+          "explanation": "The trap is check-then-act: `if (!m.containsKey(k)) m.put(k, v)` is still racy on a concurrent map — use `putIfAbsent` or `computeIfAbsent`. For hot counters use `LongAdder`, which stripes updates across cells to avoid contention.",
+          "prerequisites": ["conc-race-condition"],
+          "resources": [
+            { "title": "Java SE 21 API — ConcurrentHashMap", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ConcurrentHashMap.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-maven-gradle",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["java.build", "repo.tooling"],
+          "prompt": "Maven vs Gradle",
+          "answer": "Maven is declarative XML with a fixed lifecycle and strong conventions; Gradle is a programmable build (Kotlin or Groovy DSL) with incremental builds and a build cache.",
+          "columns": {
+            "left": { "title": "Maven", "points": ["`pom.xml`, fixed phases: compile → test → package", "Convention over configuration", "Predictable; easy to read", "Slower on large multi-module builds"] },
+            "right": { "title": "Gradle", "points": ["`build.gradle.kts`, a task graph", "Incremental builds and a build cache", "Flexible — and easy to make complex", "Default for Android and Kotlin projects"] }
+          },
+          "explanation": "Both use the same repository and coordinate system (`group:artifact:version`), and both should be run through their wrapper scripts (`mvnw`, `gradlew`) so everyone uses the same build tool version. Pin dependency versions and use a BOM to keep library families aligned.",
+          "resources": [
+            { "title": "Gradle — Compare Gradle and Maven", "url": "https://gradle.org/maven-vs-gradle/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-junit-mockito",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["java.testing", "testing.unit"],
+          "prompt": "What do JUnit 5, AssertJ and Mockito each contribute to a Java test suite?",
+          "answer": "JUnit 5 is the test runner and lifecycle (`@Test`, `@BeforeEach`, `@ParameterizedTest`, `@Nested`). AssertJ gives fluent, readable assertions (`assertThat(list).containsExactly(...)`). Mockito creates test doubles (`mock`, `when(...).thenReturn`, `verify`).",
+          "explanation": "Use Testcontainers for integration tests against a real database or broker in Docker instead of mocking the persistence layer. Mock only what you own or what is slow and external; over-mocking produces the brittle tests that break on every refactor.",
+          "prerequisites": ["test-doubles"],
+          "resources": [
+            { "title": "JUnit 5 User Guide", "url": "https://junit.org/junit5/docs/current/user-guide/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-string-builder",
+          "type": "complexity",
+          "difficulty": 2,
+          "tags": ["java.strings", "algo.complexity"],
+          "prompt": "Cost of building a string of n parts with `s += part` in a loop versus a `StringBuilder`?",
+          "answer": "`+=` in a loop is O(n²) character copying because `String` is immutable and each concatenation creates a new string; `StringBuilder.append` is amortised O(1) per append, O(n) total.",
+          "complexity": { "time": "O(n²) with +=, O(n) with StringBuilder", "space": "O(n)" },
+          "explanation": "The compiler optimises concatenation within a single expression, but not across loop iterations. Use `StringBuilder` in loops, or `String.join` / `Collectors.joining` for collections. Same lesson as Python's `str.join`.",
+          "prerequisites": ["py-string-concat-loop"],
+          "resources": [
+            { "title": "Java SE 21 API — StringBuilder", "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/StringBuilder.html", "kind": "docs" }
           ]
         }
       ]

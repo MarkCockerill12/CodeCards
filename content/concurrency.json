@@ -160,6 +160,144 @@
           ]
         }
       ]
+    },
+    {
+      "id": "conc-coordination",
+      "name": "Coordination & Patterns",
+      "description": "Condition variables, producer–consumer, read–write locks, pools, liveness failures and message passing.",
+      "cards": [
+        {
+          "id": "conc-condition-variable",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["concurrency.condvar", "concurrency.sync"],
+          "prompt": "Why must this `if` be a `while`?",
+          "code": "std::unique_lock lock(mu);\nif (queue.empty()) {\n    cv.wait(lock);\n}\nauto item = queue.front();   // may be empty here!\nqueue.pop();",
+          "lang": "cpp",
+          "answer": "Waiting threads can wake without the condition being true — spurious wakeups, or another consumer taking the item first after `notify_all`. Always re-check the predicate in a loop: `while (queue.empty()) cv.wait(lock);` (or use the predicate overload).",
+          "explanation": "A condition variable is always used with a mutex and a predicate on shared state: lock, loop while the predicate is false and wait (which atomically releases the lock), then act. Signal after changing the state, not before.",
+          "prerequisites": ["conc-mutex-semaphore"],
+          "resources": [
+            { "title": "cppreference — std::condition_variable", "url": "https://en.cppreference.com/w/cpp/thread/condition_variable", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "conc-producer-consumer",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["concurrency.patterns", "concurrency.backpressure"],
+          "prompt": "Producers generate work faster than consumers can process it, and memory keeps growing. What is the fix?",
+          "answer": "A bounded queue between them. When it is full, producers block (or are rejected), which is backpressure: the slow stage automatically slows the fast one instead of buffering unboundedly.",
+          "explanation": "Unbounded queues only hide overload until memory runs out. Size the bound for acceptable latency, not just throughput, and decide deliberately between blocking, dropping and shedding load. Go channels, Java's `ArrayBlockingQueue` and Python's `queue.Queue(maxsize=...)` all provide this.",
+          "prerequisites": ["conc-condition-variable"],
+          "resources": [
+            { "title": "Wikipedia — Producer–consumer problem", "url": "https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-rwlock",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["concurrency.locks"],
+          "prompt": "Mutex vs read–write lock",
+          "answer": "A mutex allows one holder at a time; a read–write lock allows many concurrent readers or one writer.",
+          "columns": {
+            "left": { "title": "Mutex", "points": ["One holder, reader or writer", "Cheapest lock to take", "Simple to reason about", "Readers serialise needlessly"] },
+            "right": { "title": "Read–write lock", "points": ["Many readers or one writer", "More overhead per acquisition", "Wins for long, read-heavy sections", "Writer starvation is possible"] }
+          },
+          "explanation": "RW locks help only when reads dominate and critical sections are long enough for the parallelism to matter — their bookkeeping is more expensive than a plain mutex, and writers can starve under a steady stream of readers. Measure before switching; for read-mostly data, copy-on-write or RCU can remove read locking entirely.",
+          "prerequisites": ["conc-mutex-semaphore"],
+          "resources": [
+            { "title": "Wikipedia — Readers–writer lock", "url": "https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-pool-sizing",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["concurrency.thread-pools", "perf.capacity"],
+          "prompt": "How many threads should a pool have for CPU-bound work, and for work that mostly waits on I/O?",
+          "answer": "CPU-bound: about the number of cores — more only adds context switching. I/O-bound: roughly cores × (1 + wait time / compute time), or use async I/O or virtual threads so waiting costs almost nothing.",
+          "explanation": "Little's law (concurrency = throughput × latency) sizes pools for a target load: 200 requests/s at 50 ms each needs about 10 in flight. Separate pools for different workloads (bulkheads) stop slow I/O from starving CPU tasks.",
+          "prerequisites": ["conc-async-models"],
+          "resources": [
+            { "title": "Wikipedia — Little's law", "url": "https://en.wikipedia.org/wiki/Little%27s_law", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-liveness",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["concurrency.liveness", "concurrency.deadlock"],
+          "prompt": "Beyond deadlock, what are livelock, starvation and priority inversion?",
+          "answer": "Livelock: threads keep reacting to each other and changing state but make no progress (two people stepping aside in a corridor forever). Starvation: a thread never gets the resource because others keep winning. Priority inversion: a high-priority thread waits on a lock held by a low-priority one that a medium-priority thread keeps preempting.",
+          "explanation": "Fixes: randomised backoff for livelock, fair locks or queues for starvation, and priority inheritance for inversion — famously the fix applied to the Mars Pathfinder lander in 1997, whose system kept resetting because of it.",
+          "prerequisites": ["conc-deadlock-conditions"],
+          "resources": [
+            { "title": "Wikipedia — Priority inversion", "url": "https://en.wikipedia.org/wiki/Priority_inversion", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-message-passing",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["concurrency.actors", "concurrency.csp"],
+          "prompt": "Shared memory with locks vs message passing (actors, CSP channels)",
+          "answer": "Shared memory lets threads read and write the same data under synchronisation; message passing gives each piece of state one owner and communicates by sending copies or ownership.",
+          "columns": {
+            "left": { "title": "Shared memory + locks", "points": ["Direct, low-latency access", "Races and deadlocks are possible", "Hard to compose correctly", "Single process only"] },
+            "right": { "title": "Message passing", "points": ["State owned by one actor or goroutine", "No shared mutable state to race on", "Mailboxes can back up; ordering matters", "Extends across machines"] }
+          },
+          "explanation": "Message passing turns data races into ordering questions and scales to distributed systems naturally (Erlang/Elixir actors, Akka, Go channels). Locks are faster for fine-grained shared state within one process. Many systems combine them: actors between components, locks inside.",
+          "prerequisites": ["go-channels"],
+          "resources": [
+            { "title": "Wikipedia — Actor model", "url": "https://en.wikipedia.org/wiki/Actor_model", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-structured",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["concurrency.structured", "concurrency.async"],
+          "prompt": "What is structured concurrency?",
+          "answer": "Concurrent tasks are started inside a scope that cannot exit until all of them finish; if one fails, the others are cancelled and the error propagates to the parent. No task outlives the block that created it.",
+          "explanation": "It fixes \"fire and forget\" leaks and lost errors, the same way structured programming fixed goto. Python's `asyncio.TaskGroup`, Kotlin coroutine scopes, Swift task groups, Trio nurseries and Java's `StructuredTaskScope` all implement it.",
+          "prerequisites": ["py-asyncio-basics"],
+          "resources": [
+            { "title": "Notes on structured concurrency, or: Go statement considered harmful", "url": "https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-optimistic-pessimistic",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["concurrency.control", "db.transactions"],
+          "prompt": "Optimistic vs pessimistic concurrency control",
+          "answer": "Pessimistic locks the resource before changing it so conflicts cannot happen; optimistic proceeds without locking and checks at commit time whether anyone else changed it (a version number or CAS), retrying on conflict.",
+          "columns": {
+            "left": { "title": "Pessimistic", "points": ["Lock first: `SELECT ... FOR UPDATE`", "Conflicts cannot happen", "Waiting, contention, deadlock risk", "Best when conflicts are frequent"] },
+            "right": { "title": "Optimistic", "points": ["Check a version at commit", "No locks held while working", "Losers retry or report a conflict", "Best when conflicts are rare"] }
+          },
+          "explanation": "Optimistic concurrency is what `UPDATE ... WHERE id = ? AND version = ?` and HTTP `If-Match` ETags implement: the losing writer gets a conflict instead of silently overwriting (the lost-update problem). Choose by conflict rate — rare conflicts favour optimistic.",
+          "prerequisites": ["conc-atomic-cas"],
+          "resources": [
+            { "title": "Wikipedia — Optimistic concurrency control", "url": "https://en.wikipedia.org/wiki/Optimistic_concurrency_control", "kind": "article" }
+          ]
+        },
+        {
+          "id": "conc-testing",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["concurrency.testing", "testing.flaky"],
+          "prompt": "How do you find concurrency bugs that appear once in ten thousand runs?",
+          "answer": "Use dynamic race detectors (Go `-race`, ThreadSanitizer), run stress tests with many iterations and random delays, and use tools that explore interleavings systematically (Java's jcstress, Rust's loom). Design to make them rare in the first place: less shared state, immutable data, message passing.",
+          "explanation": "A test that passes once proves little for concurrent code. Record the seed when using randomised scheduling so failures reproduce. For distributed systems, deterministic simulation testing runs the whole system on a controlled clock and scheduler.",
+          "prerequisites": ["go-race-detector", "cicd-flaky-tests"],
+          "resources": [
+            { "title": "Clang — ThreadSanitizer", "url": "https://clang.llvm.org/docs/ThreadSanitizer.html", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -131,6 +131,182 @@
           ]
         }
       ]
+    },
+    {
+      "id": "test-kinds",
+      "name": "Kinds of Tests",
+      "description": "Integration tests with real dependencies, contract, end-to-end, snapshot, mutation, fuzzing, load and characterisation tests.",
+      "cards": [
+        {
+          "id": "test-integration-real",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["testing.integration"],
+          "prompt": "Your repository tests mock the database driver and all pass, but production queries fail. What should the tests do instead?",
+          "answer": "Run them against a real instance of the same database engine and version — started per test run with Testcontainers or a CI service container — with the schema created by your real migrations. Isolate tests with transactions rolled back after each test, or unique data per test.",
+          "explanation": "Mocking a database only verifies that you called the mock the way you expected; SQL syntax, constraints, transactions and query plans go untested. SQLite standing in for Postgres misses dialect differences. Real dependencies in containers are now cheap enough to be the default.",
+          "prerequisites": ["test-pyramid", "test-doubles"],
+          "resources": [
+            { "title": "Testcontainers — Getting started", "url": "https://testcontainers.com/getting-started/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-contract",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["testing.contract", "microservices.testing"],
+          "prompt": "What is consumer-driven contract testing?",
+          "answer": "Each consumer records the requests it makes and the response fields it relies on, as a contract. The provider's CI verifies it still satisfies every consumer's contract, so a breaking change fails the provider's build before deploy — without spinning up the whole system.",
+          "explanation": "It replaces slow, brittle end-to-end environments for checking service compatibility. Pact is the common tool; schema-based alternatives check OpenAPI or protobuf compatibility. Contracts capture only what consumers use, so providers stay free to change everything else.",
+          "prerequisites": ["ms-versioning"],
+          "resources": [
+            { "title": "Pact docs — Introduction", "url": "https://docs.pact.io/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-e2e",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["testing.e2e", "web.testing"],
+          "prompt": "What makes browser end-to-end tests reliable instead of flaky?",
+          "answer": "Select elements by role or accessible name (`getByRole('button', { name: 'Save' })`) rather than CSS paths; rely on auto-waiting assertions instead of fixed sleeps; give each test isolated data and state; mock only third parties you do not control; and keep the suite to critical user journeys.",
+          "explanation": "Tools such as Playwright auto-wait for elements and record traces, videos and screenshots on failure, which makes flakes diagnosable. Role-based selectors double as an accessibility check: if a test cannot find the button by its name, neither can a screen reader.",
+          "prerequisites": ["cicd-flaky-tests"],
+          "resources": [
+            { "title": "Playwright — Best practices", "url": "https://playwright.dev/docs/best-practices", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-snapshot",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["testing.snapshot"],
+          "prompt": "Snapshot tests vs explicit assertions",
+          "answer": "A snapshot test serialises output (rendered markup, JSON) and compares it with a stored copy; explicit assertions check specific properties you care about.",
+          "columns": {
+            "left": { "title": "Snapshot", "points": ["Whole output compared to a stored file", "Fast to write, catches any change", "Large diffs get rubber-stamped", "Great for small, stable outputs"] },
+            "right": { "title": "Explicit assertions", "points": ["Check chosen properties", "Documents intent", "Misses unexpected changes elsewhere", "Survives harmless refactors"] }
+          },
+          "explanation": "Snapshots are cheap to write and catch unintended changes broadly, but large snapshots get approved without reading (\"just update them\"), so they stop protecting anything. Keep snapshots small and focused, or prefer assertions on what matters. They suit serialisers, CLIs and error messages.",
+          "prerequisites": ["test-brittle"],
+          "resources": [
+            { "title": "Jest — Snapshot testing", "url": "https://jestjs.io/docs/snapshot-testing", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-mutation",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["testing.quality"],
+          "prompt": "What does mutation testing measure that coverage does not?",
+          "answer": "It makes small deliberate changes (mutants) to your code — flip `<` to `<=`, `+` to `-`, delete a call — and reruns the tests. A mutant that no test catches reveals code that is executed but not actually verified.",
+          "explanation": "Coverage says code ran; mutation score says tests would notice if it were wrong. It is expensive, so run it on critical modules or on changed files. Tools: Stryker (JS/TS, .NET), PIT (Java), mutmut (Python), cargo-mutants (Rust).",
+          "prerequisites": ["test-coverage-limits"],
+          "resources": [
+            { "title": "Stryker Mutator — What is mutation testing?", "url": "https://stryker-mutator.io/docs/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-fuzzing",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["testing.fuzzing", "security.testing"],
+          "prompt": "What is fuzzing, and where does it find bugs other tests miss?",
+          "answer": "Automatically feeding huge numbers of generated or mutated inputs to code, guided by coverage feedback, looking for crashes, hangs, sanitizer errors or broken invariants. It excels at parsers, decoders, protocol handlers and anything consuming untrusted input.",
+          "explanation": "Coverage-guided fuzzers (libFuzzer, AFL++, Go's built-in `go test -fuzz`, cargo-fuzz, Atheris for Python) have found thousands of security bugs, many through Google's OSS-Fuzz. Property-based testing is a close cousin focused on logic rather than crashes.",
+          "prerequisites": ["test-property-based"],
+          "resources": [
+            { "title": "Go — Tutorial: Getting started with fuzzing", "url": "https://go.dev/doc/tutorial/fuzz", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-load",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["testing.performance"],
+          "prompt": "How do you find out how much traffic your service can handle before launch day?",
+          "answer": "Load test a production-like environment with realistic traffic shapes (mix of endpoints, think time, data volume), ramping up while watching latency percentiles and error rates, to find the knee where latency climbs. Then run a soak test for hours to catch leaks, and a spike test for sudden bursts.",
+          "explanation": "Measure from the client with open-model load (requests arriving at a rate regardless of responses) — closed-model tools that wait for each response hide overload (coordinated omission). k6, Gatling and Locust are common tools. The bottleneck found is often a database or a connection pool.",
+          "prerequisites": ["obs-percentiles"],
+          "resources": [
+            { "title": "Grafana k6 — Load test types", "url": "https://grafana.com/docs/k6/latest/testing-guides/test-types/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "test-characterisation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["testing.legacy", "craft.refactoring"],
+          "prompt": "You must change a 2,000-line legacy function with no tests and no documentation. How do you start safely?",
+          "answer": "Write characterisation tests first: call the code with representative inputs and assert whatever it currently returns — capturing actual behaviour, bugs included. Then refactor in small steps under that safety net, introducing seams so pieces can be tested alone.",
+          "explanation": "The goal is not to judge the behaviour but to notice when it changes. Approval (golden-master) testing records large outputs to make this quick. Michael Feathers' definition applies: legacy code is simply code without tests.",
+          "prerequisites": ["craft-refactoring"],
+          "resources": [
+            { "title": "Michael Feathers — Working Effectively with Legacy Code", "url": "https://www.oreilly.com/library/view/working-effectively-with/0131177052/", "kind": "book" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-design",
+      "name": "Designing Good Tests",
+      "description": "Isolation and determinism, test data builders, Given–When–Then and BDD, and testing observable behaviour.",
+      "cards": [
+        {
+          "id": "test-isolation",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["testing.isolation", "testing.flaky"],
+          "prompt": "Each test passes alone, but the suite fails when run in a different order. Why?",
+          "code": "users = []\n\ndef test_create():\n    users.append('ada')\n    assert users == ['ada']\n\ndef test_count():\n    assert len(users) == 0",
+          "lang": "python",
+          "answer": "The tests share mutable state: `users` is module-level and never reset, so `test_count` depends on whether `test_create` ran first. Give each test its own fresh state (a fixture that builds it, or a reset in setup), so order never matters.",
+          "explanation": "Order dependence also hides in databases, caches, singletons, environment variables, the filesystem and the clock. Running tests in random order (pytest-randomly, Jest's `--randomize`) surfaces it early; parallel test runs surface it by force.",
+          "prerequisites": ["test-aaa"],
+          "resources": [
+            { "title": "Martin Fowler — Eradicating non-determinism in tests", "url": "https://martinfowler.com/articles/nonDeterminism.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-data-builders",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["testing.fixtures"],
+          "prompt": "What is a test data builder, and what problem does it solve?",
+          "answer": "A helper that creates valid domain objects with sensible defaults, letting each test override only the fields it cares about: `an_order().with_status(\"paid\").build()`. Tests then show exactly what is relevant to them.",
+          "explanation": "Without it, every test constructs full objects by hand, obscuring the one field that matters, and every new required field breaks hundreds of tests. Factory libraries (factory_boy, Fishery, Instancio) provide the same idea with persistence support.",
+          "prerequisites": ["test-aaa"],
+          "resources": [
+            { "title": "Nat Pryce — Test data builders", "url": "http://www.natpryce.com/articles/000714.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-bdd",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["testing.bdd"],
+          "prompt": "What is Given–When–Then, and what is behaviour-driven development for?",
+          "answer": "A structure for describing a behaviour as a scenario: Given some context, When an event happens, Then an outcome follows. BDD uses such scenarios, written together by developers, testers and product people, as shared examples of the required behaviour — sometimes executed directly (Cucumber, SpecFlow).",
+          "explanation": "The real value is the conversation that produces concrete examples before building; the tooling is optional. Given–When–Then is the same shape as Arrange–Act–Assert in plain language, and works equally well in ordinary test names.",
+          "prerequisites": ["test-aaa"],
+          "resources": [
+            { "title": "Martin Fowler — Given When Then", "url": "https://martinfowler.com/bliki/GivenWhenThen.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "test-what-to-test",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["testing.strategy"],
+          "prompt": "With limited time, which code most deserves tests?",
+          "answer": "Code where bugs are costly or likely: business rules and calculations (money, permissions, pricing), complex branching, code that has broken before, boundaries between components, and anything you are about to refactor. Test through public behaviour, not private helpers.",
+          "explanation": "Trivial getters, framework glue and generated code rarely repay tests. Risk-based priorities beat a coverage target. A good question for each test: \"what bug would this catch?\" — if there is no answer, it is probably not worth maintaining.",
+          "prerequisites": ["test-coverage-limits"],
+          "resources": [
+            { "title": "Kent C. Dodds — Write tests. Not too many. Mostly integration.", "url": "https://kentcdodds.com/blog/write-tests", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

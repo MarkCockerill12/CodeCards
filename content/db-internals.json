@@ -135,6 +135,107 @@
           ]
         }
       ]
+    },
+    {
+      "id": "dbi-operations",
+      "name": "Replication, Recovery & Scaling",
+      "description": "Query planning and statistics, vacuum, replication, backups and PITR, partitioning, sharding and CDC.",
+      "cards": [
+        {
+          "id": "dbi-query-planner",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["db.planner", "sql.performance"],
+          "prompt": "How does a cost-based query planner choose a plan, and why does it sometimes choose badly?",
+          "answer": "It enumerates candidate plans (scan types, join orders, join algorithms), estimates each one's cost from table statistics — row counts, value distributions, correlations — and picks the cheapest estimate. Bad choices almost always trace back to bad row-count estimates.",
+          "explanation": "Stale statistics after bulk loads, correlated columns the planner assumes independent, and parameters with skewed distributions are the usual causes. Fix with `ANALYZE`, extended statistics (`CREATE STATISTICS`), or rewriting the query — before reaching for hints.",
+          "prerequisites": ["sql-explain", "dbi-join-strategies"],
+          "resources": [
+            { "title": "PostgreSQL docs — Using EXPLAIN", "url": "https://www.postgresql.org/docs/current/using-explain.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-vacuum",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["db.postgres", "db.mvcc"],
+          "prompt": "A Postgres table's size keeps growing although the row count is stable, and queries slow down. What is happening?",
+          "answer": "Bloat: every UPDATE and DELETE leaves dead tuples under MVCC, and autovacuum is not reclaiming them fast enough — often because a long-running or idle-in-transaction session holds back the oldest visible snapshot. Find and end that session, and tune autovacuum for the hot table.",
+          "explanation": "Plain VACUUM makes dead space reusable but rarely shrinks the file; `VACUUM FULL` rewrites the table under an exclusive lock (pg_repack does it online). Vacuum also prevents transaction-ID wraparound, which is why it must never be disabled.",
+          "prerequisites": ["dbi-mvcc"],
+          "resources": [
+            { "title": "PostgreSQL docs — Routine vacuuming", "url": "https://www.postgresql.org/docs/current/routine-vacuuming.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-replication",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["db.replication"],
+          "prompt": "Physical (streaming) replication vs logical replication",
+          "answer": "Physical replication ships the WAL byte-for-byte, producing an exact copy of the whole cluster; logical replication decodes changes into row-level operations for selected tables, which the subscriber applies.",
+          "columns": {
+            "left": { "title": "Physical / streaming", "points": ["Byte-identical copy of the cluster", "All databases and tables", "Same major version required", "HA failover and read replicas"] },
+            "right": { "title": "Logical", "points": ["Row changes for chosen tables", "Works across major versions", "DDL not replicated", "Upgrades, migrations, CDC"] }
+          },
+          "explanation": "Physical replicas are for high availability and read scaling, and must run the same major version. Logical replication enables zero-downtime major-version upgrades, selective replication and feeding other systems — but does not replicate schema changes (DDL) automatically.",
+          "prerequisites": ["dbi-wal", "nosql-replication-modes"],
+          "resources": [
+            { "title": "PostgreSQL docs — Logical replication", "url": "https://www.postgresql.org/docs/current/logical-replication.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-backup-pitr",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["db.backup", "ops.dr"],
+          "prompt": "Someone ran `DELETE FROM customers` without a WHERE clause at 14:03. How do you recover, and what must already be in place?",
+          "answer": "Point-in-time recovery: restore the last base backup and replay archived WAL up to 14:02:59, into a separate instance, then copy the lost rows back. It requires continuous WAL archiving plus regular base backups — set up before the incident.",
+          "explanation": "A backup is only real once a restore has been tested — schedule restore drills and measure how long they take (your real RTO). Replicas are not backups: the DELETE replicates to them within milliseconds. Delayed replicas give a short grace window.",
+          "prerequisites": ["dbi-wal"],
+          "resources": [
+            { "title": "PostgreSQL docs — Continuous archiving and point-in-time recovery", "url": "https://www.postgresql.org/docs/current/continuous-archiving.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-partitioning",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["db.partitioning", "db.scaling"],
+          "prompt": "What does table partitioning buy you within a single database?",
+          "answer": "Partition pruning (queries touching one time range scan only its partitions), cheap retention (drop an old partition instead of deleting millions of rows), and smaller per-partition indexes and vacuum work.",
+          "explanation": "Choose the partition key from the dominant filter — usually time for events and logs. Partitioning does not add capacity beyond one machine; that is sharding. Too many partitions add planning overhead, so avoid thousands of tiny ones.",
+          "resources": [
+            { "title": "PostgreSQL docs — Table partitioning", "url": "https://www.postgresql.org/docs/current/ddl-partitioning.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "dbi-sharding",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["db.sharding", "db.scaling"],
+          "prompt": "Your primary database is at the limit of the largest instance available. What are the options before and when sharding?",
+          "answer": "Before: optimise queries and indexes, add read replicas for read traffic, cache, archive cold data, and move independent domains to separate databases. Sharding — splitting rows across databases by a shard key such as tenant ID — comes last.",
+          "explanation": "Sharding makes cross-shard joins, transactions, unique constraints and rebalancing hard, and the key is very expensive to change. Tenant-based keys fit SaaS well because most queries stay within one tenant. Distributed SQL systems (Citus, CockroachDB, Spanner) absorb some of this complexity.",
+          "prerequisites": ["nosql-partition-key", "sd-vertical-horizontal"],
+          "resources": [
+            { "title": "Citus docs — Choosing a distribution column", "url": "https://docs.citusdata.com/en/stable/sharding/data_modeling.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dbi-cdc-outbox",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["db.cdc", "distributed.messaging"],
+          "prompt": "A service must update its database and publish an event. How do you avoid the event being lost if the process crashes between the two?",
+          "answer": "The transactional outbox: write the event into an `outbox` table in the same transaction as the data change, then a relay — polling, or change-data-capture reading the WAL (Debezium) — publishes it to the broker. Publish at least once and make consumers idempotent.",
+          "explanation": "Writing to the database and a broker are two systems with no shared transaction (the dual-write problem): either order can leave one without the other. The outbox turns it into one local transaction plus reliable, retryable delivery.",
+          "prerequisites": ["sd-idempotency-key", "sd-saga"],
+          "resources": [
+            { "title": "microservices.io — Transactional outbox", "url": "https://microservices.io/patterns/data/transactional-outbox.html", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

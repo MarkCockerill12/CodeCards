@@ -1,0 +1,207 @@
+{
+  "id": "functional-programming",
+  "name": "Functional Programming",
+  "icon": "λ",
+  "category": "Computer Science",
+  "color": "#5E5086",
+  "description": "Pure functions, immutability, higher-order functions, composition, recursion, algebraic data types, Option and Result chaining, laziness and functional architecture.",
+  "modules": [
+    {
+      "id": "fp-core",
+      "name": "Functional Foundations",
+      "description": "Purity and side effects, immutability, higher-order functions, currying, composition, recursion and declarative style.",
+      "cards": [
+        {
+          "id": "fp-pure-functions",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["fp.purity"],
+          "prompt": "What makes a function pure, and what is referential transparency?",
+          "answer": "A pure function returns the same output for the same inputs and has no side effects — no mutation of arguments or globals, no I/O, no reading the clock or random numbers. Referential transparency means any call can be replaced by its result without changing the program's behaviour.",
+          "explanation": "Pure functions are trivial to test (no setup or mocks), safe to cache and to run in parallel, and easy to reason about locally. Real programs need effects; functional style pushes them to the edges rather than eliminating them.",
+          "resources": [
+            { "title": "Wikipedia — Pure function", "url": "https://en.wikipedia.org/wiki/Pure_function", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fp-side-effects",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["fp.purity", "fp.immutability"],
+          "prompt": "Calling `with_tax` twice on the same cart gives different totals. Why?",
+          "code": "def with_tax(cart):\n    for item in cart:\n        item['price'] = item['price'] * 1.2\n    return sum(item['price'] for item in cart)",
+          "lang": "python",
+          "answer": "It mutates its argument: each call overwrites the prices in the caller's list, so the second call taxes already-taxed prices. Return new data instead — `return [{**item, \"price\": item[\"price\"] * 1.2} for item in cart]` — leaving the input untouched.",
+          "explanation": "Hidden mutation of inputs is a side effect that callers cannot see from the signature. It makes functions order-dependent and breaks anything else holding a reference to the same list. Immutable data or defensive copies make functions safe to call repeatedly.",
+          "prerequisites": ["fp-pure-functions", "py-mutable-aliasing"],
+          "resources": [
+            { "title": "Professor Frisby's Mostly Adequate Guide to Functional Programming", "url": "https://mostly-adequate.gitbook.io/mostly-adequate-guide/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "fp-immutability",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["fp.immutability"],
+          "prompt": "What does programming with immutable data buy you, and how is it kept efficient?",
+          "answer": "Values never change after creation; \"updates\" produce new values. That removes whole bug classes — aliasing surprises, torn state, data races between threads — and makes change detection a cheap reference comparison. Structural sharing keeps copies cheap by reusing the unchanged parts.",
+          "explanation": "Most languages let you opt in: `const` plus `readonly` types, frozen dataclasses, records, persistent collections. Immutability at boundaries (values passed between components or threads) gives most of the benefit even when local code mutates freely.",
+          "prerequisites": ["ds-persistent"],
+          "resources": [
+            { "title": "Wikipedia — Immutable object", "url": "https://en.wikipedia.org/wiki/Immutable_object", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fp-higher-order",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["fp.higher-order", "python.functional"],
+          "prompt": "What does this print?",
+          "code": "from functools import reduce\nnums = [1, 2, 3, 4, 5]\nsquares = list(map(lambda x: x * x, filter(lambda x: x % 2, nums)))\nprint(squares)\nprint(reduce(lambda acc, x: acc + x, squares, 0))",
+          "lang": "python",
+          "answer": "[1, 9, 25]\n35",
+          "explanation": "Higher-order functions take or return functions. `filter` keeps odd numbers, `map` squares them, and `reduce` folds the list into a single value by repeatedly applying a combining function from an initial accumulator. Together they replace most hand-written loops with named intent — though in Python a comprehension is often clearer.",
+          "prerequisites": ["js-array-methods"],
+          "resources": [
+            { "title": "Python docs — functools.reduce", "url": "https://docs.python.org/3/library/functools.html#functools.reduce", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[1, 9, 25]\n35" }
+        },
+        {
+          "id": "fp-currying",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["fp.currying", "js.functions"],
+          "prompt": "What does this print?",
+          "code": "const add = a => b => a + b;\nconsole.log(add(3)(4));\nconst addThree = add(3);\nconsole.log(addThree(4));\nconsole.log([1, 2, 3].map(add(10)));",
+          "lang": "javascript",
+          "answer": "7\n7\n[ 11, 12, 13 ]",
+          "explanation": "Currying turns a function of several arguments into a chain of single-argument functions, so `add(3)(4)` works. Partial application fixes some arguments up front — here `add(10)` makes an \"add ten\" function to pass to `map`. Both build specialised functions from general ones.",
+          "prerequisites": ["js-closure-definition"],
+          "resources": [
+            { "title": "Professor Frisby's Mostly Adequate Guide to Functional Programming", "url": "https://mostly-adequate.gitbook.io/mostly-adequate-guide/", "kind": "book" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "7\n7\n[ 11, 12, 13 ]" }
+        },
+        {
+          "id": "fp-composition",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["fp.composition"],
+          "prompt": "What does this print?",
+          "code": "const pipe = (...fns) => x => fns.reduce((acc, f) => f(acc), x);\n\nconst shout = pipe(\n  s => s.trim(),\n  s => s.toUpperCase(),\n  s => s + '!',\n);\nconsole.log(shout('  hello, world '));",
+          "lang": "javascript",
+          "answer": "HELLO, WORLD!",
+          "explanation": "`pipe` composes functions left to right: the output of each becomes the input of the next. Small, single-purpose pure functions combined this way form readable data pipelines. `compose` is the same idea applied right to left, as in mathematics — f(g(x)).",
+          "prerequisites": ["fp-higher-order"],
+          "resources": [
+            { "title": "Wikipedia — Function composition (computer science)", "url": "https://en.wikipedia.org/wiki/Function_composition_(computer_science)", "kind": "article" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "HELLO, WORLD!" }
+        },
+        {
+          "id": "fp-recursion-tco",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["fp.recursion"],
+          "prompt": "How do functional languages loop without mutable counters, and what is tail-call optimisation?",
+          "answer": "With recursion: a function calls itself on a smaller problem until a base case. When the recursive call is the very last thing the function does (a tail call), the language can reuse the current stack frame instead of pushing a new one, so deep recursion runs in constant stack space.",
+          "explanation": "Scheme, Haskell, Elixir and Scala (with `@tailrec`) rely on this. Python, Java and most JavaScript engines do not perform general tail-call optimisation, so deep recursion there still overflows — use loops, or folds like `reduce`, for long sequences.",
+          "prerequisites": ["algo-recursion-stack"],
+          "resources": [
+            { "title": "Wikipedia — Tail call", "url": "https://en.wikipedia.org/wiki/Tail_call", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fp-declarative",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["fp.style"],
+          "prompt": "Imperative vs declarative style",
+          "answer": "Imperative code says *how*: step-by-step statements that change state (loops, counters, assignments). Declarative code says *what*: describe the result and let the language or engine work out the steps (SQL, HTML, `map`/`filter`, React components).",
+          "columns": {
+            "left": { "title": "Imperative", "points": ["Explicit steps and mutable state", "`for` loops, counters, flags", "Full control over execution", "Easy to introduce off-by-one bugs"] },
+            "right": { "title": "Declarative", "points": ["Describe the desired result", "SQL, CSS, map/filter, UI components", "Engine handles the mechanics", "Less control over exact execution"] }
+          },
+          "explanation": "Declarative code is usually shorter and harder to get subtly wrong, because the error-prone mechanics live in a well-tested engine. Imperative code gives precise control when performance or ordering really matters. Most good code is declarative at the top and imperative only where needed.",
+          "prerequisites": ["fp-higher-order"],
+          "resources": [
+            { "title": "Wikipedia — Declarative programming", "url": "https://en.wikipedia.org/wiki/Declarative_programming", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fp-types-architecture",
+      "name": "Types, Effects & Architecture",
+      "description": "Algebraic data types, Option and Result chaining, laziness, memoisation, and functional core with imperative shell.",
+      "cards": [
+        {
+          "id": "fp-adts",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["fp.types", "types.adt"],
+          "prompt": "What are algebraic data types?",
+          "answer": "Types built from two operations: product types combine values that exist together (a struct or record: name AND email) and sum types choose one of several variants (a tagged union: Loading OR Loaded(data) OR Failed(error)). With exhaustive pattern matching, the compiler checks that every variant is handled.",
+          "explanation": "Sum types make illegal states unrepresentable — you cannot have `data` and `error` set at once if they live in different variants. They exist as Rust and Swift enums, TypeScript discriminated unions, Java sealed interfaces with records, and Kotlin sealed classes.",
+          "prerequisites": ["rs-enums-match", "ts-never-exhaustive"],
+          "resources": [
+            { "title": "Wikipedia — Algebraic data type", "url": "https://en.wikipedia.org/wiki/Algebraic_data_type", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fp-option-result-chaining",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["fp.monads", "fp.error-handling"],
+          "prompt": "What do `map` and `flatMap` (`and_then`) do on Option and Result types, and why does that matter?",
+          "answer": "`map` transforms the value inside if there is one and passes None or an error through untouched; `flatMap` does the same with a function that itself returns an Option or Result, avoiding nested wrappers. Chaining them builds pipelines where failure short-circuits automatically, with no `if` checks at each step.",
+          "explanation": "This pattern — a wrapper type with `flatMap` obeying a few laws — is what \"monad\" means in practice. Promises (`then`), arrays (`flatMap`), Rust's `?` and C#'s LINQ all use it. You rarely need the theory; recognising the shape is what helps.",
+          "prerequisites": ["rs-option-result", "fp-composition"],
+          "resources": [
+            { "title": "Professor Frisby's Mostly Adequate Guide to Functional Programming", "url": "https://mostly-adequate.gitbook.io/mostly-adequate-guide/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "fp-lazy-evaluation",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["fp.laziness"],
+          "prompt": "What is lazy evaluation, and what are its benefits and costs?",
+          "answer": "Expressions are evaluated only when their values are needed, rather than when they are bound. This allows infinite sequences, avoids computing unused results, and lets pipelines stream element by element. Haskell is lazy by default; most languages offer opt-in laziness through generators, iterators and streams.",
+          "explanation": "The costs are less predictable memory and timing: a deferred computation can hold references alive (space leaks), and errors surface where a value is consumed rather than where it was defined. Opt-in laziness on large or infinite data gives most of the benefit.",
+          "prerequisites": ["py-generator-lazy", "rs-iterator-lazy"],
+          "resources": [
+            { "title": "Wikipedia — Lazy evaluation", "url": "https://en.wikipedia.org/wiki/Lazy_evaluation", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fp-memoisation",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["fp.purity", "perf.caching"],
+          "prompt": "Why does purity make memoisation safe?",
+          "answer": "A pure function always returns the same result for the same arguments, so its results can be cached by argument and reused without changing behaviour. Memoising an impure function — one that reads the clock, a database or global state — returns stale or wrong answers.",
+          "explanation": "Memoisation trades memory for time, so bound the cache (LRU) and make sure the arguments are hashable and stable. It is the mechanism behind dynamic programming, React's `useMemo`, and build systems that skip unchanged steps.",
+          "prerequisites": ["fp-pure-functions", "algo-memo-fib"],
+          "resources": [
+            { "title": "Python docs — functools.cache", "url": "https://docs.python.org/3/library/functools.html#functools.cache", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fp-functional-core",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["fp.architecture", "testing.design"],
+          "prompt": "Order processing mixes business rules with database calls, email sending and the current time, so it can only be tested with heavy mocking. How would a functional architecture restructure it?",
+          "answer": "\"Functional core, imperative shell\": move every decision into pure functions that take plain data (the order, the stock levels, the current time as a parameter) and return plain data describing what should happen. A thin imperative shell gathers the inputs, calls the core, and performs the resulting effects.",
+          "explanation": "The core becomes fast to test with ordinary values and no mocks; the shell is simple enough to cover with a few integration tests. It is the same dependency direction as hexagonal architecture, reached from the functional side.",
+          "prerequisites": ["fp-pure-functions", "test-hard-things"],
+          "resources": [
+            { "title": "Destroy All Software — Functional core, imperative shell", "url": "https://www.destroyallsoftware.com/screencasts/catalog/functional-core-imperative-shell", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

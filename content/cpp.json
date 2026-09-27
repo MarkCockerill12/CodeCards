@@ -190,6 +190,279 @@
           ]
         }
       ]
+    },
+    {
+      "id": "cpp-language",
+      "name": "Language Core",
+      "description": "Pointers and references, const-correctness, construction, conversions, lambdas and compile-time programming.",
+      "cards": [
+        {
+          "id": "cpp-pointer-vs-reference",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["cpp.references", "cpp.core"],
+          "prompt": "Pointer vs reference",
+          "answer": "A reference is an alias that must be bound at initialisation and can never be reseated or null; a pointer is an object holding an address that can be null, reassigned and do arithmetic.",
+          "columns": {
+            "left": { "title": "Pointer `T*`", "points": ["Can be null — must be checked", "Can be reseated to point elsewhere", "Supports arithmetic and arrays", "Explicit `*` / `->` to dereference"] },
+            "right": { "title": "Reference `T&`", "points": ["Always bound to an object", "Cannot be reseated after initialisation", "No arithmetic, no null", "Used exactly like the object itself"] }
+          },
+          "explanation": "Guideline: use references for parameters that must refer to something, pointers (or `std::optional<T&>`-like wrappers, or smart pointers for ownership) when \"nothing\" is a valid value. A raw pointer in modern C++ should mean \"non-owning, possibly null\" — never ownership.",
+          "resources": [
+            { "title": "C++ Core Guidelines — F.60: Prefer T* over T& when \"no argument\" is a valid option", "url": "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-ptr-ref", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-const-correctness",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.const", "cpp.core"],
+          "prompt": "What is the difference between `const T*`, `T* const` and a `const` member function?",
+          "answer": "`const T*` (pointer to const): you cannot modify the pointee, but you can repoint it. `T* const` (const pointer): you cannot repoint it, but you can modify the pointee. A `const` member function (`int size() const`) promises not to modify the object and is the only kind callable on a const object.",
+          "explanation": "Read declarations right to left: `const char* const p` is \"p is a const pointer to const char\". Const-correctness spreads: mark every non-mutating member function `const` from day one, because retrofitting it later ripples through the whole codebase. `mutable` exempts caches and mutexes.",
+          "resources": [
+            { "title": "C++ Core Guidelines — Con: Constants and immutability", "url": "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-const", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-member-init-order",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["cpp.constructors", "cpp.gotchas"],
+          "prompt": "Why is `size_` garbage even though the initialiser list looks correct?",
+          "code": "class Buffer {\n    std::vector<char> buffer_;\n    std::size_t size_;\npublic:\n    explicit Buffer(std::size_t n)\n        : size_(n), buffer_(size_) {}   // buffer_ built first!\n};",
+          "lang": "cpp",
+          "answer": "Members are initialised in their *declaration* order, not the order in the initialiser list. `buffer_` is declared first, so it is initialised using `size_` before `size_` has been set. Declare members in dependency order (and enable `-Wreorder`).",
+          "explanation": "Always use member initialiser lists rather than assignment in the constructor body — they initialise instead of default-constructing then assigning, and they are required for references, const members and types without default constructors. Default member initialisers (`int size_ = 0;`) cover the common case.",
+          "resources": [
+            { "title": "cppreference — Constructors and member initializer lists", "url": "https://en.cppreference.com/w/cpp/language/constructor", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-explicit",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["cpp.conversions", "cpp.constructors"],
+          "prompt": "Why does `send(42)` compile, and what is the fix?",
+          "code": "struct Message {\n    Message(std::size_t bytes);   // allocate a buffer\n};\n\nvoid send(const Message& m);\n\nsend(42);   // compiles!",
+          "lang": "cpp",
+          "answer": "A single-argument constructor doubles as an implicit conversion, so `42` silently becomes `Message(42)` — a message of 42 bytes, not the number 42. Mark single-argument constructors `explicit` unless implicit conversion is genuinely intended.",
+          "explanation": "Implicit conversions are how surprising overloads get selected and how units get mixed up. The Core Guidelines default is `explicit` for single-argument constructors and conversion operators; `std::string` from `const char*` is a deliberate exception.",
+          "resources": [
+            { "title": "C++ Core Guidelines — C.46: By default, declare single-argument constructors explicit", "url": "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-explicit", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-range-for-copy",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["cpp.loops", "cpp.performance"],
+          "prompt": "This loop is slow and its changes are lost. Why?",
+          "code": "std::vector<std::string> names = load();\nfor (auto name : names) {\n    name += \"!\";\n}",
+          "lang": "cpp",
+          "answer": "`auto` deduces a value type, so each element is copied — expensive for strings, and the `+=` modifies the copy. Use `auto&` to modify in place and `const auto&` to read without copying.",
+          "explanation": "Rule of thumb for range-for: `const auto&` by default, `auto&` to mutate, plain `auto` only for cheap types you mean to copy, and `auto&&` in generic code. The same copy trap applies to structured bindings: `for (auto [k, v] : map)` copies every pair.",
+          "resources": [
+            { "title": "cppreference — Range-based for loop", "url": "https://en.cppreference.com/w/cpp/language/range-for", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-lambda-capture",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["cpp.lambdas", "cpp.lifetime"],
+          "prompt": "Why is this callback undefined behaviour when it eventually runs?",
+          "code": "void schedule(EventLoop& loop) {\n    int count = 0;\n    loop.post([&] {\n        ++count;             // runs after schedule() returned\n        log(count);\n    });\n}",
+          "lang": "cpp",
+          "answer": "`[&]` captures `count` by reference, but `count` is a local that dies when `schedule` returns. The callback runs later and touches a dead stack slot. Capture by value (`[count]`), or move ownership in (`[p = std::move(ptr)]`).",
+          "explanation": "Reference captures are only safe when the lambda cannot outlive the scope — as with algorithms like `std::sort`. Anything stored, returned or run asynchronously should capture by value or own its data. Capturing `this` has the same danger when the object dies first.",
+          "prerequisites": ["cpp-dangling-reference"],
+          "resources": [
+            { "title": "cppreference — Lambda expressions", "url": "https://en.cppreference.com/w/cpp/language/lambda", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-optional-variant",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.stdlib", "cpp.types"],
+          "prompt": "What are `std::optional`, `std::variant` and `std::expected` for?",
+          "answer": "`optional<T>` holds a T or nothing — a typed replacement for sentinel values and nullable pointers. `variant<A, B>` holds exactly one of several types, visited with `std::visit`. `expected<T, E>` (C++23) holds a value or an error, like Rust's `Result`.",
+          "explanation": "All three store their contents inline, with no heap allocation. They make \"maybe absent\" and \"one of several\" explicit in signatures instead of documented in comments. `variant` plus `std::visit` gives exhaustive handling of closed sets of alternatives.",
+          "prerequisites": ["rs-option-result"],
+          "resources": [
+            { "title": "cppreference — std::optional", "url": "https://en.cppreference.com/w/cpp/utility/optional", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-string-view",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["cpp.lifetime", "cpp.strings"],
+          "prompt": "Why does this print garbage?",
+          "code": "std::string make_name() { return \"user-\" + std::to_string(42); }\n\nint main() {\n    std::string_view name = make_name();\n    std::cout << name << \"\\n\";\n}",
+          "lang": "cpp",
+          "answer": "`std::string_view` does not own its characters. `make_name()` returns a temporary `std::string` that is destroyed at the end of the full expression, leaving `name` pointing into freed memory.",
+          "explanation": "Use `string_view` for parameters (read-only, no copy, accepts literals and strings alike), but never store one that may outlive its source, and never return one that refers to a local or temporary. `std::span` has exactly the same caveat for arrays.",
+          "prerequisites": ["cpp-dangling-reference"],
+          "resources": [
+            { "title": "cppreference — std::basic_string_view", "url": "https://en.cppreference.com/w/cpp/string/basic_string_view", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-constexpr",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.compile-time"],
+          "prompt": "What do `constexpr`, `consteval` and `constinit` mean?",
+          "answer": "`constexpr` allows (but does not require) evaluation at compile time when inputs are constant. `consteval` requires compile-time evaluation. `constinit` guarantees a static variable is initialised at compile time, avoiding the static initialisation order fiasco.",
+          "explanation": "Compile-time evaluation catches errors early (UB in a constant expression is a compile error) and removes runtime cost for lookup tables and parsers. Most of the standard library — including `std::vector` and `std::string` in C++20 — is now usable in constexpr contexts.",
+          "resources": [
+            { "title": "cppreference — constexpr specifier", "url": "https://en.cppreference.com/w/cpp/language/constexpr", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-concepts",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cpp.templates", "cpp.generics"],
+          "prompt": "What problem do C++20 concepts solve?",
+          "answer": "They state template requirements explicitly — `template <std::integral T> T gcd(T a, T b)` or `requires std::sortable<It>` — so misuse fails at the call site with a readable error, instead of pages of errors from deep inside the template.",
+          "explanation": "Concepts replace SFINAE and `enable_if` tricks for constraining overloads. Prefer standard concepts (`std::ranges::range`, `std::invocable`, `std::totally_ordered`) and name your own after real semantic requirements, not syntax.",
+          "prerequisites": ["cpp-template-instantiation"],
+          "resources": [
+            { "title": "cppreference — Constraints and concepts", "url": "https://en.cppreference.com/w/cpp/language/constraints", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-enum-class",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["cpp.types"],
+          "prompt": "`enum class` vs plain `enum`",
+          "answer": "Scoped enums (`enum class Color { Red }`) require qualification and never convert implicitly to integers; plain enums leak their names into the enclosing scope and convert to int silently.",
+          "columns": {
+            "left": { "title": "enum class", "points": ["Names scoped: `Color::Red`", "No implicit conversion to int", "Can forward-declare with a type", "The default choice"] },
+            "right": { "title": "enum", "points": ["Names leak into the surrounding scope", "Converts to int silently", "Different enums compare with each other", "Legacy and C interop"] }
+          },
+          "explanation": "Use `enum class` by default. Plain enums let you compare a `Color` with a `Fruit` or pass one where an int is expected without complaint. Specify an underlying type (`enum class Op : std::uint8_t`) for serialisation and ABI stability.",
+          "resources": [
+            { "title": "cppreference — Enumeration declaration", "url": "https://en.cppreference.com/w/cpp/language/enum", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpp-stl-build",
+      "name": "STL, Concurrency & Build",
+      "description": "Containers and algorithms, noexcept moves, threads and locks, the compilation model and CMake.",
+      "cards": [
+        {
+          "id": "cpp-container-choice",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["cpp.stl", "ds.choice"],
+          "prompt": "Which standard container should be your default, and when do you pick `map`, `unordered_map` or `list`?",
+          "answer": "`std::vector` by default — contiguous, cache-friendly, fastest for almost everything. `std::unordered_map` for key lookup, `std::map` when you need sorted order or range queries, and `std::list` only when you need stable iterators across frequent middle insertions.",
+          "explanation": "Measure before leaving vector: a linear scan over a small vector often beats a map because of cache locality. `std::deque` for push/pop at both ends; `std::array` for fixed size; and flat maps (C++23 `std::flat_map`) for read-heavy lookups.",
+          "prerequisites": ["ds-array-vs-linked"],
+          "resources": [
+            { "title": "cppreference — Containers library", "url": "https://en.cppreference.com/w/cpp/container", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-algorithms-ranges",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.stl", "cpp.ranges"],
+          "prompt": "Why prefer standard algorithms and ranges over hand-written loops?",
+          "answer": "They name the intent (`std::ranges::sort`, `find_if`, `any_of`, `transform`), are well tested and optimised, and are harder to get subtly wrong. C++20 ranges accept whole containers and compose lazily with views: `v | std::views::filter(pred) | std::views::transform(f)`.",
+          "explanation": "The classic trap is the erase-remove idiom: `std::remove` only moves elements; you must also `erase` — C++20 adds `std::erase_if(container, pred)` to do both. Views are lazy and non-owning, so a view over a temporary container dangles.",
+          "resources": [
+            { "title": "cppreference — Ranges library", "url": "https://en.cppreference.com/w/cpp/ranges", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-noexcept-move",
+          "type": "scenario",
+          "difficulty": 5,
+          "tags": ["cpp.move", "cpp.performance"],
+          "prompt": "Your type has a fast move constructor, yet `std::vector` copies every element when it grows. Why?",
+          "answer": "The move constructor is not `noexcept`. To keep its strong exception guarantee during reallocation, vector uses `std::move_if_noexcept` and falls back to copying when a move might throw. Mark move operations `noexcept`.",
+          "explanation": "Defaulted move operations are `noexcept` automatically when all members' moves are. This one keyword can change the complexity of growth from copying strings to swapping pointers. Destructors are implicitly `noexcept`; keep them that way.",
+          "prerequisites": ["cpp-rule-of-five", "cpp-vector-complexity"],
+          "resources": [
+            { "title": "cppreference — std::move_if_noexcept", "url": "https://en.cppreference.com/w/cpp/utility/move_if_noexcept", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-emplace",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["cpp.stl", "cpp.performance"],
+          "prompt": "`push_back` vs `emplace_back`",
+          "answer": "`push_back` takes an already-constructed object (copying or moving it in); `emplace_back` forwards constructor arguments and builds the element in place.",
+          "columns": {
+            "left": { "title": "push_back(x)", "points": ["Takes a `T` — copies or moves it", "Only implicit conversions allowed", "Clear intent", "Fine for existing objects"] },
+            "right": { "title": "emplace_back(args...)", "points": ["Constructs `T` in place from args", "Can call explicit constructors", "Avoids a temporary for multi-arg types", "Can hide wrong-constructor bugs"] }
+          },
+          "explanation": "For an existing object or a temporary of the same type, the two are equivalent after moves. `emplace_back` can also call `explicit` constructors, which can hide mistakes: `v.emplace_back(10)` on a `vector<vector<int>>` quietly creates a 10-element vector.",
+          "resources": [
+            { "title": "cppreference — std::vector::emplace_back", "url": "https://en.cppreference.com/w/cpp/container/vector/emplace_back", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-threads-locks",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.concurrency", "concurrency.locks"],
+          "prompt": "What are the modern C++ building blocks for threads and locking?",
+          "answer": "`std::jthread` (joins automatically on destruction and supports stop tokens), `std::mutex` locked through RAII guards — `std::lock_guard`, `std::unique_lock`, and `std::scoped_lock` for several mutexes at once without deadlock — plus `std::condition_variable` and `std::atomic<T>`.",
+          "explanation": "Never call `lock()`/`unlock()` by hand: an exception between them leaves the mutex locked forever. A plain `std::thread` that is destroyed while still joinable calls `std::terminate`, which is why `jthread` exists. Data races on non-atomic variables are undefined behaviour.",
+          "prerequisites": ["cpp-raii", "conc-mutex-semaphore"],
+          "resources": [
+            { "title": "cppreference — Concurrency support library", "url": "https://en.cppreference.com/w/cpp/thread", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-compilation-model",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.build", "compilers.linking"],
+          "prompt": "What are translation units, header guards and the One Definition Rule?",
+          "answer": "Each `.cpp` file plus everything it `#include`s is preprocessed into a translation unit and compiled separately; the linker then combines the object files. Header guards or `#pragma once` stop a header being included twice in one TU. The ODR says an entity must have exactly one definition across the program.",
+          "explanation": "Defining a non-inline function or variable in a header breaks the ODR once two TUs include it (duplicate symbol link errors) — mark it `inline`, or declare in the header and define in one `.cpp`. Every include costs compile time; C++20 modules replace textual inclusion.",
+          "prerequisites": ["comp-linking"],
+          "resources": [
+            { "title": "cppreference — Definitions and ODR", "url": "https://en.cppreference.com/w/cpp/language/definition", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-cmake",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cpp.build", "repo.tooling"],
+          "prompt": "What does \"modern CMake\" mean?",
+          "answer": "Target-based configuration: define targets with `add_library`/`add_executable`, attach settings with `target_include_directories`, `target_compile_features` and `target_link_libraries` using PUBLIC/PRIVATE/INTERFACE, and never touch global variables like `CMAKE_CXX_FLAGS`.",
+          "explanation": "PUBLIC/PRIVATE/INTERFACE control what propagates to dependants, so linking a library brings its include paths and flags automatically. Use a package manager (vcpkg, Conan) or `FetchContent` for dependencies, and presets (`CMakePresets.json`) to share configurations.",
+          "resources": [
+            { "title": "CMake tutorial", "url": "https://cmake.org/cmake/help/latest/guide/tutorial/index.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-exceptions-policy",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["cpp.exceptions", "cpp.errors"],
+          "prompt": "How should a modern C++ codebase handle errors?",
+          "answer": "Use exceptions for exceptional failures that cannot be handled locally, RAII so unwinding releases everything, and `std::expected`/`std::optional` for expected, frequent failures. Mark functions that cannot throw `noexcept`, and never let an exception escape a destructor.",
+          "explanation": "Know the exception-safety guarantees: basic (no leaks, valid state), strong (commit-or-rollback), and nothrow. Codebases that ban exceptions (games, some embedded) must use error codes consistently — mixing both styles is the worst of both.",
+          "prerequisites": ["cpp-raii"],
+          "resources": [
+            { "title": "C++ Core Guidelines — E: Error handling", "url": "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-errors", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

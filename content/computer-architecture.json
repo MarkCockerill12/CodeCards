@@ -1,0 +1,216 @@
+{
+  "id": "computer-architecture",
+  "name": "Computer Architecture",
+  "icon": "🔲",
+  "category": "Systems & OS",
+  "color": "#475569",
+  "description": "How hardware runs your code: instruction sets, pipelines, branch prediction, out-of-order and speculative execution, SIMD, coherence, storage and the performance laws.",
+  "modules": [
+    {
+      "id": "arch-cpu",
+      "name": "How a CPU Executes Code",
+      "description": "Logic gates, the fetch–decode–execute cycle, instruction sets, pipelining, branch prediction, out-of-order and speculative execution.",
+      "cards": [
+        {
+          "id": "arch-logic-gates",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["architecture.digital-logic"],
+          "prompt": "How do logic gates add two binary numbers?",
+          "answer": "A half adder adds two bits: the sum is `a XOR b` and the carry is `a AND b`. A full adder also takes an incoming carry; chaining full adders bit by bit (ripple-carry) adds whole words. Every arithmetic and logic operation in the CPU's ALU is built from gates like these.",
+          "explanation": "All digital logic reduces to a few gate types — NAND alone is universal. Real CPUs use faster carry-lookahead adders because a ripple carry across 64 bits is too slow. Building a computer from NAND gates upward (Nand2Tetris) is the classic way to make this concrete.",
+          "prerequisites": ["num-bitwise"],
+          "resources": [
+            { "title": "Nand2Tetris — From NAND to Tetris", "url": "https://www.nand2tetris.org/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "arch-fetch-decode-execute",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["architecture.cpu"],
+          "prompt": "What is the fetch–decode–execute cycle?",
+          "answer": "The CPU repeatedly fetches the instruction at the address in the program counter from memory, decodes it into control signals (which operation, which registers), executes it in the ALU or load/store unit, writes the result back to a register or memory, and advances the program counter — or jumps, for branches.",
+          "explanation": "Everything a program does — function calls, loops, system calls — is this loop running billions of times per second. Modern CPUs overlap and reorder these steps heavily (pipelining, out-of-order execution) while preserving the illusion that instructions run one at a time in order.",
+          "resources": [
+            { "title": "Computer Systems: A Programmer's Perspective (Bryant & O'Hallaron)", "url": "https://csapp.cs.cmu.edu/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "arch-isa",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["architecture.isa"],
+          "prompt": "What is an instruction set architecture, and what are registers?",
+          "answer": "The ISA is the contract between software and hardware: the instructions, registers, addressing modes, data types and memory model a CPU family exposes (x86-64, AArch64, RISC-V). Registers are a small set of extremely fast storage locations inside the CPU that instructions operate on directly — typically 16–32 general-purpose ones.",
+          "explanation": "Compilers target an ISA, which is why a binary built for x86-64 cannot run natively on ARM. Values are loaded from memory into registers, computed on, and stored back; the register allocator's job is keeping hot values in registers. RISC-V is an open ISA that anyone may implement.",
+          "prerequisites": ["plat-arm-vs-x86", "comp-register-allocation"],
+          "resources": [
+            { "title": "Wikipedia — Instruction set architecture", "url": "https://en.wikipedia.org/wiki/Instruction_set_architecture", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-pipelining",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["architecture.pipeline"],
+          "prompt": "What is instruction pipelining, and what are pipeline hazards?",
+          "answer": "Like an assembly line, the CPU splits each instruction into stages (fetch, decode, execute, memory, write-back) and works on several instructions at once, one per stage, so throughput approaches one instruction per cycle. Hazards stall it: data hazards (an instruction needs a result not yet produced), control hazards (branches — which instruction comes next?) and structural hazards (two instructions need the same unit).",
+          "explanation": "Forwarding (bypassing) passes results directly between stages to shrink data stalls; branch prediction attacks control hazards. Deep pipelines allow higher clock speeds but make every misprediction more expensive, since more in-flight work must be discarded.",
+          "prerequisites": ["arch-fetch-decode-execute"],
+          "resources": [
+            { "title": "Wikipedia — Instruction pipelining", "url": "https://en.wikipedia.org/wiki/Instruction_pipelining", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-branch-prediction",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["architecture.branch-prediction", "perf.cpu"],
+          "prompt": "Summing only the elements greater than 128 in a large array runs several times faster when the array is sorted first. Why?",
+          "answer": "Branch prediction. With sorted data, `if (x > 128)` is false for a long run and then true for a long run, so the predictor is almost always right. With random data it guesses wrong about half the time, and each misprediction flushes the pipeline — roughly 15–20 wasted cycles.",
+          "explanation": "Predictors learn patterns in branch history; unpredictable branches in hot loops are expensive. Fixes: make data more predictable, or make code branchless (conditional moves, arithmetic tricks, SIMD masks), which compilers often do automatically at higher optimisation levels.",
+          "prerequisites": ["arch-pipelining"],
+          "resources": [
+            { "title": "Wikipedia — Branch predictor", "url": "https://en.wikipedia.org/wiki/Branch_predictor", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-out-of-order",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["architecture.ooo"],
+          "prompt": "What do superscalar and out-of-order execution do?",
+          "answer": "A superscalar core issues several instructions per cycle to multiple execution units. Out-of-order execution lets instructions run as soon as their inputs are ready rather than in program order — while one waits for a cache miss, independent later instructions proceed — and a reorder buffer retires results in the original order, so the program cannot tell.",
+          "explanation": "This extracts instruction-level parallelism from ordinary sequential code, and is why dependency chains matter: `a = b + c; d = a * 2` must be serial, whereas independent operations overlap. Summing an array with several accumulators instead of one can be measurably faster for this reason.",
+          "prerequisites": ["arch-pipelining"],
+          "resources": [
+            { "title": "Wikipedia — Out-of-order execution", "url": "https://en.wikipedia.org/wiki/Out-of-order_execution", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-speculation-spectre",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["architecture.speculation", "security.side-channels"],
+          "prompt": "What is speculative execution, and how did Spectre and Meltdown exploit it?",
+          "answer": "The CPU guesses the outcome of branches and runs ahead on the predicted path, discarding the results if the guess was wrong. Architectural state is rolled back, but microarchitectural side effects — which data was pulled into the cache — are not. Spectre tricks speculation into reading secret data and leaks it through cache-timing measurements; Meltdown exploited speculative reads of kernel memory.",
+          "explanation": "Mitigations — kernel page-table isolation, retpolines, speculation barriers, site isolation in browsers, reduced timer precision — cost measurable performance. The broader lesson is that performance optimisations can create side channels that break isolation boundaries.",
+          "prerequisites": ["arch-branch-prediction", "crypto-timing-attack"],
+          "resources": [
+            { "title": "Meltdown and Spectre (official site)", "url": "https://meltdownattack.com/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "arch-performance",
+      "name": "Parallel Hardware & Performance",
+      "description": "Clock speed versus IPC, SIMD, cache coherence, GPUs, storage devices, latency numbers and Amdahl's law.",
+      "cards": [
+        {
+          "id": "arch-clock-ipc",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["architecture.performance"],
+          "prompt": "Why can a 3 GHz CPU outperform a 4 GHz one?",
+          "answer": "Execution time = instructions × cycles per instruction ÷ clock rate. Clock speed is only one factor: instructions per cycle (IPC) depends on pipeline width, branch prediction, cache sizes and memory latency, and differs greatly between microarchitectures.",
+          "explanation": "Clock speeds stopped rising in the mid-2000s because power and heat grow steeply with frequency (the end of Dennard scaling), so performance gains came from more cores, wider cores and bigger caches instead. For software, that means gains now come from parallelism and cache-friendly code rather than waiting for faster chips.",
+          "prerequisites": ["arch-out-of-order"],
+          "resources": [
+            { "title": "Computer Systems: A Programmer's Perspective (Bryant & O'Hallaron)", "url": "https://csapp.cs.cmu.edu/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "arch-simd",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["architecture.simd", "perf.vectorisation"],
+          "prompt": "What is SIMD, and how does code benefit from it?",
+          "answer": "Single instruction, multiple data: one instruction operates on a vector of values at once — for example eight 32-bit floats in a 256-bit AVX register, or four in 128-bit NEON on ARM. Compilers auto-vectorise simple loops; libraries such as NumPy, BLAS and simdjson use it explicitly.",
+          "explanation": "Vectorisation needs contiguous, aligned data and loops without unpredictable branches or dependencies between iterations — another reason struct-of-arrays layouts and branchless code are fast. It is the main reason NumPy array operations run orders of magnitude faster than Python loops.",
+          "prerequisites": ["mem-locality"],
+          "resources": [
+            { "title": "Wikipedia — Single instruction, multiple data", "url": "https://en.wikipedia.org/wiki/Single_instruction,_multiple_data", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-cache-coherence",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["architecture.coherence", "concurrency.hardware"],
+          "prompt": "How do cores keep their private caches consistent, and what does it cost software?",
+          "answer": "A coherence protocol (MESI and variants) tracks each cache line's state — Modified, Exclusive, Shared, Invalid. Before a core writes a line, copies in other cores are invalidated; a later read by another core must fetch the updated line. Coherence works per cache line, not per variable.",
+          "explanation": "Coherence traffic is why contended atomics and locks are slow, and why false sharing hurts. It guarantees that caches agree on each individual location, but not the order in which writes to different locations become visible — that is the memory model's job, enforced with fences and atomics.",
+          "prerequisites": ["conc-false-sharing", "conc-memory-visibility"],
+          "resources": [
+            { "title": "Wikipedia — MESI protocol", "url": "https://en.wikipedia.org/wiki/MESI_protocol", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-gpu-vs-cpu",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["architecture.gpu"],
+          "prompt": "CPU cores vs GPU cores",
+          "answer": "CPUs have a few powerful cores optimised for low latency on branchy, sequential code — big caches, branch prediction, out-of-order execution. GPUs have thousands of simple cores running the same instruction across many threads at once (SIMT), optimised for throughput on data-parallel work.",
+          "columns": {
+            "left": { "title": "CPU", "points": ["A few to dozens of complex cores", "Latency-optimised: caches, prediction, OoO", "Great at branchy, serial logic", "Runs the OS and general code"] },
+            "right": { "title": "GPU", "points": ["Thousands of simple cores", "Throughput-optimised: many threads in lockstep", "Great at uniform data-parallel maths", "Graphics, ML, simulations"] }
+          },
+          "explanation": "GPUs hide memory latency by switching between huge numbers of threads rather than with large caches. Divergent branches and scattered memory access waste their capacity, and moving data between CPU and GPU memory is often the real bottleneck.",
+          "prerequisites": ["ai-gpu-why", "arch-simd"],
+          "resources": [
+            { "title": "NVIDIA — CUDA programming guide", "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "arch-ssd-hdd",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["architecture.storage"],
+          "prompt": "SSD vs HDD",
+          "answer": "An HDD reads with a moving head over spinning platters, so random access costs milliseconds of seek time while sequential reads are fairly fast. An SSD has no moving parts: random reads take tens of microseconds and it handles many requests in parallel, but flash wears out and must erase large blocks before rewriting.",
+          "columns": {
+            "left": { "title": "HDD", "points": ["Mechanical seek: ~5–10 ms random access", "Decent sequential throughput", "Cheap per terabyte", "Archives, backups, bulk storage"] },
+            "right": { "title": "SSD (NVMe)", "points": ["~10–100 µs random access", "Massive parallel I/O (queues)", "Limited write endurance; needs TRIM", "Databases, OS, anything latency-sensitive"] }
+          },
+          "explanation": "Many classic designs — B-trees tuned for seeks, careful sequential layouts — date from spinning disks. SSDs changed the trade-offs (random I/O is cheap), but write amplification and endurance still reward append-heavy designs such as log-structured storage.",
+          "prerequisites": ["dbi-btree-vs-lsm"],
+          "resources": [
+            { "title": "Wikipedia — Solid-state drive", "url": "https://en.wikipedia.org/wiki/Solid-state_drive", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-latency-numbers",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["architecture.performance", "sd.estimation"],
+          "prompt": "Roughly how long do these take: an L1 cache hit, a main-memory access, an SSD random read, a round trip within a data centre, and a transatlantic round trip?",
+          "answer": "About 1 ns for L1, ~100 ns for main memory, ~20–100 µs for an SSD random read, ~0.5 ms for a data-centre round trip, and ~70–150 ms for a round trip across the Atlantic.",
+          "explanation": "Each step is roughly two to three orders of magnitude slower than the one before. These numbers drive design decisions: keep hot data in memory, batch network calls, put caches close to users, and never make a chatty sequence of cross-region requests.",
+          "prerequisites": ["mem-cache-hierarchy", "sd-capacity-estimation"],
+          "resources": [
+            { "title": "Latency numbers every programmer should know", "url": "https://gist.github.com/jboner/2841832", "kind": "article" }
+          ]
+        },
+        {
+          "id": "arch-amdahl",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["architecture.parallelism", "perf.scaling"],
+          "prompt": "Using Amdahl's law, what speedup do 10 and 1,000 cores give a program that is 90% parallelisable?",
+          "code": "def speedup(p, n):\n    return 1 / ((1 - p) + p / n)\n\nprint(round(speedup(0.9, 10), 2))\nprint(round(speedup(0.9, 1000), 2))",
+          "lang": "python",
+          "answer": "5.26\n9.91",
+          "explanation": "Speedup = 1 / ((1 − p) + p / n). With p = 0.9, the 10% serial part caps the speedup at 10× however many cores you add — 1,000 cores give only 9.9×. Reduce the serial fraction (locks, sequential setup, I/O) before buying more hardware. Gustafson's law is the optimistic counterpart: bigger problems parallelise better.",
+          "prerequisites": ["conc-vs-parallel"],
+          "resources": [
+            { "title": "Wikipedia — Amdahl's law", "url": "https://en.wikipedia.org/wiki/Amdahl%27s_law", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "5.26\n9.91" }
+        }
+      ]
+    }
+  ]
+}

@@ -123,6 +123,99 @@
           ]
         }
       ]
+    },
+    {
+      "id": "plat-environments",
+      "name": "Developer Environments Across Platforms",
+      "description": "Package managers, Linux distributions, Windows and macOS service models, shells, dotfiles and app sandboxing.",
+      "cards": [
+        {
+          "id": "plat-package-managers",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["platforms.packages"],
+          "prompt": "Which package managers do you meet on each platform, and what should you avoid mixing?",
+          "answer": "Linux: apt/dpkg (Debian, Ubuntu), dnf/rpm (Fedora, RHEL), pacman (Arch), apk (Alpine). macOS: Homebrew. Windows: winget, Scoop, Chocolatey. Language ecosystems add their own (npm, pip, cargo) and version managers (nvm, pyenv, mise, asdf).",
+          "explanation": "Avoid installing language packages globally with the system package manager and the language tool at once — the two fight over the same files. Keep the OS for system software and per-project tools (virtualenvs, local node_modules, mise) for application dependencies.",
+          "prerequisites": ["py-venv"],
+          "resources": [
+            { "title": "Homebrew documentation", "url": "https://docs.brew.sh/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-linux-distros",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["platforms.linux"],
+          "prompt": "Debian/Ubuntu vs RHEL-family vs Alpine as a server or container base",
+          "answer": "Debian and Ubuntu (apt, glibc) have the broadest package ecosystem and documentation; RHEL and its rebuilds (Rocky, Alma — dnf, glibc) offer long enterprise support; Alpine (apk, musl libc) is tiny and popular for containers.",
+          "columns": {
+            "left": { "title": "Debian / Ubuntu / RHEL", "points": ["glibc — maximum compatibility", "Large repositories, long support cycles", "Bigger images (slim variants help)", "Predictable for native dependencies"] },
+            "right": { "title": "Alpine", "points": ["musl libc and busybox", "~5 MB base image", "Some wheels and binaries unavailable", "DNS and performance quirks"] }
+          },
+          "explanation": "musl differs from glibc in DNS resolution, locale handling and performance, and prebuilt binaries (Python wheels, Node native modules) may not exist for it — so Alpine images can build slower or behave differently. Debian slim or distroless images are a common safer default.",
+          "prerequisites": ["ctr-image-hardening"],
+          "resources": [
+            { "title": "Docker docs — Choosing a base image", "url": "https://docs.docker.com/build/building/base-images/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-services",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["platforms.services"],
+          "prompt": "Running a background service: systemd (Linux) vs launchd (macOS) vs Windows Services",
+          "answer": "All three start processes at boot or login, restart them on failure and run them without a user session, but each has its own format: systemd unit files, launchd property-list files, and the Windows Service Control Manager (managed with `sc`, PowerShell or NSSM).",
+          "columns": {
+            "left": { "title": "systemd / launchd", "points": ["systemd: `.service` units + `systemctl`", "systemd: journald logs, cgroup limits", "launchd: `.plist` in LaunchDaemons/Agents", "launchd: `launchctl bootstrap` / `kickstart`"] },
+            "right": { "title": "Windows Services", "points": ["Service Control Manager", "`sc.exe`, `New-Service`, services.msc", "Runs as a service account", "Windows Event Log for output"] }
+          },
+          "explanation": "Cross-platform tools either abstract these (Node's pm2, the kardianos Go service library) or run in containers so the host's init system matters less. Log destinations differ too: journald, unified logging (`log show`) and the Windows Event Log.",
+          "prerequisites": ["linux-systemd"],
+          "resources": [
+            { "title": "Apple — Creating launch daemons and agents", "url": "https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-powershell",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["platforms.windows", "shell.powershell"],
+          "prompt": "What is fundamentally different about PowerShell compared with Bash?",
+          "answer": "PowerShell pipes .NET *objects*, not text: `Get-Process | Where-Object CPU -gt 100 | Sort-Object CPU` filters and sorts on typed properties without parsing columns. Commands follow a Verb-Noun convention and share a consistent parameter model.",
+          "explanation": "Structured pipelines remove fragile `awk`/`cut` parsing, at the cost of different habits. PowerShell 7 is cross-platform. Escaping and quoting rules differ from Bash — the backtick is the escape character — which trips people moving between them.",
+          "prerequisites": ["plat-windows-vs-unix"],
+          "resources": [
+            { "title": "Microsoft Learn — What is PowerShell?", "url": "https://learn.microsoft.com/en-us/powershell/scripting/overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-dotfiles",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["platforms.dev-environment"],
+          "prompt": "A new laptop takes you two days to set up and every machine behaves slightly differently. How do you fix that?",
+          "answer": "Keep dotfiles (shell, git, editor config) in a git repository and apply them with a tool (chezmoi, GNU Stow, or a bootstrap script), and pin project toolchains per repo (mise/asdf `.tool-versions`, `.nvmrc`, dev containers or Nix) so the project declares what it needs.",
+          "explanation": "Reproducible environments are the local equivalent of infrastructure as code. Dev containers go furthest — the whole toolchain in an image the editor attaches to — so \"works on my machine\" becomes \"works in the declared environment\".",
+          "prerequisites": ["iac-why"],
+          "resources": [
+            { "title": "Development Containers specification", "url": "https://containers.dev/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "plat-sandboxing",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["platforms.security", "security.sandboxing"],
+          "prompt": "How do modern desktop and mobile platforms sandbox applications?",
+          "answer": "Apps run with limited default access and must declare or request capabilities: iOS and Android sandboxes with permission prompts; the macOS App Sandbox with entitlements plus TCC prompts for camera, files and screen recording; Windows AppContainer for Store apps; Flatpak and Snap on Linux.",
+          "explanation": "Sandboxing contains the damage of a compromised or malicious app. For developers it means requesting the narrowest entitlements, handling denial gracefully, and expecting file access to go through system pickers rather than arbitrary paths.",
+          "prerequisites": ["plat-mobile-permissions"],
+          "resources": [
+            { "title": "Apple — App Sandbox", "url": "https://developer.apple.com/documentation/security/app-sandbox", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -160,6 +160,166 @@
           ]
         }
       ]
+    },
+    {
+      "id": "num-bases-encodings",
+      "name": "Bases, Bits & Encodings",
+      "description": "Binary, hex and octal, bitwise operators, base64, hashing versus encoding, decimals and fixed point.",
+      "cards": [
+        {
+          "id": "num-bases",
+          "type": "predict-output",
+          "difficulty": 1,
+          "tags": ["num.bases"],
+          "prompt": "What does this print?",
+          "code": "n = 255\nprint(n, format(n, 'x'), bin(n), oct(n))\nprint(int('2a', 16))",
+          "lang": "python",
+          "answer": "255 ff 0b11111111 0o377\n42",
+          "explanation": "The same number in decimal, hexadecimal (base 16), binary (base 2) and octal (base 8). One hex digit is exactly four bits, so a byte is two hex digits — which is why memory addresses, colours (`#ff8800`) and hashes are written in hex. `int(s, base)` parses any of them.",
+          "resources": [
+            { "title": "Python docs — Built-in functions — format", "url": "https://docs.python.org/3/library/functions.html#format", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "255 ff 0b11111111 0o377\n42" }
+        },
+        {
+          "id": "num-bitwise",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["num.bits"],
+          "prompt": "What does this print?",
+          "code": "a, b = 12, 10          # 0b1100, 0b1010\nprint(a & b, a | b, a ^ b, ~a, a << 2, a >> 2)",
+          "lang": "python",
+          "answer": "8 14 6 -13 48 3",
+          "explanation": "`&` keeps bits set in both, `|` bits set in either, `^` bits set in exactly one, `~x` flips every bit (which in two's complement equals −x − 1), `<<` multiplies by powers of two and `>>` floor-divides by them. Bit flags — permissions, feature sets — combine with `|` and test with `&`.",
+          "prerequisites": ["num-twos-complement"],
+          "resources": [
+            { "title": "Python docs — Bitwise operations on integer types", "url": "https://docs.python.org/3/library/stdtypes.html#bitwise-operations-on-integer-types", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "8 14 6 -13 48 3" }
+        },
+        {
+          "id": "num-base64",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["num.encoding", "web.encoding"],
+          "prompt": "What does this print?",
+          "code": "import base64\nprint(base64.b64encode(b'hi').decode())\nprint(len(base64.b64encode(b'abc')))",
+          "lang": "python",
+          "answer": "aGk=\n4",
+          "explanation": "Base64 maps every 3 bytes to 4 ASCII characters (6 bits each), padding with `=` — so output is about 33% larger than the input. It exists to carry binary data through text-only channels (JSON, email, data URLs), and provides no secrecy at all: anyone can decode it.",
+          "prerequisites": ["crypto-hash-vs-encrypt"],
+          "resources": [
+            { "title": "Wikipedia — Base64", "url": "https://en.wikipedia.org/wiki/Base64", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "aGk=\n4" }
+        },
+        {
+          "id": "num-decimal",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["num.decimal", "num.float"],
+          "prompt": "What does this print?",
+          "code": "from decimal import Decimal\nprint(0.1 + 0.2)\nprint(Decimal('0.1') + Decimal('0.2'))\nprint(Decimal(0.1 + 0.2))",
+          "lang": "python",
+          "answer": "0.30000000000000004\n0.3\n0.3000000000000000444089209850062616169452667236328125",
+          "explanation": "`Decimal` does exact base-10 arithmetic, so 0.1 + 0.2 is exactly 0.3 — but only when built from strings. `Decimal(0.1 + 0.2)` faithfully records the binary float's exact value, error included. Construct from strings (or integers), and set rounding explicitly for money.",
+          "prerequisites": ["num-float-precision"],
+          "resources": [
+            { "title": "Python docs — decimal — Decimal fixed point and floating point arithmetic", "url": "https://docs.python.org/3/library/decimal.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "0.30000000000000004\n0.3\n0.3000000000000000444089209850062616169452667236328125" }
+        },
+        {
+          "id": "num-money",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["num.decimal", "domain.money"],
+          "prompt": "How should an application store and calculate money?",
+          "answer": "As integers in the smallest unit (cents, pence) or with a decimal type, always paired with a currency code. Never binary floats. Round only at defined points using an explicit rule (banker's rounding or half-up, as the domain requires), and allocate remainders deliberately when splitting.",
+          "explanation": "Splitting £100 three ways cannot give three equal pence amounts — someone gets the extra penny, and the code must decide who. Currencies have different minor units (JPY has none, some have three), so the precision belongs with the currency, not in a global constant.",
+          "prerequisites": ["num-decimal"],
+          "resources": [
+            { "title": "Martin Fowler — Money pattern", "url": "https://martinfowler.com/eaaCatalog/money.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "num-float-compare",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["num.float"],
+          "prompt": "This loop never terminates. Why, and what is the fix?",
+          "code": "x = 0.0\nwhile x != 1.0:\n    x += 0.1",
+          "lang": "python",
+          "answer": "0.1 is not exactly representable, so repeatedly adding it never produces exactly 1.0 — `x` goes from 0.9999999999999999 to 1.0999999999999999 and skips the target. Loop on an integer counter (`for i in range(10): x = i / 10`) or compare with `<` or a tolerance.",
+          "explanation": "Floating-point errors accumulate with every operation. Use `math.isclose(a, b, rel_tol=1e-9)` for equality, and prefer integer counters for loop control. Summing many floats? `math.fsum` compensates for the lost low-order bits.",
+          "prerequisites": ["num-float-precision"],
+          "resources": [
+            { "title": "Python docs — Floating point arithmetic: issues and limitations", "url": "https://docs.python.org/3/tutorial/floatingpoint.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "num-text-time-2",
+      "name": "Text & Time II",
+      "description": "UTF-16 and surrogate pairs, character sets, epoch time and the year-2038 problem.",
+      "cards": [
+        {
+          "id": "num-utf16-length",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["text.unicode", "js.strings"],
+          "prompt": "In JavaScript, what does this print?",
+          "code": "const s = '😀';\nconsole.log(s.length);\nconsole.log([...s].length);\nconst family = '👨‍👩‍👧';\nconsole.log([...family].length);\nconsole.log([...new Intl.Segmenter().segment(family)].length);",
+          "lang": "javascript",
+          "answer": "2\n1\n5\n1",
+          "explanation": "JavaScript strings are UTF-16: characters outside the Basic Multilingual Plane, such as most emoji, take two code units (a surrogate pair), so `.length` says 2. Spreading or `for...of` iterates code points. A flag or family emoji is several code points joined — `Intl.Segmenter` counts graphemes, which is what users perceive.",
+          "prerequisites": ["text-unicode-utf8"],
+          "resources": [
+            { "title": "MDN — String: length", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/length", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "2\n1\n5\n1" }
+        },
+        {
+          "id": "num-encoding-mojibake",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["text.encoding"],
+          "prompt": "A user's name \"José\" shows up as \"JosÃ©\". What happened, and how do you prevent it?",
+          "answer": "UTF-8 bytes were decoded as Latin-1 (Windows-1252): é is two bytes in UTF-8, each shown as a separate Latin-1 character. Use UTF-8 end to end — declare it explicitly when reading files, in HTTP `Content-Type` charsets, and in database and connection settings.",
+          "explanation": "This garbling is called mojibake. Every boundary where bytes become text needs a declared encoding; relying on a platform default is how the same code works on one machine and breaks on another. MySQL's legacy `utf8` holds only three bytes per character — use `utf8mb4` for emoji.",
+          "prerequisites": ["text-unicode-utf8"],
+          "resources": [
+            { "title": "Wikipedia — Mojibake", "url": "https://en.wikipedia.org/wiki/Mojibake", "kind": "article" }
+          ]
+        },
+        {
+          "id": "num-unix-epoch",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["time.epoch", "num.integers"],
+          "prompt": "What is Unix time, and what is the year-2038 problem?",
+          "answer": "Seconds elapsed since 1970-01-01T00:00:00Z, ignoring leap seconds. Stored in a signed 32-bit integer, it overflows on 2038-01-19 at 03:14:07 UTC and wraps to December 1901.",
+          "explanation": "Modern 64-bit systems use a 64-bit `time_t`, but 32-bit embedded devices, file formats, database columns and protocols still carry 32-bit timestamps. Watch the unit too: JavaScript and Java use milliseconds, Unix APIs seconds — mixing them puts dates in 1970 or the far future.",
+          "prerequisites": ["time-utc-storage"],
+          "resources": [
+            { "title": "Wikipedia — Year 2038 problem", "url": "https://en.wikipedia.org/wiki/Year_2038_problem", "kind": "article" }
+          ]
+        },
+        {
+          "id": "num-leap-time",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["time.clocks"],
+          "prompt": "Why should you measure durations with a monotonic clock rather than the wall clock?",
+          "answer": "The wall clock can jump backwards or forwards — NTP corrections, manual changes, leap-second handling — so `end - start` can come out negative or wildly wrong. A monotonic clock only moves forward at a steady rate, which is what elapsed time needs.",
+          "explanation": "Use `time.monotonic()` / `perf_counter()` in Python, `performance.now()` in browsers, `System.nanoTime()` in Java, `time.Since` in Go (which uses the monotonic reading `time.Now` carries), and `Stopwatch` in .NET. Wall-clock time is for timestamps shown to humans or stored, never for timeouts and benchmarks.",
+          "prerequisites": ["time-dst-bug"],
+          "resources": [
+            { "title": "Python docs — time.monotonic", "url": "https://docs.python.org/3/library/time.html#time.monotonic", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

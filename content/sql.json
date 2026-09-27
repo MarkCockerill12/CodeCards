@@ -190,6 +190,250 @@
           "resources": [
             { "title": "OWASP — SQL Injection Prevention Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html", "kind": "docs" }
           ]
+        },
+        {
+          "id": "sql-transactions-practice",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["sql.transactions", "db.integrity"],
+          "prompt": "The second debit violates the CHECK constraint. What does this print?",
+          "code": "import sqlite3\ndb = sqlite3.connect(':memory:', isolation_level=None)   # autocommit; we control transactions\ndb.executescript(\"\"\"\nCREATE TABLE accounts (name TEXT PRIMARY KEY, balance INT CHECK (balance >= 0));\nINSERT INTO accounts VALUES ('ada', 100), ('bob', 50);\n\"\"\")\ntry:\n    db.execute('BEGIN')\n    db.execute(\"UPDATE accounts SET balance = balance + 80 WHERE name = 'bob'\")\n    db.execute(\"UPDATE accounts SET balance = balance - 80 WHERE name = 'ada'\")\n    db.execute(\"UPDATE accounts SET balance = balance - 80 WHERE name = 'ada'\")  # violates CHECK\n    db.execute('COMMIT')\nexcept sqlite3.IntegrityError:\n    db.execute('ROLLBACK')\nprint(db.execute('SELECT name, balance FROM accounts ORDER BY name').fetchall())",
+          "lang": "python",
+          "answer": "[('ada', 100), ('bob', 50)]",
+          "explanation": "Statements between `BEGIN` and `COMMIT` succeed or fail as a unit: on any error, `ROLLBACK` undoes every change in the transaction, including the credit to bob that had already run. Without an explicit transaction, most drivers autocommit each statement, so a failure half-way leaves money created from nothing.",
+          "prerequisites": ["sql-acid", "sql-constraints"],
+          "resources": [
+            { "title": "PostgreSQL docs — Transactions tutorial", "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[('ada', 100), ('bob', 50)]" }
+        },
+        {
+          "id": "sql-dml-safety",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["sql.dml", "ops.safety"],
+          "prompt": "You need to fix one customer's email in production by hand. How do you avoid the classic `UPDATE` without `WHERE` disaster?",
+          "answer": "Run the `WHERE` as a `SELECT` first and check the row count; open a transaction, run the `UPDATE`, confirm the reported affected-row count matches, then `COMMIT` (or `ROLLBACK`). Use a role with only the permissions needed, and prefer a reviewed migration or admin tool over ad-hoc SQL.",
+          "explanation": "Safety nets exist too: MySQL's `--safe-updates` rejects UPDATE and DELETE without a key in the WHERE clause, and some clients warn before running them. Point-in-time recovery is the last resort — slow and disruptive, so rely on it least.",
+          "prerequisites": ["sql-transactions-practice"],
+          "resources": [
+            { "title": "MySQL docs — Using safe-updates mode", "url": "https://dev.mysql.com/doc/refman/8.4/en/mysql-tips.html#safe-updates", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sql-querying-2",
+      "name": "Aggregation, Sets & Upserts",
+      "description": "GROUP BY and HAVING, set operators, EXISTS, CASE and COALESCE, upserts and keyset pagination.",
+      "cards": [
+        {
+          "id": "sql-group-having",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["sql.aggregation"],
+          "prompt": "What rows does this return?",
+          "code": "import sqlite3\ndb = sqlite3.connect(':memory:')\ndb.executescript(\"\"\"\nCREATE TABLE orders (customer TEXT, amount INT);\nINSERT INTO orders VALUES\n  ('ada', 50), ('ada', 70), ('bob', 20), ('cy', 90), ('cy', 5);\n\"\"\")\nfor row in db.execute(\"\"\"\nSELECT customer, COUNT(*), SUM(amount)\nFROM orders\nGROUP BY customer\nHAVING SUM(amount) > 50\nORDER BY customer\n\"\"\"):\n    print(row)",
+          "lang": "python",
+          "answer": "('ada', 2, 120)\n('cy', 2, 95)",
+          "explanation": "`GROUP BY` collapses rows into one per group; aggregates (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`) summarise each group. `WHERE` filters rows before grouping, `HAVING` filters groups after — so a condition on `SUM(amount)` must go in HAVING. Every selected column must be grouped or aggregated.",
+          "prerequisites": ["sql-logical-order"],
+          "resources": [
+            { "title": "PostgreSQL docs — Aggregate functions", "url": "https://www.postgresql.org/docs/current/tutorial-agg.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "('ada', 2, 120)\n('cy', 2, 95)" }
+        },
+        {
+          "id": "sql-union",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["sql.set-operations"],
+          "prompt": "`UNION` vs `UNION ALL`",
+          "answer": "`UNION` combines result sets and removes duplicates; `UNION ALL` keeps every row.",
+          "columns": {
+            "left": { "title": "UNION", "points": ["Deduplicates the combined rows", "Needs a sort or hash — extra cost", "Correct when overlap must be removed", "Easy to use by accident"] },
+            "right": { "title": "UNION ALL", "points": ["Keeps every row, including duplicates", "Just concatenates — cheap", "Right default when sets are disjoint", "Preserves counts for later aggregation"] }
+          },
+          "explanation": "Removing duplicates needs a sort or hash over the whole result, so `UNION ALL` is much cheaper — use it whenever duplicates are impossible or wanted. `INTERSECT` and `EXCEPT` complete the set operators. All require the same number of columns with compatible types.",
+          "resources": [
+            { "title": "PostgreSQL docs — Combining queries", "url": "https://www.postgresql.org/docs/current/queries-union.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-exists",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["sql.subqueries"],
+          "prompt": "When should you use `EXISTS` rather than `IN` or a JOIN?",
+          "answer": "Use `EXISTS` for \"rows that have at least one related row\" — it stops at the first match and never duplicates outer rows. A JOIN would multiply rows when there are several matches (needing DISTINCT), and `NOT IN` returns no rows at all if the subquery yields a NULL.",
+          "explanation": "`NOT EXISTS` is the safe anti-join: \"customers with no orders\" should be `WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)`. Modern planners often turn IN and EXISTS into the same semi-join plan, so choose for correctness and clarity.",
+          "prerequisites": ["sql-null-semantics"],
+          "resources": [
+            { "title": "PostgreSQL docs — Subquery expressions — EXISTS", "url": "https://www.postgresql.org/docs/current/functions-subquery.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-case-coalesce",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["sql.expressions", "sql.nulls"],
+          "prompt": "What rows does this return?",
+          "code": "import sqlite3\ndb = sqlite3.connect(':memory:')\ndb.executescript(\"\"\"\nCREATE TABLE orders (customer TEXT, amount INT);\nINSERT INTO orders VALUES\n  ('ada', 50), ('ada', 70), ('bob', 20), ('cy', 90), ('cy', 5);\nCREATE TABLE customers (name TEXT);\nINSERT INTO customers VALUES ('ada'), ('bob'), ('cy'), ('dee');\n\"\"\")\nfor row in db.execute(\"\"\"\nSELECT c.name,\n       CASE WHEN COALESCE(SUM(o.amount), 0) >= 90 THEN 'big' ELSE 'small' END,\n       COALESCE(SUM(o.amount), 0)\nFROM customers c LEFT JOIN orders o ON o.customer = c.name\nGROUP BY c.name\nORDER BY c.name\n\"\"\"):\n    print(row)",
+          "lang": "python",
+          "answer": "('ada', 'big', 120)\n('bob', 'small', 20)\n('cy', 'big', 95)\n('dee', 'small', 0)",
+          "explanation": "`CASE WHEN ... THEN ... ELSE ... END` is SQL's conditional expression, usable anywhere a value is. `COALESCE(a, b, ...)` returns the first non-NULL argument — here it turns the missing total for a customer with no orders into 0. The LEFT JOIN keeps `dee` despite having no orders.",
+          "prerequisites": ["sql-join-types"],
+          "resources": [
+            { "title": "PostgreSQL docs — Conditional expressions", "url": "https://www.postgresql.org/docs/current/functions-conditional.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "('ada', 'big', 120)\n('bob', 'small', 20)\n('cy', 'big', 95)\n('dee', 'small', 0)" }
+        },
+        {
+          "id": "sql-upsert",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["sql.dml", "sql.concurrency"],
+          "prompt": "You need \"insert this row, or update it if the key already exists\" — safely under concurrency. How?",
+          "answer": "A native upsert: `INSERT ... ON CONFLICT (key) DO UPDATE SET ...` in PostgreSQL and SQLite, `ON DUPLICATE KEY UPDATE` in MySQL, `MERGE` in SQL Server and others. It relies on a unique constraint and is atomic.",
+          "explanation": "The hand-rolled \"SELECT, then INSERT or UPDATE\" races: two requests both see no row and both insert, producing a duplicate or a constraint error. Let the unique constraint arbitrate — it is the only part of the system that sees every concurrent writer.",
+          "prerequisites": ["sql-constraints"],
+          "resources": [
+            { "title": "PostgreSQL docs — INSERT — ON CONFLICT clause", "url": "https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-keyset-pagination",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["sql.pagination", "sql.performance"],
+          "prompt": "Page 5,000 of this feed takes seconds. What is the problem and the SQL fix?",
+          "code": "SELECT id, title, created_at\nFROM posts\nORDER BY created_at DESC\nLIMIT 20 OFFSET 100000;",
+          "lang": "sql",
+          "answer": "`OFFSET 100000` still reads and discards 100,000 rows. Use keyset (seek) pagination: remember the last row's sort key and continue after it — `WHERE (created_at, id) < ($last_ts, $last_id) ORDER BY created_at DESC, id DESC LIMIT 20` — which an index on `(created_at, id)` serves directly.",
+          "explanation": "The `id` tiebreaker makes the order total, so rows with equal timestamps are neither skipped nor repeated. Keyset pages stay fast at any depth and are stable while new rows arrive; the trade-off is no jumping to an arbitrary page number.",
+          "prerequisites": ["api-pagination"],
+          "resources": [
+            { "title": "Use The Index, Luke — Paging through results", "url": "https://use-the-index-luke.com/sql/partial-results/fetch-next-page", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-other-joins",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["sql.joins"],
+          "prompt": "What do FULL OUTER, CROSS and self joins do?",
+          "answer": "FULL OUTER keeps unmatched rows from both sides, padding with NULLs — useful for reconciling two sources. CROSS JOIN pairs every row with every row (a Cartesian product), for generating combinations. A self join joins a table to itself under two aliases — employees to their managers, or rows to their neighbours.",
+          "explanation": "An accidental Cartesian product — a missing or wrong join condition — is a classic way to turn a small query into millions of rows. If a result count looks like the product of two table sizes, check the ON clause first.",
+          "prerequisites": ["sql-join-types"],
+          "resources": [
+            { "title": "PostgreSQL docs — Joined tables", "url": "https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sql-schema",
+      "name": "Schema, Constraints & Advanced Indexing",
+      "description": "Keys and constraints, views, covering and partial indexes, triggers and procedures, and ORMs.",
+      "cards": [
+        {
+          "id": "sql-constraints",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["sql.constraints", "db.integrity"],
+          "prompt": "Which constraints should a schema use, and why enforce them in the database rather than only in code?",
+          "answer": "PRIMARY KEY (unique row identity), FOREIGN KEY (references must exist), UNIQUE, NOT NULL, CHECK (row-level rules such as `amount >= 0`) and, in Postgres, EXCLUDE (no overlapping ranges).",
+          "explanation": "Application checks race and get bypassed by scripts, migrations and other services; constraints hold for every writer, always. They also document the model and help the planner. Index foreign-key columns — deletes on the parent otherwise scan the child table.",
+          "resources": [
+            { "title": "PostgreSQL docs — Constraints", "url": "https://www.postgresql.org/docs/current/ddl-constraints.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-surrogate-natural",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["sql.keys", "db.modelling"],
+          "prompt": "Surrogate keys vs natural keys",
+          "answer": "A natural key comes from the data itself (email, ISBN, country code); a surrogate key is a meaningless generated identifier (auto-increment integer, UUID).",
+          "columns": {
+            "left": { "title": "Natural key", "points": ["Meaningful: email, ISBN", "No extra column", "Can change — cascading updates", "Can leak information in URLs"] },
+            "right": { "title": "Surrogate key", "points": ["Opaque generated ID", "Never needs to change", "Keep a UNIQUE on the natural key too", "UUIDv7 or bigint identity"] }
+          },
+          "explanation": "Natural keys change more often than anyone expects — people change emails, and \"unique\" business codes get reused — and every change cascades through foreign keys. The common pattern is a surrogate primary key plus a UNIQUE constraint on the natural key. For UUIDs prefer time-ordered UUIDv7, which keeps B-tree inserts local.",
+          "resources": [
+            { "title": "Wikipedia — Surrogate key", "url": "https://en.wikipedia.org/wiki/Surrogate_key", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-views",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["sql.views", "sql.performance"],
+          "prompt": "View vs materialised view",
+          "answer": "A view is a stored query, re-run every time it is read; a materialised view stores the query's result and must be refreshed.",
+          "columns": {
+            "left": { "title": "View", "points": ["A named query, no stored data", "Always current", "Only as fast as the underlying query", "Good for abstraction and access control"] },
+            "right": { "title": "Materialised view", "points": ["Stores the result set", "Stale until refreshed", "Fast reads, indexable", "Good for dashboards and heavy aggregates"] }
+          },
+          "explanation": "Views give abstraction and security (expose a subset of columns) at no storage cost. Materialised views make expensive aggregations cheap to read at the price of staleness and refresh cost — `REFRESH MATERIALIZED VIEW CONCURRENTLY` avoids blocking readers in Postgres.",
+          "resources": [
+            { "title": "PostgreSQL docs — Materialized views", "url": "https://www.postgresql.org/docs/current/rules-materializedviews.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-covering-index",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["sql.indexes", "sql.performance"],
+          "prompt": "What is a covering (index-only) scan, and how do you get one?",
+          "answer": "When every column a query needs is in the index, the database answers from the index alone without visiting the table rows. Add the extra columns to the index key, or as non-key payload with `INCLUDE (col)` in Postgres and SQL Server.",
+          "explanation": "It avoids a random heap lookup per matching row — often the dominant cost. In Postgres it also depends on the visibility map being current (vacuumed). `SELECT *` defeats it, which is one more reason to select only the columns you need.",
+          "prerequisites": ["sql-index-leftmost"],
+          "resources": [
+            { "title": "Use The Index, Luke — Index-only scan", "url": "https://use-the-index-luke.com/sql/clustering/index-only-scan-covering-index", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-partial-expression-index",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["sql.indexes"],
+          "prompt": "Only 1% of orders are `pending`, and every dashboard query filters `WHERE status = 'pending'`. Also, logins look up users by `lower(email)`. Which indexes?",
+          "answer": "A partial index — `CREATE INDEX ON orders (created_at) WHERE status = 'pending'` — indexes only the 1% you query, keeping it tiny. An expression index — `CREATE INDEX ON users (lower(email))` — lets the planner use an index for the function call.",
+          "explanation": "A plain index on `email` cannot serve `WHERE lower(email) = ...`, because the indexed values differ from the expression. Partial unique indexes also enforce rules like \"only one active subscription per user\".",
+          "prerequisites": ["sql-index-cost"],
+          "resources": [
+            { "title": "PostgreSQL docs — Partial indexes", "url": "https://www.postgresql.org/docs/current/indexes-partial.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-triggers-procs",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["sql.procedures", "architecture.logic-placement"],
+          "prompt": "Should business logic live in triggers and stored procedures?",
+          "answer": "Sparingly. Keep integrity rules that must hold for every writer in the database — constraints first, triggers for audit trails or derived columns. Keep business workflows in application code, where they are versioned, tested, reviewed and observable like everything else.",
+          "explanation": "Triggers act invisibly: a simple UPDATE can cascade into unexpected work, and they are hard to test and debug. Stored procedures earn their place for set-based operations close to the data or where many applications must share one guarded interface.",
+          "resources": [
+            { "title": "PostgreSQL docs — Triggers", "url": "https://www.postgresql.org/docs/current/triggers.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-orm-tradeoffs",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["sql.orm", "db.access"],
+          "prompt": "ORM vs raw SQL / query builder",
+          "answer": "An ORM maps tables to objects and generates SQL; raw SQL or a thin query builder keeps you writing the queries yourself.",
+          "columns": {
+            "left": { "title": "ORM", "points": ["Fast CRUD with little code", "Handles mapping, migrations, identity", "Hides N+1 and over-fetching", "Complex queries fight the abstraction"] },
+            "right": { "title": "SQL / query builder", "points": ["Full control and visibility", "Easy to optimise and EXPLAIN", "More boilerplate mapping", "Parameterise — never interpolate strings"] }
+          },
+          "explanation": "Use the ORM for routine CRUD and drop to SQL for reports, bulk operations and anything performance-critical. Whatever you use, log the generated SQL in development and watch query counts per request — most ORM problems are invisible until you look at what it actually sent.",
+          "prerequisites": ["sql-n-plus-one"],
+          "resources": [
+            { "title": "Martin Fowler — OrmHate", "url": "https://martinfowler.com/bliki/OrmHate.html", "kind": "article" }
+          ]
         }
       ]
     }

@@ -166,7 +166,7 @@
           "code": "try {\n  items.forEach(async (item) => {\n    await process(item);   // throws\n  });\n} catch (e) {\n  console.error('caught', e);\n}",
           "lang": "javascript",
           "answer": "`forEach` ignores the returned promises, so the async callbacks run detached — their rejections become unhandled rejections outside the try block. Use `for...of` with `await`, or `await Promise.all(items.map(...))`.",
-          "explanation": "`try/catch` only catches synchronous throws in its own frame. An async callback returns a promise immediately; the throw happens later, on a different tick, with nobody listening. Array methods other than `map` have no idea what a promise is.",
+          "explanation": "`try/catch` only catches synchronous throws in its own frame. An async callback returns a promise immediately; the throw happens later, on a different tick, with nobody listening. No array method awaits its callback — `map` merely returns the promises so that you can hand them to `Promise.all`.",
           "prerequisites": ["js-promise-states"],
           "resources": [
             { "title": "MDN — for await...of", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of", "kind": "docs" }
@@ -261,9 +261,405 @@
           "tags": ["js.memory", "js.performance"],
           "prompt": "A single-page app grows to 2 GB after an hour of navigation. What are the usual suspects?",
           "answer": "Listeners and timers never removed, detached DOM nodes still referenced by JS, unbounded caches/arrays, and closures capturing large objects.",
-          "explanation": "GC frees only unreachable objects. An `addEventListener` on `window`, an `setInterval`, or a module-level array holds references forever. Fix by removing listeners on teardown (AbortController signals make this one line), clearing timers, and bounding caches — `WeakMap`/`WeakRef` where the key's lifetime should drive the entry's.",
+          "explanation": "GC frees only unreachable objects. An `addEventListener` on `window`, a `setInterval`, or a module-level array holds references forever. Fix by removing listeners on teardown (AbortController signals make this one line), clearing timers, and bounding caches — `WeakMap`/`WeakRef` where the key's lifetime should drive the entry's.",
           "resources": [
             { "title": "MDN — Memory management", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_management", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "js-values-functions",
+      "name": "Values, Types & Functions",
+      "description": "Primitives, coercion, scoping, functions and the quirks every JavaScript developer meets.",
+      "cards": [
+        {
+          "id": "js-primitive-types",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.types", "js.core"],
+          "prompt": "What are JavaScript's primitive types, and what is everything else?",
+          "answer": "Seven primitives: `string`, `number`, `bigint`, `boolean`, `undefined`, `null` and `symbol`. Everything else — arrays, functions, dates, maps — is an object, passed and compared by reference.",
+          "explanation": "Primitives are immutable and compared by value; objects are compared by identity, so `{} === {}` is false. Primitives temporarily wrap in objects when you call methods on them (`\"abc\".toUpperCase()`), which is why they appear to have methods.",
+          "resources": [
+            { "title": "MDN — JavaScript data types and data structures", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-typeof-quirks",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["js.types", "js.gotchas"],
+          "prompt": "What does this print?",
+          "code": "console.log(typeof null);\nconsole.log(typeof function () {});\nconsole.log(typeof NaN);\nconsole.log(typeof []);\nconsole.log(Array.isArray([]));",
+          "lang": "javascript",
+          "answer": "object\nfunction\nnumber\nobject\ntrue",
+          "explanation": "`typeof null === \"object\"` is a bug from the first JavaScript implementation that can never be fixed without breaking the web. `NaN` is a number. Arrays report `\"object\"`, so test with `Array.isArray`. Test for null with `x === null`, and for \"null or undefined\" with `x == null`.",
+          "resources": [
+            { "title": "MDN — typeof", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "object\nfunction\nnumber\nobject\ntrue" }
+        },
+        {
+          "id": "js-var-let-const",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["js.scope", "js.core"],
+          "prompt": "`var` vs `let` vs `const`",
+          "answer": "`var` is function-scoped and hoisted as `undefined`; `let` and `const` are block-scoped and in the temporal dead zone until declared. `const` forbids reassignment, not mutation.",
+          "columns": {
+            "left": { "title": "var", "points": ["Function scope — leaks out of blocks", "Hoisted and initialised to undefined", "Re-declarable in the same scope", "Creates a property on the global object at top level"] },
+            "right": { "title": "let / const", "points": ["Block scope", "Temporal dead zone before the declaration", "Redeclaration is a SyntaxError", "`const` binding cannot be reassigned"] }
+          },
+          "explanation": "Default to `const`, use `let` when you genuinely reassign, and never `var` in new code. `const arr = []; arr.push(1)` is legal — freeze with `Object.freeze` (shallowly) if you need immutability.",
+          "prerequisites": ["js-hoisting-tdz"],
+          "resources": [
+            { "title": "MDN — let", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-truthy-falsy",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["js.types", "js.coercion"],
+          "prompt": "What does this print?",
+          "code": "const count = 0;\nconsole.log(count ?? 10);\nconsole.log('' || 'fallback');\nconsole.log(count || 0);\nconsole.log(JSON.stringify([] || 'x'));\nconsole.log(Boolean('0'));",
+          "lang": "javascript",
+          "answer": "0\nfallback\n0\n[]\ntrue",
+          "explanation": "The falsy values are `false`, `0`, `-0`, `0n`, `\"\"`, `null`, `undefined` and `NaN` — everything else, including `[]`, `{}` and `\"0\"`, is truthy. `||` falls back on any falsy value, which silently replaces a legitimate `0`; `??` falls back only on null or undefined.",
+          "resources": [
+            { "title": "MDN — Falsy", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Falsy", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "0\nfallback\n0\n[]\ntrue" }
+        },
+        {
+          "id": "js-arrow-vs-function",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["js.functions", "js.this"],
+          "prompt": "Arrow functions vs `function` declarations",
+          "answer": "Arrows have lexical `this`, `arguments` and `super`, cannot be constructed with `new`, and have no `prototype`. Regular functions get `this` from the call site and are hoisted when declared.",
+          "columns": {
+            "left": { "title": "Arrow `() => {}`", "points": ["`this` inherited from the enclosing scope", "No `arguments` object — use rest params", "Cannot be used with `new`", "Concise body returns implicitly"] },
+            "right": { "title": "`function` / method", "points": ["`this` decided by how it is called", "Has `arguments`", "Constructible (declarations and expressions)", "Declarations are hoisted"] }
+          },
+          "explanation": "Use arrows for callbacks and small expressions — especially inside methods, where you want the enclosing `this`. Use regular functions (or class methods) for object methods that need their own receiver, constructors, and generators.",
+          "prerequisites": ["js-this-binding"],
+          "resources": [
+            { "title": "MDN — Arrow function expressions", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-destructuring-defaults",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["js.destructuring", "js.functions"],
+          "prompt": "What does this print?",
+          "code": "function connect({ host = 'localhost', port = 8080, retries = 3 } = {}) {\n  console.log(retries, port, host);\n}\nconnect();\nconst [head, ...tail] = [1, 2, 3];\nconsole.log(head, tail);",
+          "lang": "javascript",
+          "answer": "3 8080 localhost\n1 [ 2, 3 ]",
+          "explanation": "Destructuring defaults apply only when the value is `undefined` — not for `null`, `0` or `\"\"`. The trailing `= {}` makes the whole options object optional; without it, calling `connect()` throws when destructuring `undefined`. Rest elements collect the remainder into a new array.",
+          "resources": [
+            { "title": "MDN — Destructuring assignment", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "3 8080 localhost\n1 [ 2, 3 ]" }
+        },
+        {
+          "id": "js-closure-definition",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["js.closures", "js.functions"],
+          "prompt": "What is a closure, and what is it used for?",
+          "answer": "A function together with the variables of the scope it was created in. The inner function keeps those variables alive and can read and update them after the outer function has returned.",
+          "explanation": "Closures give private state without classes (counters, memoisation caches, once-only functions), power callbacks and event handlers, and underlie module patterns and React hooks. The cost: anything a long-lived closure captures stays in memory as long as the closure does.",
+          "resources": [
+            { "title": "MDN — Closures", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Closures", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-default-sort",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["js.arrays", "js.gotchas"],
+          "prompt": "What does this print?",
+          "code": "console.log([10, 2, 25, 1].sort());\nconsole.log([10, 2, 25, 1].sort((a, b) => a - b));",
+          "lang": "javascript",
+          "answer": "[ 1, 10, 2, 25 ]\n[ 1, 2, 10, 25 ]",
+          "explanation": "Without a comparator, `Array.prototype.sort` converts elements to strings and compares UTF-16 code units, so `\"10\" < \"2\"`. Always pass `(a, b) => a - b` for numbers and `localeCompare` (or `Intl.Collator`) for human text. `sort` mutates in place; `toSorted()` returns a new array.",
+          "resources": [
+            { "title": "MDN — Array.prototype.sort()", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "[ 1, 10, 2, 25 ]\n[ 1, 2, 10, 25 ]" }
+        },
+        {
+          "id": "js-array-methods",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["js.arrays"],
+          "prompt": "What do `map`, `filter`, `reduce`, `find`, `some` and `every` return?",
+          "answer": "`map` a new array of transformed items; `filter` a new array of items passing the test; `reduce` a single accumulated value; `find` the first match or `undefined`; `some`/`every` a boolean, short-circuiting.",
+          "explanation": "None of them mutate the source array. Always give `reduce` an initial value — without one it throws on an empty array and uses the first element as the accumulator. The mutating methods to watch for are `push`, `splice`, `sort` and `reverse`; ES2023 added non-mutating `toSorted`, `toReversed` and `with`.",
+          "resources": [
+            { "title": "MDN — Array", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-error-handling",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["js.errors"],
+          "prompt": "How should you throw and wrap errors in modern JavaScript?",
+          "answer": "Throw `Error` instances (or subclasses), never strings, so you get a stack trace. When translating a low-level failure, pass the original as `cause`: `throw new Error(\"config load failed\", { cause: err })`.",
+          "explanation": "Subclass `Error` with a `name` for errors callers branch on. In `catch (e)`, `e` is `unknown` in TypeScript because anything can be thrown — check `e instanceof Error` before reading `.message`. Unhandled promise rejections crash modern Node, so every promise chain needs an owner.",
+          "resources": [
+            { "title": "MDN — Error: cause", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "js-objects-collections",
+      "name": "Objects, Classes & Iteration",
+      "description": "Classes, property semantics, generators, promise combinators and the built-in collections.",
+      "cards": [
+        {
+          "id": "js-classes-private",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["js.classes", "oop.encapsulation"],
+          "prompt": "What do `#private` fields give you that an underscore convention does not?",
+          "answer": "Hard privacy enforced by the language: `#balance` cannot be read or written from outside the class body — not even via bracket access or reflection — and accessing it on the wrong object throws a TypeError.",
+          "explanation": "Classes are syntax over prototypes, but `#` fields are genuinely new semantics. Use `static` for class-level members and static blocks for complex static initialisation. `#x in obj` checks brand membership without throwing.",
+          "prerequisites": ["js-prototype-chain"],
+          "resources": [
+            { "title": "MDN — Private properties", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Private_properties", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-object-freeze",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["js.objects", "js.immutability"],
+          "prompt": "What does this print?",
+          "code": "const cfg = Object.freeze({ level: 1, list: [1] });\ntry { cfg.level = 2; } catch {}\ncfg.list.push(2);\nconsole.log(cfg.level);\nconsole.log(cfg.list);",
+          "lang": "javascript",
+          "answer": "1\n[ 1, 2 ]",
+          "explanation": "`Object.freeze` is shallow: top-level properties become read-only (assignments throw in strict mode, silently fail otherwise), but nested objects stay mutable. For deep immutability, freeze recursively or use immutable data patterns. ES modules are always strict, which is why the assignment here is wrapped in try/catch.",
+          "prerequisites": ["js-spread-shallow"],
+          "resources": [
+            { "title": "MDN — Object.freeze()", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "1\n[ 1, 2 ]" }
+        },
+        {
+          "id": "js-json-pitfalls",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["js.json", "js.gotchas"],
+          "prompt": "What does this print?",
+          "code": "console.log(JSON.stringify({\n  a: 1,\n  b: undefined,\n  c: NaN,\n  d: new Date('2026-01-01T00:00:00Z'),\n  e: () => 1,\n}));",
+          "lang": "javascript",
+          "answer": "{\"a\":1,\"c\":null,\"d\":\"2026-01-01T00:00:00.000Z\"}",
+          "explanation": "`JSON.stringify` drops properties whose value is `undefined`, a function or a symbol; turns `NaN` and `Infinity` into `null`; calls `toJSON` (so dates become ISO strings); and throws on `BigInt` and on cycles. Round-tripping through JSON is lossy — dates come back as strings — which is why `structuredClone` exists.",
+          "resources": [
+            { "title": "MDN — JSON.stringify()", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "{\"a\":1,\"c\":null,\"d\":\"2026-01-01T00:00:00.000Z\"}" }
+        },
+        {
+          "id": "js-generators",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["js.generators", "js.iteration"],
+          "prompt": "What does this print?",
+          "code": "function* naturals() {\n  let n = 1;\n  while (true) yield n++;\n}\nfunction* take(it, k) {\n  for (const x of it) {\n    if (k-- <= 0) return;\n    yield x;\n  }\n}\nconsole.log([...take(naturals(), 5)]);",
+          "lang": "javascript",
+          "answer": "[ 1, 2, 3, 4, 5 ]",
+          "explanation": "A generator function (`function*`) returns an iterator that runs lazily, pausing at each `yield`. This one is infinite, which is safe because `take` pulls only five values. Generators make lazy pipelines and custom iterables trivial, and `yield*` delegates to another iterable.",
+          "prerequisites": ["js-iterable-protocol"],
+          "resources": [
+            { "title": "MDN — function*", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "[ 1, 2, 3, 4, 5 ]" }
+        },
+        {
+          "id": "js-promise-combinators",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["js.promises", "js.async"],
+          "prompt": "`Promise.all` vs `allSettled` vs `race` vs `any`",
+          "answer": "`all` resolves with every value or rejects on the first rejection; `allSettled` always resolves with each outcome; `race` settles with whichever settles first; `any` resolves with the first fulfilment and rejects only if all reject.",
+          "columns": {
+            "left": { "title": "all / allSettled", "points": ["`all`: fail-fast, values in input order", "`all`: one rejection loses the other results", "`allSettled`: `{status, value | reason}` per input", "`allSettled`: right when partial failure is fine"] },
+            "right": { "title": "race / any", "points": ["`race`: first to settle wins, even a rejection", "`race`: classic timeout wrapper", "`any`: first *success* wins", "`any`: AggregateError if every input rejects"] }
+          },
+          "explanation": "None of them cancel the losing promises — the other requests keep running. Pair `race` with an `AbortController` (or use `AbortSignal.timeout(ms)` with fetch) so a timeout actually stops the work.",
+          "prerequisites": ["js-promise-states"],
+          "resources": [
+            { "title": "MDN — Promise", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-weakmap",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["js.collections", "js.memory"],
+          "prompt": "You need to attach metadata to DOM nodes or objects you do not own without leaking them after they are removed. What do you use?",
+          "answer": "A `WeakMap` keyed by the object. Entries do not keep keys alive, so when the node or object becomes otherwise unreachable, its metadata is garbage-collected with it.",
+          "explanation": "WeakMaps are not iterable and have no `size`, because their contents depend on GC timing. A normal `Map` keyed by DOM nodes is a classic leak: removed elements stay reachable through the map forever. `WeakRef` and `FinalizationRegistry` exist for rarer cases.",
+          "prerequisites": ["js-map-vs-object"],
+          "resources": [
+            { "title": "MDN — WeakMap", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-symbols",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["js.types", "js.metaprogramming"],
+          "prompt": "What is a `Symbol`, and what are well-known symbols for?",
+          "answer": "A unique, non-string property key: two symbols with the same description are still different. Well-known symbols such as `Symbol.iterator`, `Symbol.asyncIterator` and `Symbol.toPrimitive` let your objects plug into language protocols.",
+          "explanation": "Symbol-keyed properties do not collide with string keys and are skipped by `for...in`, `Object.keys` and `JSON.stringify`, which makes them good for library metadata. `Symbol.for(key)` returns a shared symbol from a global registry when you need the same symbol across modules.",
+          "resources": [
+            { "title": "MDN — Symbol", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-bigint",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["js.numbers", "num.integers"],
+          "prompt": "To represent integers beyond 2^53 exactly in JavaScript, use the ___ type, written with an `n` suffix such as `9007199254740993n`.",
+          "answer": "BigInt",
+          "explanation": "BigInts have arbitrary precision but cannot be mixed with Numbers in arithmetic (`1n + 1` throws a TypeError), are not supported by `Math`, and cannot be serialised by `JSON.stringify` without a custom replacer. Use them for 64-bit IDs and exact integer maths, not for money with decimals.",
+          "prerequisites": ["js-number-precision"],
+          "resources": [
+            { "title": "MDN — BigInt", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "js-runtime",
+      "name": "Browser & Node Runtime",
+      "description": "The DOM event model, fetch and cancellation, the event loop in Node, and packaging.",
+      "cards": [
+        {
+          "id": "js-event-delegation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["js.dom", "web.events"],
+          "prompt": "A list has 5,000 rows, each with a delete button, and rows are added dynamically. How do you handle clicks?",
+          "answer": "Event delegation: attach one listener to the list container and use `event.target.closest(\"button[data-id]\")` to find which row was clicked. It works for rows added later and uses one listener instead of 5,000.",
+          "explanation": "It relies on bubbling: events fire on the target, then propagate up through its ancestors (after an initial capture phase down from the window). `stopPropagation` breaks delegation for everyone above you, so use it sparingly. Non-bubbling events such as `focus` have bubbling equivalents (`focusin`).",
+          "resources": [
+            { "title": "MDN — Event bubbling", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-fetch-errors",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["js.fetch", "web.http"],
+          "prompt": "Why does this treat a 500 response as success?",
+          "code": "async function load() {\n  try {\n    const res = await fetch('/api/items');\n    return await res.json();\n  } catch (e) {\n    showError(e);\n  }\n}",
+          "lang": "javascript",
+          "answer": "`fetch` only rejects on network failure — any HTTP status, including 404 and 500, resolves normally. Check `if (!res.ok) throw new Error(`HTTP ${res.status}`)` before parsing, and add a timeout with `signal: AbortSignal.timeout(5000)`.",
+          "explanation": "The other classic fetch traps: calling `res.json()` on an error page that returns HTML, forgetting that the body can be read only once, and omitting `credentials` when cookies are needed cross-origin. Without an abort signal, a hung request waits indefinitely.",
+          "resources": [
+            { "title": "MDN — Using the Fetch API", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-abort-controller",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["js.async", "js.fetch"],
+          "prompt": "What is `AbortController` for?",
+          "answer": "Cancellation: `controller.signal` is passed to fetch, event listeners, streams and your own async functions; `controller.abort()` cancels them all, rejecting pending work with an `AbortError`.",
+          "explanation": "Typical uses: cancel the previous search request when the user types again, abort in-flight requests when a component unmounts, and remove many listeners at once with `addEventListener(type, fn, { signal })`. `AbortSignal.timeout(ms)` and `AbortSignal.any([...])` cover timeouts and combined signals.",
+          "resources": [
+            { "title": "MDN — AbortController", "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-node-event-loop",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["js.event-loop", "node.runtime"],
+          "prompt": "Run as a CommonJS script (`node app.cjs`), what does this print?",
+          "code": "setTimeout(() => console.log('timeout'), 0);\nPromise.resolve().then(() => console.log('promise'));\nprocess.nextTick(() => console.log('nextTick'));\nconsole.log('sync');",
+          "lang": "javascript",
+          "answer": "sync\nnextTick\npromise\ntimeout",
+          "explanation": "Node drains the `process.nextTick` queue before the promise microtask queue, and both before moving on to the next event-loop phase (timers, I/O poll, `setImmediate` check). Twist: as an ES module the order becomes sync, promise, nextTick, because module evaluation itself runs inside a microtask. Recursive `nextTick` calls can starve I/O entirely — prefer `queueMicrotask` or `setImmediate` in library code.",
+          "prerequisites": ["js-microtask-order"],
+          "resources": [
+            { "title": "Node.js — The Node.js Event Loop", "url": "https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-streams",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["node.streams", "js.io"],
+          "prompt": "A Node service reads a 4 GB log file with `fs.readFile` and crashes. What should it do instead?",
+          "answer": "Stream it: `fs.createReadStream` plus `readline`, or `stream.pipeline` through transforms, processes the file in chunks with constant memory. `readFile` loads the entire file into one buffer.",
+          "explanation": "Streams also provide backpressure — a fast producer pauses when a slow consumer's buffer fills. Use `pipeline` (or `for await` over a readable) rather than bare `.pipe()`, which does not forward errors or clean up on failure.",
+          "resources": [
+            { "title": "Node.js docs — Stream", "url": "https://nodejs.org/api/stream.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-worker-threads",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["node.runtime", "concurrency.parallel"],
+          "prompt": "A Node API endpoint resizes images in pure JavaScript, and every other request stalls while it runs. What is wrong, and what fixes it?",
+          "answer": "CPU-bound work blocks the single event-loop thread, so nothing else is served until it finishes. Move it off the loop: a `worker_threads` pool, a separate process or queue worker, or a native library that works on the libuv thread pool.",
+          "explanation": "Node is fast for I/O because one thread multiplexes many waiting sockets, and that same design makes it poor at long computations on the main thread. Measure event-loop lag (`perf_hooks.monitorEventLoopDelay`) to detect it in production.",
+          "prerequisites": ["conc-async-models"],
+          "resources": [
+            { "title": "Node.js docs — Worker threads", "url": "https://nodejs.org/api/worker_threads.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-package-json",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["node.packaging", "repo.dependencies"],
+          "prompt": "What is the difference between `dependencies`, `devDependencies` and `peerDependencies`?",
+          "answer": "`dependencies` are needed at runtime; `devDependencies` only for building and testing (not installed for consumers of a library); `peerDependencies` must be provided by the host project — plugins declare the framework they plug into this way, so only one copy is installed.",
+          "explanation": "For applications the split mainly controls production install size (`npm ci --omit=dev`). `\"type\": \"module\"` makes `.js` files ESM, and `\"exports\"` defines a package's public entry points, hiding internal files.",
+          "prerequisites": ["repo-semver"],
+          "resources": [
+            { "title": "npm docs — package.json", "url": "https://docs.npmjs.com/cli/v10/configuring-npm/package-json", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-strict-mode",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["js.core"],
+          "prompt": "What does strict mode change, and when is it on automatically?",
+          "answer": "It turns silent failures into errors (assigning to read-only or undeclared variables throws), makes `this` undefined in plain function calls instead of the global object, forbids `with` and duplicate parameter names, and reserves future keywords.",
+          "explanation": "ES modules and class bodies are always strict, so most modern code already runs strict without writing `\"use strict\"`. The biggest practical effect is that a typo in a variable name throws a ReferenceError instead of creating an accidental global.",
+          "resources": [
+            { "title": "MDN — Strict mode", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "js-dom-basics",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["js.dom", "security.xss"],
+          "prompt": "This greeting works in testing. What is the bug, and what should it use instead?",
+          "code": "const name = new URLSearchParams(location.search).get('name');\ndocument.querySelector('#greeting').innerHTML = `Welcome back, ${name}!`;",
+          "lang": "javascript",
+          "answer": "`innerHTML` parses the string as HTML, so a name like `<img src=x onerror=alert(document.cookie)>` runs attacker script — DOM-based XSS. Use `textContent` (or build elements with `createElement`) for untrusted text; reserve `innerHTML` for trusted, sanitised markup.",
+          "explanation": "The core DOM toolkit: `querySelector`/`querySelectorAll` to find elements, `textContent` to set text, `classList` and `setAttribute` for attributes, `createElement` + `append` to build nodes, and `addEventListener` for events. Batch DOM writes and avoid reading layout in between to prevent layout thrashing.",
+          "prerequisites": ["sec-xss-types"],
+          "resources": [
+            { "title": "MDN — Element: innerHTML (security considerations)", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations", "kind": "docs" }
           ]
         }
       ]

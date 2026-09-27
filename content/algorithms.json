@@ -133,7 +133,7 @@
           "answer": "Two pointers: one at each end. If the sum is too large move the right pointer left; too small, move the left pointer right; equal, done.",
           "explanation": "Sortedness makes each move provably safe — a discarded pair could never have worked. The same pattern solves container-with-most-water, three-sum (after sorting), and palindrome checks. The hash-set alternative is O(n) time but O(n) space and works unsorted.",
           "resources": [
-            { "title": "Wikipedia — Two pointers technique", "url": "https://en.wikipedia.org/wiki/Two_pointers_technique", "kind": "article" }
+            { "title": "GeeksforGeeks — Two pointers technique", "url": "https://www.geeksforgeeks.org/dsa/two-pointers-technique/", "kind": "article" }
           ]
         },
         {
@@ -246,6 +246,288 @@
           "explanation": "N-queens, sudoku, subsets, permutations and constraint solvers are all backtracking. The template is: choose, explore, un-choose. Good pruning (constraint propagation, ordering by most-constrained variable) is worth far more than micro-optimising the loop.",
           "resources": [
             { "title": "Wikipedia — Backtracking", "url": "https://en.wikipedia.org/wiki/Backtracking", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "algo-analysis",
+      "name": "Analysis & Core Techniques",
+      "description": "Recurrences, amortised cost, lower bounds, prefix sums, monotonic stacks and binary search on the answer.",
+      "cards": [
+        {
+          "id": "algo-master-theorem",
+          "type": "complexity",
+          "difficulty": 4,
+          "tags": ["algo.recurrences", "algo.complexity"],
+          "prompt": "What do the recurrences T(n) = 2T(n/2) + O(n), T(n) = T(n/2) + O(1) and T(n) = 2T(n/2) + O(1) solve to?",
+          "answer": "Merge-sort shape: O(n log n). Binary-search shape: O(log n). Tree-traversal shape: O(n).",
+          "complexity": { "time": "O(n log n), O(log n), O(n)" },
+          "explanation": "The master theorem compares the work at the root, O(n^c), with the number of leaves, n^(log_b a). Leaves dominate → O(n^(log_b a)); balanced → multiply by log n; root dominates → O(n^c). Recognising these three shapes covers most divide-and-conquer analysis you will meet.",
+          "prerequisites": ["algo-big-o-meaning"],
+          "resources": [
+            { "title": "Wikipedia — Master theorem", "url": "https://en.wikipedia.org/wiki/Master_theorem_(analysis_of_algorithms)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-sort-lower-bound",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["algo.sorting", "algo.complexity"],
+          "prompt": "Why can no comparison sort beat O(n log n), and how do counting and radix sort get around it?",
+          "answer": "A comparison sort must distinguish all n! orderings, and each comparison yields one bit, so it needs at least log₂(n!) ≈ n log n comparisons. Counting and radix sort do not compare elements — they index by key digits — so they run in O(n + k) or O(d·(n + k)) for bounded integer keys.",
+          "explanation": "Non-comparison sorts win when keys are small integers or fixed-width (ages, bytes, IPv4 addresses). The catch is memory proportional to the key range k and restriction to specific key types; for general objects, comparison sorting remains the tool.",
+          "prerequisites": ["algo-quicksort-vs-mergesort"],
+          "resources": [
+            { "title": "Wikipedia — Comparison sort — lower bound", "url": "https://en.wikipedia.org/wiki/Comparison_sort#Number_of_comparisons_required_to_sort_a_list", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-amortised",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["algo.complexity", "algo.amortised"],
+          "prompt": "What does \"amortised O(1)\" mean, and how is it different from \"average O(1)\"?",
+          "answer": "Amortised cost is the worst-case total over any sequence of operations divided by the number of operations — occasional expensive steps are paid for by many cheap ones, guaranteed. Average-case is an expectation over random inputs and can be beaten by bad luck or an adversary.",
+          "explanation": "Dynamic-array append is amortised O(1): no sequence of n appends can cost more than O(n). Hash-table lookup is average O(1): adversarial keys can make every lookup O(n). The distinction matters for latency: amortised structures still have individual slow operations.",
+          "prerequisites": ["ds-amortized-growth"],
+          "resources": [
+            { "title": "Wikipedia — Amortized analysis", "url": "https://en.wikipedia.org/wiki/Amortized_analysis", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-prefix-sums",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["algo.prefix-sums", "algo.arrays"],
+          "prompt": "What does this print?",
+          "code": "from itertools import accumulate\na = [3, 1, 4, 1, 5]\npre = [0, *accumulate(a)]\nprint(pre)\nprint(pre[4] - pre[1])",
+          "lang": "python",
+          "answer": "[0, 3, 4, 8, 9, 14]\n6",
+          "explanation": "A prefix-sum array stores `pre[i]` = the sum of the first i elements, built once in O(n). Any range sum `sum(a[l:r])` is then `pre[r] - pre[l]` in O(1): here `a[1:4]` is 1 + 4 + 1 = 6, computed as `pre[4] - pre[1]` = 9 − 3. The leading 0 removes the special case for ranges starting at index 0. The 2-D version answers rectangle sums in images and grids.",
+          "resources": [
+            { "title": "Wikipedia — Prefix sum", "url": "https://en.wikipedia.org/wiki/Prefix_sum", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[0, 3, 4, 8, 9, 14]\n6" }
+        },
+        {
+          "id": "algo-monotonic-stack",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["algo.stack", "algo.patterns"],
+          "prompt": "For each day's temperature, find how many days until a warmer one — in O(n). Which technique?",
+          "answer": "A monotonic stack: keep indices of days with decreasing temperatures. For each new day, pop every index with a lower temperature and record the gap; then push the current index. Each index is pushed and popped at most once, so the total is O(n).",
+          "explanation": "The same pattern solves \"next greater element\", largest rectangle in a histogram, stock span, and trapping rain water. The signal is \"for each element, find the nearest element to one side that is bigger or smaller\".",
+          "prerequisites": ["ds-stack-queue"],
+          "resources": [
+            { "title": "CP-Algorithms — Minimum stack / queue", "url": "https://cp-algorithms.com/data_structures/stack_queue_modification.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-binary-search-answer",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["algo.binary-search", "algo.patterns"],
+          "prompt": "Ship packages within D days using the smallest possible truck capacity. The check \"can capacity C finish in D days?\" is easy. How do you find the minimum C efficiently?",
+          "answer": "Binary search on the answer: feasibility is monotone in C (if C works, every larger C works), so search the range [max package, total weight] for the smallest feasible C — O(n log(sum)).",
+          "explanation": "Whenever the question is \"the minimum X such that a monotone condition holds\", search over X rather than over the input. It solves splitting arrays, Koko-eating-bananas style rate problems, and scheduling with deadlines. Write the check function first; the search is boilerplate.",
+          "prerequisites": ["algo-binary-search-complexity"],
+          "resources": [
+            { "title": "CP-Algorithms — Binary search", "url": "https://cp-algorithms.com/num_methods/binary_search.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-quickselect",
+          "type": "complexity",
+          "difficulty": 4,
+          "tags": ["algo.selection", "algo.heap"],
+          "prompt": "Finding the k largest of n items: cost of sorting, of a size-k min-heap, and of quickselect?",
+          "answer": "Sorting: O(n log n). A size-k min-heap: O(n log k), O(k) memory, and it works on streams. Quickselect: O(n) average (O(n²) worst), in place.",
+          "complexity": { "time": "sort O(n log n); heap O(n log k); quickselect O(n) avg", "space": "heap O(k); quickselect O(1) extra" },
+          "explanation": "Heaps win on streams and when k is small; quickselect wins for a one-off on an in-memory array (`std::nth_element` in C++, `numpy.partition`). Python's `heapq.nlargest` switches strategies depending on k relative to n.",
+          "prerequisites": ["ds-heap"],
+          "resources": [
+            { "title": "Wikipedia — Quickselect", "url": "https://en.wikipedia.org/wiki/Quickselect", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-recursion-stack",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["algo.recursion"],
+          "prompt": "Why does this crash on a list of 100,000 items, and what is the fix?",
+          "code": "def total(xs):\n    if not xs:\n        return 0\n    return xs[0] + total(xs[1:])\n\nprint(total(list(range(100_000))))",
+          "lang": "python",
+          "answer": "Each recursive call adds a stack frame, and Python's default recursion limit is about 1,000 (native stacks are only a few MB), so linear-depth recursion over big inputs overflows. Rewrite it as a loop or use an explicit stack; recursion is best when depth is logarithmic.",
+          "explanation": "Python and Java do not eliminate tail calls, so even a tail-recursive version still grows the stack. Recursion is natural for trees and divide-and-conquer, where depth is O(log n) if balanced — beware degenerate, list-shaped trees.",
+          "resources": [
+            { "title": "Python docs — sys.setrecursionlimit", "url": "https://docs.python.org/3/library/sys.html#sys.setrecursionlimit", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "algo-graphs-strings",
+      "name": "Graphs & Strings II",
+      "description": "Minimum spanning trees, all-pairs and negative-weight shortest paths, A*, cycle detection and string matching.",
+      "cards": [
+        {
+          "id": "algo-mst",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["algo.graphs", "algo.mst"],
+          "prompt": "Kruskal vs Prim for a minimum spanning tree",
+          "answer": "Both are greedy and both are correct. Kruskal sorts all edges and adds the cheapest one that does not form a cycle (checked with union-find); Prim grows one tree from a start vertex, always adding the cheapest edge leaving it (using a priority queue).",
+          "columns": {
+            "left": { "title": "Kruskal", "points": ["Sort edges: O(E log E)", "Union-find detects cycles", "Natural for sparse graphs and edge lists", "Builds a forest that merges"] },
+            "right": { "title": "Prim", "points": ["Heap-based: O(E log V)", "Grows a single tree", "Good for dense graphs (O(V²) array version)", "Similar in shape to Dijkstra"] }
+          },
+          "explanation": "MSTs appear in network design, clustering (cut the heaviest MST edges) and as approximation building blocks. Correctness comes from the cut property: the lightest edge crossing any cut belongs to some MST.",
+          "prerequisites": ["ds-union-find", "algo-greedy-correct"],
+          "resources": [
+            { "title": "CP-Algorithms — Kruskal's algorithm", "url": "https://cp-algorithms.com/graph/mst_kruskal.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-bellman-floyd",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["algo.graphs", "algo.shortest-path"],
+          "prompt": "Bellman–Ford vs Floyd–Warshall",
+          "answer": "Bellman–Ford computes single-source shortest paths with negative edges in O(VE) and detects negative cycles. Floyd–Warshall computes all-pairs shortest paths in O(V³) with a simple triple loop.",
+          "columns": {
+            "left": { "title": "Bellman–Ford", "points": ["Single source", "O(V·E)", "Negative edges OK; reports negative cycles", "Relax every edge V−1 times"] },
+            "right": { "title": "Floyd–Warshall", "points": ["All pairs", "O(V³) time, O(V²) space", "Negative edges OK (no negative cycles)", "DP over allowed intermediate vertices"] }
+          },
+          "explanation": "Choose by question: one source → Dijkstra (non-negative weights) or Bellman–Ford (negative weights); all pairs on a small dense graph → Floyd–Warshall; all pairs on a sparse graph → run Dijkstra from each vertex (Johnson's algorithm handles negatives).",
+          "prerequisites": ["algo-dijkstra"],
+          "resources": [
+            { "title": "CP-Algorithms — Bellman-Ford algorithm", "url": "https://cp-algorithms.com/graph/bellman_ford.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-astar",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["algo.graphs", "algo.search"],
+          "prompt": "How does A* differ from Dijkstra, and what makes its heuristic admissible?",
+          "answer": "A* orders the frontier by f(n) = g(n) + h(n): the known cost so far plus a heuristic estimate of the remaining cost. The heuristic is admissible if it never overestimates the true remaining cost, which guarantees the path found is optimal.",
+          "explanation": "With h = 0, A* is Dijkstra. A good heuristic (straight-line or Manhattan distance on a grid) dramatically shrinks the search. An inadmissible heuristic can be faster but may return suboptimal paths — sometimes an acceptable trade in games.",
+          "prerequisites": ["algo-dijkstra"],
+          "resources": [
+            { "title": "Red Blob Games — Introduction to A*", "url": "https://www.redblobgames.com/pathfinding/a-star/introduction.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-cycle-detection",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["algo.graphs", "algo.dfs"],
+          "prompt": "How do you detect a cycle in a directed graph versus an undirected one?",
+          "answer": "Directed: DFS with three colours (unvisited, on the current path, finished) — reaching a node that is still on the path means a back edge, hence a cycle. Or Kahn's algorithm leaving nodes unprocessed. Undirected: DFS finding a visited node that is not the parent, or union-find reporting two endpoints already connected.",
+          "explanation": "For linked lists, Floyd's tortoise-and-hare finds a cycle in O(1) space: move one pointer one step and another two steps — they meet if and only if there is a cycle.",
+          "prerequisites": ["algo-bfs-vs-dfs", "algo-topological-sort"],
+          "resources": [
+            { "title": "CP-Algorithms — Checking a graph for acyclicity", "url": "https://cp-algorithms.com/graph/finding-cycle.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-string-matching",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["algo.strings"],
+          "prompt": "Naive substring search is O(n·m). How do KMP and Rabin–Karp do better?",
+          "answer": "KMP precomputes, for each prefix of the pattern, the longest proper prefix that is also a suffix; on a mismatch it jumps using that table instead of re-scanning, giving O(n + m). Rabin–Karp compares rolling hashes of each window and checks characters only on a hash match — O(n + m) expected, and natural for searching many patterns.",
+          "explanation": "In practice, standard library `find` implementations use tuned algorithms (such as Two-Way or Boyer–Moore variants). Knowing KMP matters for the idea of a failure function, which reappears in Aho–Corasick for matching many patterns at once.",
+          "resources": [
+            { "title": "CP-Algorithms — Prefix function — Knuth-Morris-Pratt", "url": "https://cp-algorithms.com/string/prefix-function.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-intervals",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["algo.intervals", "algo.sorting"],
+          "prompt": "Given meeting times, merge overlapping ones — and separately, find the minimum number of rooms needed. How?",
+          "answer": "Merge: sort by start, then extend the last merged interval while the next one starts before it ends — O(n log n). Rooms: sort start and end times separately (or sweep with a min-heap of end times) and track the maximum number of meetings open at once.",
+          "explanation": "Sorting first is the key move in nearly every interval problem. The sweep-line view — +1 at each start, −1 at each end, find the running maximum — generalises to calendar conflicts, bandwidth peaks and CPU scheduling.",
+          "resources": [
+            { "title": "Wikipedia — Sweep line algorithm", "url": "https://en.wikipedia.org/wiki/Sweep_line_algorithm", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "algo-dp-classics",
+      "name": "Dynamic Programming & Hardness",
+      "description": "Knapsack, edit distance, LIS, the DP recipe, and what NP-completeness means in practice.",
+      "cards": [
+        {
+          "id": "algo-knapsack",
+          "type": "complexity",
+          "difficulty": 4,
+          "tags": ["algo.dp"],
+          "prompt": "0/1 knapsack with n items and capacity W: complexity of the classic DP, and why is it called pseudo-polynomial?",
+          "answer": "O(n·W) time and O(W) space with a 1-D table iterated from high to low capacity. It is pseudo-polynomial because the cost is polynomial in the numeric value of W but exponential in the number of bits used to write W down — each extra bit doubles the work.",
+          "complexity": { "time": "O(n·W)", "space": "O(W)" },
+          "explanation": "Knapsack is NP-complete, yet solvable quickly when W is small — that is the pseudo-polynomial loophole. Iterating capacity downwards in the 1-D version prevents an item from being used twice; iterating upwards gives the unbounded variant.",
+          "prerequisites": ["algo-dp-requirements"],
+          "resources": [
+            { "title": "CP-Algorithms — Knapsack problem", "url": "https://cp-algorithms.com/dynamic_programming/knapsack.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-edit-distance",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["algo.dp", "algo.strings"],
+          "prompt": "What does this print?",
+          "code": "def edit(a, b):\n    prev = list(range(len(b) + 1))\n    for i, ca in enumerate(a, 1):\n        cur = [i]\n        for j, cb in enumerate(b, 1):\n            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))\n        prev = cur\n    return prev[-1]\n\nprint(edit('kitten', 'sitting'))",
+          "lang": "python",
+          "answer": "3",
+          "explanation": "Edit (Levenshtein) distance fills a table where `d[i][j]` is the cost to turn the first i characters of a into the first j of b, taking the minimum of delete, insert and substitute. kitten → sitting needs three edits: k→s, e→i, insert g. O(n·m) time; two rows suffice for space.",
+          "prerequisites": ["algo-dp-requirements"],
+          "resources": [
+            { "title": "Wikipedia — Levenshtein distance", "url": "https://en.wikipedia.org/wiki/Levenshtein_distance", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "3" }
+        },
+        {
+          "id": "algo-lis",
+          "type": "complexity",
+          "difficulty": 5,
+          "tags": ["algo.dp", "algo.binary-search"],
+          "prompt": "Longest increasing subsequence: complexity of the straightforward DP, and of the patience-sorting method?",
+          "answer": "The DP over \"LIS ending at i\" is O(n²). Patience sorting keeps, for each length, the smallest possible tail value, and binary-searches where each element goes — O(n log n).",
+          "complexity": { "time": "O(n²) DP; O(n log n) with binary search", "space": "O(n)" },
+          "explanation": "The tails array is always sorted, which is what makes binary search applicable; it does not itself hold a valid subsequence, but parent pointers recover one. LIS shows up in diff algorithms, box stacking and scheduling problems.",
+          "resources": [
+            { "title": "CP-Algorithms — Longest increasing subsequence", "url": "https://cp-algorithms.com/dynamic_programming/longest_increasing_subsequence.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-dp-recipe",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["algo.dp"],
+          "prompt": "What is a reliable recipe for solving a new dynamic programming problem?",
+          "answer": "Define the state (what parameters identify a subproblem), write the recurrence (how a state is built from smaller ones), identify base cases, choose an evaluation order (memoised recursion or a table filled in dependency order), then optimise space if only recent rows are needed.",
+          "explanation": "Most difficulty is in the state definition — \"the best answer using the first i items with capacity w\". If the recurrence needs information your state does not hold, add a dimension. Draw the table for a tiny example before writing code.",
+          "prerequisites": ["algo-dp-requirements", "algo-memo-fib"],
+          "resources": [
+            { "title": "MIT OpenCourseWare 6.006 — Dynamic programming", "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algo-np-complete",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["algo.complexity", "algo.np"],
+          "prompt": "What do P, NP, NP-complete and NP-hard mean — and what do you do when you meet an NP-complete problem at work?",
+          "answer": "P: solvable in polynomial time. NP: a proposed solution can be verified in polynomial time. NP-complete: in NP and every NP problem reduces to it (SAT, travelling salesman decision, graph colouring). NP-hard: at least as hard as NP-complete, not necessarily in NP. Whether P = NP is open.",
+          "explanation": "In practice: check whether your instances are small or specially structured, use approximation algorithms with guarantees, heuristics (greedy, local search, simulated annealing), or hand the problem to a SAT/ILP solver — modern solvers handle surprisingly large real instances.",
+          "resources": [
+            { "title": "Wikipedia — NP-completeness", "url": "https://en.wikipedia.org/wiki/NP-completeness", "kind": "article" }
           ]
         }
       ]

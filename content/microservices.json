@@ -138,7 +138,92 @@
           "explanation": "Diagnostic questions: can you deploy one service on a Friday without checking with anyone? Can it run when its neighbours are down? If either answer is no, the boundary is wrong — and merging back is a legitimate fix.",
           "prerequisites": ["ms-shared-database"],
           "resources": [
-            { "title": "microservices.io — Antipatterns", "url": "https://microservices.io/microservices/antipatterns/", "kind": "article" }
+            { "title": "microservices.io — Microservice architecture pattern", "url": "https://microservices.io/patterns/microservices.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ms-operations",
+      "name": "Running Microservices",
+      "description": "Service discovery, migration with the strangler fig, cross-service queries, configuration, team topologies and independent deployability.",
+      "cards": [
+        {
+          "id": "ms-service-discovery",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["microservices.discovery"],
+          "prompt": "How do services find each other when instances come and go constantly?",
+          "answer": "Through service discovery: instances register (or are registered by the platform) in a registry, and callers resolve a stable name to healthy instances. In Kubernetes, a Service gives a stable DNS name and virtual IP; elsewhere Consul, Eureka or cloud load balancers play the role.",
+          "explanation": "Client-side discovery lets callers pick instances and balance load themselves; server-side discovery puts a load balancer in between. Either way, health checks drive membership — a registry that keeps dead instances is worse than none.",
+          "prerequisites": ["k8s-objects"],
+          "resources": [
+            { "title": "microservices.io — Service registry", "url": "https://microservices.io/patterns/service-registry.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-strangler-fig",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["microservices.migration", "architecture.legacy"],
+          "prompt": "How do you migrate a large monolith to new services without a big-bang rewrite?",
+          "answer": "The strangler fig pattern: put a routing layer (proxy or gateway) in front of the monolith, then move one capability at a time into new code, routing its traffic there while everything else still goes to the monolith. The old system shrinks until it can be retired.",
+          "explanation": "Each step is small, reversible and delivers value. Big-bang rewrites famously fail because the old system keeps changing while the new one chases feature parity. Start with a capability that has clear boundaries and real reasons to move.",
+          "prerequisites": ["ms-monolith-modular"],
+          "resources": [
+            { "title": "Martin Fowler — Strangler Fig Application", "url": "https://martinfowler.com/bliki/StranglerFigApplication.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-cross-service-queries",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["microservices.data"],
+          "prompt": "The order history page needs data owned by the orders, customers and shipping services. How do you query across them?",
+          "answer": "Either API composition — a BFF or composer service calls each service and joins the results in memory (simple, but latency and availability depend on every call) — or a dedicated read model: a service builds its own denormalised view by subscribing to the other services' events, answering the query locally.",
+          "explanation": "This is the price of database-per-service: joins become integration. Use composition for low-volume screens, and event-fed read models (CQRS) for hot or complex queries. Never reach into another service's database directly.",
+          "prerequisites": ["ms-shared-database", "sd-cqrs-event-sourcing"],
+          "resources": [
+            { "title": "microservices.io — API composition", "url": "https://microservices.io/patterns/data/api-composition.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-configuration",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["microservices.config", "ops.config"],
+          "prompt": "How should configuration be handled across many services and environments?",
+          "answer": "Keep configuration out of the build: the same artefact receives environment-specific settings at deploy time (environment variables, mounted files or a config service), with secrets from a secret manager. Validate configuration at startup and fail fast on anything missing or malformed.",
+          "explanation": "This is the twelve-factor principle of separating config from code. Centralised dynamic config and feature-flag services allow changes without redeploying — powerful, but treat config changes like code changes, with review, audit and rollback, because they cause many incidents.",
+          "prerequisites": ["cicd-artifact-promotion"],
+          "resources": [
+            { "title": "The Twelve-Factor App — Config", "url": "https://12factor.net/config", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ms-team-topologies",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["microservices.organisation", "process.teams"],
+          "prompt": "What are the four team types in Team Topologies, and how do they relate to service boundaries?",
+          "answer": "Stream-aligned teams own a flow of business value end to end; platform teams provide internal self-service products that reduce their load; enabling teams coach and upskill; complicated-subsystem teams own areas needing deep specialist knowledge. Interaction modes are collaboration, X-as-a-service, and facilitating.",
+          "explanation": "It operationalises Conway's law: design teams around the architecture you want and limit each team's cognitive load. Service boundaries that cut across team boundaries create constant coordination — the distributed-monolith symptom in organisational form.",
+          "prerequisites": ["meth-conway"],
+          "resources": [
+            { "title": "Team Topologies — key concepts", "url": "https://teamtopologies.com/key-concepts", "kind": "book" }
+          ]
+        },
+        {
+          "id": "ms-independent-deploy",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["microservices.deployment"],
+          "prompt": "What has to be true for each service to be deployed independently, any day, without coordination?",
+          "answer": "Backwards-compatible APIs and events (additive changes, tolerant readers), consumer contract tests in each provider's pipeline, a separate pipeline per service, no shared database, feature flags to decouple release from deploy, and observability good enough to spot a bad deploy and roll it back quickly.",
+          "explanation": "Independent deployability is the whole point of microservices — if releases need a coordinated schedule, the costs of distribution are being paid for nothing. Track how often deployments require changes to other services as an architecture health metric.",
+          "prerequisites": ["ms-distributed-monolith", "test-contract"],
+          "resources": [
+            { "title": "Sam Newman — Building Microservices (independent deployability)", "url": "https://samnewman.io/books/building_microservices_2nd_edition/", "kind": "article" }
           ]
         }
       ]

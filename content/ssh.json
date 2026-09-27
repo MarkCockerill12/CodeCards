@@ -20,7 +20,7 @@
           "answer": "You keep a private key; the server holds the public key in `~/.ssh/authorized_keys`. The server sends a challenge the client signs with the private key. The secret never crosses the network, so it cannot be phished, sniffed or brute-forced.",
           "explanation": "Generate with `ssh-keygen -t ed25519 -C \"you@host\"` — Ed25519 is fast, short and the current default recommendation. Protect the key with a passphrase and let the agent cache it; permissions must be 600 on the private key or SSH refuses it.",
           "resources": [
-            { "title": "OpenSSH — ssh-keygen(1)", "url": "https://man.openbsd.org/ssh-keygen.1", "kind": "docs" }
+            { "title": "OpenSSH manual — ssh-keygen(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh-keygen.1.html", "kind": "docs" }
           ]
         },
         {
@@ -33,7 +33,7 @@
           "explanation": "Host keys are how the *client* authenticates the *server* — the half people forget. Blindly running `ssh-keygen -R host` trains you to click through a genuine MITM. In fleets, publish host keys via configuration management or use SSH certificates.",
           "prerequisites": ["ssh-key-auth"],
           "resources": [
-            { "title": "OpenSSH — ssh(1)", "url": "https://man.openbsd.org/ssh.1", "kind": "docs" }
+            { "title": "OpenSSH manual — ssh(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh.1.html", "kind": "docs" }
           ]
         },
         {
@@ -45,7 +45,7 @@
           "answer": "Per-host aliases and defaults: `Host prod` with `HostName`, `User`, `Port`, `IdentityFile`, `ProxyJump` for bastions, and `ServerAliveInterval` to stop idle disconnects. Then `ssh prod` just works, and scp/rsync/git inherit it.",
           "explanation": "`ProxyJump bastion` replaces fragile nested ssh commands. `ControlMaster auto` with `ControlPersist 10m` reuses one connection for subsequent sessions — dramatically faster for tools that open many SSH connections, such as Ansible.",
           "resources": [
-            { "title": "OpenSSH — ssh_config(5)", "url": "https://man.openbsd.org/ssh_config.5", "kind": "docs" }
+            { "title": "OpenSSH manual — ssh_config(5) (man7.org)", "url": "https://man7.org/linux/man-pages/man5/ssh_config.5.html", "kind": "docs" }
           ]
         },
         {
@@ -58,7 +58,7 @@
           "explanation": "Prefer `ProxyJump`, which tunnels the connection instead of exposing the agent. If you must forward, do it per-host rather than globally, and use `ssh-add -c` so each use requires confirmation.",
           "prerequisites": ["ssh-config"],
           "resources": [
-            { "title": "OpenSSH — ssh-agent(1)", "url": "https://man.openbsd.org/ssh-agent.1", "kind": "docs" }
+            { "title": "OpenSSH manual — ssh-agent(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh-agent.1.html", "kind": "docs" }
           ]
         }
       ]
@@ -81,7 +81,7 @@
           },
           "explanation": "`-D` adds a third mode: a local SOCKS proxy routing arbitrary traffic through the server. All three are legitimate admin tools and all three are also classic pivoting techniques — which is why forwarding is often disabled on hardened bastions.",
           "resources": [
-            { "title": "OpenSSH — Port forwarding", "url": "https://man.openbsd.org/ssh.1#L", "kind": "docs" }
+            { "title": "OpenSSH manual — ssh(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh.1.html", "kind": "docs" }
           ]
         },
         {
@@ -106,7 +106,7 @@
           "explanation": "Changing the port only reduces log noise — it is not security. The genuine wins are key-only auth and reducing exposure. Adding a hardware token (`sk-ed25519`) makes key theft alone insufficient.",
           "prerequisites": ["ssh-key-auth"],
           "resources": [
-            { "title": "OpenSSH — sshd_config(5)", "url": "https://man.openbsd.org/sshd_config.5", "kind": "docs" }
+            { "title": "OpenSSH manual — sshd_config(5) (man7.org)", "url": "https://man7.org/linux/man-pages/man5/sshd_config.5.html", "kind": "docs" }
           ]
         },
         {
@@ -121,6 +121,107 @@
           "explanation": "SSH offers a limited number of keys before the server rejects the connection, so a crowded agent can fail even when the right key exists. Pin the key per host with `IdentityFile` plus `IdentitiesOnly yes`.",
           "resources": [
             { "title": "GitHub Docs — Error: permission denied (publickey)", "url": "https://docs.github.com/en/authentication/troubleshooting-ssh/error-permission-denied-publickey", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ssh-operations",
+      "name": "Operating SSH at Scale",
+      "description": "Key management and the agent, SSH certificates, file-transfer protocols, persistent sessions and troubleshooting.",
+      "cards": [
+        {
+          "id": "ssh-key-types",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["ssh.keys", "crypto.asymmetric"],
+          "prompt": "Ed25519 vs RSA keys for SSH",
+          "answer": "Ed25519 is the modern default: small keys, fast, and resistant to implementation mistakes. RSA is universally supported but needs 3072+ bits today, and legacy `ssh-rsa` signatures using SHA-1 are disabled by modern OpenSSH.",
+          "columns": {
+            "left": { "title": "Ed25519", "points": ["Short keys and signatures", "Fast; deterministic signatures", "Default in modern OpenSSH", "`ed25519-sk` for FIDO hardware keys"] },
+            "right": { "title": "RSA", "points": ["Works with very old servers", "Needs 3072–4096 bits", "Larger and slower", "SHA-1 `ssh-rsa` signatures deprecated"] }
+          },
+          "explanation": "Use Ed25519 unless an old system forces RSA, and use a hardware-backed `ed25519-sk` key where possible so the private key cannot be copied off the device. Always set a passphrase; the agent makes that painless.",
+          "prerequisites": ["ssh-key-auth"],
+          "resources": [
+            { "title": "OpenSSH manual — ssh-keygen(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh-keygen.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-agent",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ssh.agent"],
+          "prompt": "What does `ssh-agent` do?",
+          "answer": "It holds decrypted private keys in memory so you type each passphrase once per session; `ssh` asks the agent to sign authentication challenges and the key itself never leaves it. `ssh-add` loads keys, `ssh-add -l` lists them, and `-t` sets a lifetime.",
+          "explanation": "OS integrations (macOS Keychain, Windows OpenSSH agent service, desktop keyrings, 1Password and similar) provide the agent automatically. Keep the loaded key set small — servers limit authentication attempts, so offering too many keys fails before the right one is tried.",
+          "prerequisites": ["ssh-key-auth"],
+          "resources": [
+            { "title": "OpenSSH manual — ssh-agent(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh-agent.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-certificates",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ssh.certificates", "security.identity"],
+          "prompt": "What problem do SSH certificates solve for a large fleet?",
+          "answer": "Instead of copying every user's public key into every server's `authorized_keys`, servers trust one certificate authority key. The CA signs short-lived user certificates (hours) carrying principals (allowed usernames) and restrictions; host certificates likewise remove \"trust on first use\" for host keys.",
+          "explanation": "Short-lived certificates make offboarding automatic — access expires rather than needing removal from hundreds of servers — and can be issued after SSO and MFA login. Tools such as HashiCorp Vault, Teleport and smallstep implement the CA workflow.",
+          "prerequisites": ["ssh-host-key", "crypto-pki"],
+          "resources": [
+            { "title": "OpenSSH manual — ssh-keygen(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh-keygen.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-sftp-scp",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["ssh.file-transfer"],
+          "prompt": "What is the difference between scp, sftp and rsync over SSH today?",
+          "answer": "The legacy SCP protocol had design flaws (the remote side could influence which files were written), so modern OpenSSH's `scp` uses the SFTP protocol underneath by default. `sftp` is an interactive and scriptable file-transfer protocol. `rsync` transfers only differences and can resume.",
+          "explanation": "For one-off copies, `scp` is fine; for repeated or large syncs, rsync; for restricted file-only accounts, an SFTP-only user with `ForceCommand internal-sftp` and a chroot. Plain FTP sends credentials in cleartext and should not be used.",
+          "prerequisites": ["ssh-scp-rsync"],
+          "resources": [
+            { "title": "OpenSSH manual — sftp(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/sftp.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-persistent-sessions",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["ssh.sessions", "linux.tools"],
+          "prompt": "You start a two-hour migration over SSH and your Wi-Fi drops. How should you have run it?",
+          "answer": "Inside a terminal multiplexer — `tmux` (or `screen`) — on the server, so the job keeps running when the connection drops and you can reattach (`tmux attach`). Alternatively run it as a proper service or job (`systemd-run`, a job queue). `nohup` survives the hang-up but loses the interactive session.",
+          "explanation": "A process started directly in an SSH session receives SIGHUP when the connection closes and usually dies mid-way. `mosh` keeps a roaming interactive session alive across network changes. Long operations belong in a multiplexer as a habit.",
+          "prerequisites": ["linux-processes-signals"],
+          "resources": [
+            { "title": "tmux wiki — Getting started", "url": "https://github.com/tmux/tmux/wiki/Getting-Started", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-troubleshooting",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ssh.troubleshooting"],
+          "prompt": "Key authentication works for one user but not another on the same server, and the key is definitely in `authorized_keys`. What do you check?",
+          "answer": "Permissions: with `StrictModes` on, sshd ignores `authorized_keys` if the home directory, `~/.ssh` (should be 700) or the file (600) are writable by group or others. Also check ownership, SELinux contexts on the files, `AllowUsers`/`AllowGroups`, and the server log (`journalctl -u sshd` or `/var/log/auth.log`).",
+          "explanation": "The server log states the exact reason while the client only sees \"Permission denied\". `ssh -vvv` shows the client side; running `sshd -d -p 2222` in debug mode shows everything for a single test connection.",
+          "prerequisites": ["ssh-git-auth", "linux-permissions"],
+          "resources": [
+            { "title": "OpenSSH manual — sshd_config(5) (man7.org)", "url": "https://man7.org/linux/man-pages/man5/sshd_config.5.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-escape",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["ssh.sessions"],
+          "prompt": "To kill a frozen SSH session from the client side, press Enter, then type the escape sequence ___ .",
+          "answer": "~.",
+          "explanation": "SSH escape sequences start with `~` at the beginning of a line: `~.` disconnects, `~^Z` suspends ssh, `~#` lists forwarded connections, `~C` opens a command line to add port forwards to a live session, and `~?` lists them all. When nested sessions are involved, `~~` sends a literal tilde to the inner one.",
+          "resources": [
+            { "title": "OpenSSH manual — ssh(1) (man7.org)", "url": "https://man7.org/linux/man-pages/man1/ssh.1.html", "kind": "docs" }
           ]
         }
       ]

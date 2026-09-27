@@ -153,6 +153,215 @@
           ]
         }
       ]
+    },
+    {
+      "id": "ctr-docker-2",
+      "name": "Docker in Depth",
+      "description": "ENTRYPOINT and CMD, tags and digests, volumes, networking, Compose, registries and scanning.",
+      "cards": [
+        {
+          "id": "ctr-entrypoint-cmd",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["containers.dockerfile", "os.signals"],
+          "prompt": "Why does this container take 10 seconds to stop and drop in-flight requests?",
+          "code": "FROM node:22-slim\nWORKDIR /app\nCOPY . .\nCMD node server.js",
+          "lang": "dockerfile",
+          "answer": "The shell form (`CMD node server.js`) runs `/bin/sh -c`, so the shell is PID 1 and does not forward SIGTERM to node; after the grace period the runtime sends SIGKILL. Use the exec form, `CMD [\"node\", \"server.js\"]`, so the app is PID 1 and receives signals — and handle SIGTERM in the app.",
+          "explanation": "`ENTRYPOINT` defines the executable; `CMD` supplies default arguments that `docker run image args` overrides. If a wrapper script is needed, end it with `exec \"$@\"`. Add `--init` (tini) when the process spawns children that must be reaped.",
+          "prerequisites": ["os-signals", "os-zombie-orphan"],
+          "resources": [
+            { "title": "Docker docs — Dockerfile reference — ENTRYPOINT", "url": "https://docs.docker.com/reference/dockerfile/#entrypoint", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-tags-digests",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["containers.images", "cicd.reproducibility"],
+          "prompt": "What is the difference between an image tag and a digest?",
+          "answer": "A tag (`python:3.12-slim`, `myapp:latest`) is a mutable pointer that can be moved to a different image at any time. A digest (`@sha256:9f86…`) is the content hash of one exact image and can never change.",
+          "explanation": "Deploy by digest (or an immutable, unique tag such as the commit SHA) so what you tested is exactly what runs. Pin base images by digest too, and let a bot (Renovate, Dependabot) propose updates so you still receive security patches.",
+          "prerequisites": ["cicd-artifact-promotion"],
+          "resources": [
+            { "title": "Docker docs — Image digests", "url": "https://docs.docker.com/reference/cli/docker/image/pull/#pull-an-image-by-digest-immutable-identifier", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-volumes",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["containers.storage"],
+          "prompt": "Named volumes vs bind mounts",
+          "answer": "A named volume is storage managed by Docker, independent of the host's directory layout; a bind mount maps a specific host path into the container.",
+          "columns": {
+            "left": { "title": "Named volume", "points": ["Managed by Docker", "Portable across hosts and platforms", "Right for database data", "Survives container removal"] },
+            "right": { "title": "Bind mount", "points": ["Any host path, live-synced", "Right for development source code", "Depends on host layout and permissions", "Can be slow on macOS and Windows"] }
+          },
+          "explanation": "Use volumes for persistent service data (a local Postgres) and bind mounts for development (live-editing source). Bind mounts expose host paths and permissions to the container — mounting the Docker socket or `/` into a container is effectively giving it root on the host.",
+          "prerequisites": ["ctr-stateless"],
+          "resources": [
+            { "title": "Docker docs — Storage — volumes", "url": "https://docs.docker.com/engine/storage/volumes/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-networking",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["containers.networking"],
+          "prompt": "How do containers talk to each other and to the outside world?",
+          "answer": "On a user-defined bridge network, containers reach each other by container or service name through Docker's embedded DNS. Publishing a port (`-p 8080:80`) maps a host port to a container port for outside access. Inside a container, `localhost` means the container itself, not the host.",
+          "explanation": "The classic mistake is an app connecting to `localhost:5432` for a database in another container — use the service name (`db:5432`). Publish only what must be reachable, and bind to `127.0.0.1:` on the host for local-only services; published ports can bypass host firewall rules.",
+          "prerequisites": ["net-ports-sockets"],
+          "resources": [
+            { "title": "Docker docs — Networking overview", "url": "https://docs.docker.com/engine/network/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-compose",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["containers.compose", "dev.environment"],
+          "prompt": "What is Docker Compose for?",
+          "answer": "Defining and running a multi-container application from one YAML file — services, images or builds, environment, ports, volumes, networks and dependencies — so `docker compose up` starts the whole local stack: the app, its database, cache and any mocks.",
+          "explanation": "Compose is ideal for local development and integration tests; production usually runs on an orchestrator. `depends_on` only orders startup — add a healthcheck with `condition: service_healthy` so the app waits until the database actually accepts connections.",
+          "resources": [
+            { "title": "Docker docs — Docker Compose overview", "url": "https://docs.docker.com/compose/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ctr-image-scanning",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["containers.security", "security.vulnerabilities"],
+          "prompt": "A scanner reports 200 CVEs in your production image. What do you do first?",
+          "answer": "Shrink the attack surface — a minimal or distroless base removes most OS packages and their CVEs at once — then rebuild regularly on patched bases. Prioritise what remains by exploitability and reachability (known-exploited, network-facing, actually loaded) rather than by count.",
+          "explanation": "Scan in CI and in the registry continuously, since new CVEs appear for images that have not changed. Fail builds on fixable critical issues, not on every finding, or the gate gets disabled. Rebuilding weekly is often the single most effective control.",
+          "prerequisites": ["ctr-image-hardening", "sec-vuln-management"],
+          "resources": [
+            { "title": "Docker docs — Docker Scout", "url": "https://docs.docker.com/scout/", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ctr-k8s-2",
+      "name": "Kubernetes in Practice",
+      "description": "Configuration and secrets, namespaces and RBAC, autoscaling, stateful workloads, disruptions, packaging, network policy and debugging.",
+      "cards": [
+        {
+          "id": "k8s-config-secrets",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["k8s.config", "security.secrets"],
+          "prompt": "How do ConfigMaps and Secrets reach a pod, and why are Secrets not really secret by default?",
+          "answer": "Both are injected as environment variables or mounted files. Secrets are only base64-encoded, not encrypted: anyone who can read them through the API, or read etcd without encryption at rest, sees the values.",
+          "explanation": "Enable etcd encryption at rest, restrict `get secrets` via RBAC, and prefer an external secret manager synchronised by the External Secrets Operator or a CSI driver. Mounted files update when the source changes; environment variables do not until the pod restarts.",
+          "prerequisites": ["k8s-objects"],
+          "resources": [
+            { "title": "Kubernetes docs — Good practices for Kubernetes Secrets", "url": "https://kubernetes.io/docs/concepts/security/secrets-good-practices/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-namespaces-rbac",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["k8s.security", "security.authz"],
+          "prompt": "What do namespaces and RBAC provide in a Kubernetes cluster?",
+          "answer": "Namespaces partition resources by team or environment and scope names, quotas and policies. RBAC grants verbs (get, list, create…) on resources through Roles (namespaced) or ClusterRoles, bound to users, groups or service accounts.",
+          "explanation": "Namespaces are not a security boundary by themselves: without network policies, pods talk across them freely. Give every workload its own service account with the minimum permissions, and disable automounting API tokens for pods that never call the API.",
+          "prerequisites": ["sec-access-models"],
+          "resources": [
+            { "title": "Kubernetes docs — Using RBAC authorization", "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-hpa",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["k8s.scaling"],
+          "prompt": "How does the Horizontal Pod Autoscaler work, and what does it depend on?",
+          "answer": "It periodically compares observed metrics — CPU or memory utilisation relative to *requests*, or custom and external metrics such as requests per second or queue depth — with a target, and adjusts the replica count between a minimum and a maximum.",
+          "explanation": "Without resource requests, utilisation-based scaling cannot work. Pair the HPA with a cluster autoscaler (or Karpenter) so new pods have nodes to land on, and use stabilisation windows to prevent flapping. KEDA scales on event sources, including down to zero.",
+          "prerequisites": ["k8s-requests-limits", "cloud-autoscaling"],
+          "resources": [
+            { "title": "Kubernetes docs — Horizontal Pod Autoscaling", "url": "https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-statefulset",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["k8s.workloads", "db.operations"],
+          "prompt": "Deployment vs StatefulSet",
+          "answer": "Deployment pods are interchangeable — random names, shared or no storage, replaced in any order. StatefulSet pods have stable identities (`db-0`, `db-1`), stable DNS names, their own persistent volume each, and ordered start-up and termination.",
+          "columns": {
+            "left": { "title": "Deployment", "points": ["Stateless, interchangeable replicas", "Random pod names", "Rolling updates in any order", "Web servers, APIs, workers"] },
+            "right": { "title": "StatefulSet", "points": ["Stable name and network identity", "A persistent volume per replica", "Ordered, one-at-a-time rollout", "Databases, queues, consensus clusters"] }
+          },
+          "explanation": "StatefulSets exist for clustered data stores that need identity and per-member storage. Even so, running databases on Kubernetes demands operators, backups and real expertise; a managed database is often the better choice.",
+          "prerequisites": ["k8s-objects"],
+          "resources": [
+            { "title": "Kubernetes docs — StatefulSets", "url": "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-pdb-rollouts",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["k8s.availability", "cicd.deploy"],
+          "prompt": "During node upgrades your three-replica service briefly goes fully down. What prevents that?",
+          "answer": "A PodDisruptionBudget (`minAvailable: 2`), which stops voluntary evictions such as node drains from taking too many pods at once. Also spread replicas across nodes and zones (topology spread constraints or anti-affinity), and tune the rolling update (`maxUnavailable: 0`, `maxSurge: 1`).",
+          "explanation": "PDBs only govern voluntary disruptions; they do not help if all replicas share one node that fails, which is what spreading addresses. Combined with readiness probes and graceful shutdown, these give zero-downtime deploys and maintenance.",
+          "prerequisites": ["k8s-probes"],
+          "resources": [
+            { "title": "Kubernetes docs — Specifying a Disruption Budget", "url": "https://kubernetes.io/docs/tasks/run-application/configure-pdb/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-helm-kustomize",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["k8s.packaging", "iac.templating"],
+          "prompt": "Helm vs Kustomize",
+          "answer": "Helm packages manifests as charts with Go templates and a values file, with releases, versioning and rollback. Kustomize layers plain YAML with patches and overlays per environment, with no templating language.",
+          "columns": {
+            "left": { "title": "Helm", "points": ["Charts with templates + values", "Release history and rollback", "Ecosystem of third-party charts", "Templates can grow complex"] },
+            "right": { "title": "Kustomize", "points": ["Plain YAML plus patches", "Base + overlays per environment", "Built into `kubectl -k`", "No logic — sometimes too limited"] }
+          },
+          "explanation": "Helm suits distributing reusable software (most third-party installs are charts); Kustomize suits your own services where overlays for dev, staging and prod are enough. Heavy template logic in charts becomes hard to review — keep values simple and render the output in CI to diff it.",
+          "prerequisites": ["iac-modules"],
+          "resources": [
+            { "title": "Helm documentation", "url": "https://helm.sh/docs/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-network-policy",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["k8s.security", "security.network"],
+          "prompt": "What is a NetworkPolicy, and what is the default without one?",
+          "answer": "Without any policy, every pod can reach every other pod in the cluster. A NetworkPolicy selects pods and allows specific ingress and egress (from certain pods, namespaces or IP ranges, on certain ports); once a pod is selected, everything else is denied.",
+          "explanation": "Start with a default-deny policy per namespace and allow flows explicitly — it contains lateral movement from a compromised pod. Enforcement needs a CNI plugin that supports it (Calico, Cilium); on one that does not, policies are silently ignored.",
+          "prerequisites": ["sec-segmentation"],
+          "resources": [
+            { "title": "Kubernetes docs — Network policies", "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "k8s-debugging",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["k8s.troubleshooting", "ops.troubleshooting"],
+          "prompt": "A pod is stuck in `CrashLoopBackOff`. How do you investigate?",
+          "answer": "`kubectl describe pod` for events, exit codes and the reason (OOMKilled, failed probe, image pull error); `kubectl logs <pod> --previous` for the crashed container's last output; then `kubectl debug` or `exec` into a running copy to inspect config, environment and connectivity.",
+          "explanation": "Common causes: missing config or secrets, the app exiting immediately (wrong command), a liveness probe killing a slow-starting app (use a startup probe), OOM from a tight memory limit, or a dependency that is unreachable. Events usually point the way within a minute.",
+          "prerequisites": ["k8s-probes", "mem-oom-killer"],
+          "resources": [
+            { "title": "Kubernetes docs — Debug running pods", "url": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -158,6 +158,172 @@
           ]
         }
       ]
+    },
+    {
+      "id": "craft-design-in-code",
+      "name": "Clean Code in Practice",
+      "description": "Code smells, guard clauses, function design, abstraction levels, KISS and YAGNI, static analysis and the boy-scout rule.",
+      "cards": [
+        {
+          "id": "craft-code-smells",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["craft.smells", "craft.refactoring"],
+          "prompt": "Name common code smells and the refactoring each suggests.",
+          "answer": "Long method → extract function. Large class → extract class. Long parameter list → introduce a parameter object. Feature envy (a method using another object's data more than its own) → move method. Primitive obsession → value objects. Shotgun surgery (one change touches many files) → consolidate. Duplicated code → extract and share.",
+          "explanation": "A smell is a hint, not a verdict: it tells you where to look. Refactor smells when you are about to change that code anyway, with tests in place, one small step at a time.",
+          "prerequisites": ["craft-refactoring"],
+          "resources": [
+            { "title": "Refactoring.Guru — Code smells", "url": "https://refactoring.guru/refactoring/smells", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-guard-clauses",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["craft.readability"],
+          "prompt": "How would you make this easier to read?",
+          "code": "def ship(user, order):\n    if user:\n        if user.active:\n            if order.items:\n                label = make_label(order)\n                return dispatch(label)\n    return None",
+          "lang": "python",
+          "answer": "Replace the nesting with guard clauses that handle invalid cases and return early: `if not user: return None`, `if not user.active: return None`, `if not order.items: return None` — leaving the main logic unindented at the end.",
+          "explanation": "Deep nesting forces readers to keep every condition in their head at once. Early returns put the exceptional cases first and let the happy path read straight down. The same idea appears as `let ... else` in Rust and `guard` in Swift.",
+          "resources": [
+            { "title": "Refactoring.Guru — Replace nested conditional with guard clauses", "url": "https://refactoring.guru/replace-nested-conditional-with-guard-clauses", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-function-design",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["craft.functions"],
+          "prompt": "What makes a function well designed?",
+          "answer": "It does one thing at one level of abstraction, has a name that says what it does, takes few parameters (group related ones into an object), avoids boolean flag arguments that switch behaviour, has no hidden side effects, and returns results rather than mutating its inputs where practical.",
+          "explanation": "A boolean flag (`render(doc, true)`) is a sign of two functions sharing a body — split them or pass a named option. Separating commands (which change state) from queries (which return data) makes code easier to reason about and test.",
+          "prerequisites": ["craft-naming"],
+          "resources": [
+            { "title": "Martin Fowler — Function length", "url": "https://martinfowler.com/bliki/FunctionLength.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-abstraction-levels",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["craft.readability", "design.abstraction"],
+          "prompt": "What is the single level of abstraction principle?",
+          "answer": "Statements within a function should sit at the same level of abstraction. A function that orchestrates high-level steps (`validate(order); charge(order); notify(customer)`) should not also contain low-level byte manipulation or string formatting in the middle.",
+          "explanation": "Mixed levels force the reader to switch between \"what\" and \"how\" line by line. Extracting the low-level parts into well-named helpers turns the top-level function into a readable summary — the code becomes its own outline.",
+          "prerequisites": ["craft-function-design"],
+          "resources": [
+            { "title": "Kent Beck — Composed method pattern (summary)", "url": "https://wiki.c2.com/?ComposedMethod", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-kiss-yagni",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["craft.simplicity"],
+          "prompt": "A teammate adds a plugin system, a configuration DSL and an abstract base class \"so we can support other payment providers later\". There is one provider and no plans for another. What principle applies?",
+          "answer": "YAGNI — \"you aren't gonna need it\" — and KISS — \"keep it simple\". Build for the requirement you have; speculative generality has real costs today (code to read, test and maintain) for a benefit that may never come, and it is often designed around the wrong future.",
+          "explanation": "Simple code is easier to change when the second provider really arrives, and at that point you will know what actually varies. YAGNI is not an excuse for poor structure — keep code clean and well separated so later extension is cheap.",
+          "prerequisites": ["dp-over-engineering"],
+          "resources": [
+            { "title": "Martin Fowler — Yagni", "url": "https://martinfowler.com/bliki/Yagni.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-static-analysis",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["craft.tooling"],
+          "prompt": "What should automated formatting, linting and type checking take off a team's plate?",
+          "answer": "Formatters (Prettier, Black/ruff format, gofmt, rustfmt) end style debates; linters (ESLint/oxlint, ruff, clippy, golangci-lint) catch bug patterns and unsafe constructs; type checkers (tsc, mypy/pyright) catch type errors before runtime. All run in the editor for instant feedback and in CI as a gate.",
+          "explanation": "Anything a machine can check should never appear in code review. Adopt rules gradually on legacy code (baseline existing violations) and treat new warnings as errors, so the codebase only gets better.",
+          "prerequisites": ["craft-review-giving"],
+          "resources": [
+            { "title": "Ruff documentation", "url": "https://docs.astral.sh/ruff/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "craft-boy-scout",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["craft.maintenance"],
+          "prompt": "What is the boy-scout rule, and how do you apply it without derailing a change?",
+          "answer": "\"Leave the code better than you found it\": when you touch code, make small improvements nearby — rename an unclear variable, extract a confusing block, add a missing test. Continuous small clean-ups stop decay without big rewrites.",
+          "explanation": "Keep the improvements small and put them in a separate commit (or PR) from the behaviour change, so reviewers can see each clearly. Large refactors deserve their own planned change, not a detour inside a bug fix.",
+          "prerequisites": ["meth-technical-debt"],
+          "resources": [
+            { "title": "97 Things Every Programmer Should Know — The Boy Scout Rule", "url": "https://97-things-every-x-should-know.gitbooks.io/97-things-every-programmer-should-know/content/en/thing_08/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "craft-collaboration",
+      "name": "Working with Others",
+      "description": "Design documents and RFCs, pair and mob programming, legacy seams, and docstrings versus comments.",
+      "cards": [
+        {
+          "id": "craft-design-docs",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["craft.documentation", "architecture.decisions"],
+          "prompt": "What belongs in a design document or RFC, and when is one worth writing?",
+          "answer": "Context and the problem, goals and explicit non-goals, the proposed design, alternatives considered and why they were rejected, risks and open questions, and a rollout and testing plan. Write one when a change is hard to reverse, spans teams, or has several reasonable approaches.",
+          "explanation": "The document is a thinking tool: writing down alternatives exposes weak reasoning before code exists, and review catches problems while they are cheap. Keep it short, and record the final decision as an ADR so the \"why\" survives.",
+          "prerequisites": ["repo-readme"],
+          "resources": [
+            { "title": "Design Docs at Google", "url": "https://www.industrialempathy.com/posts/design-docs-at-google/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-pairing",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["craft.collaboration"],
+          "prompt": "Pair programming vs mob (ensemble) programming",
+          "answer": "In pairing, two developers work on one task at one machine — one drives, one navigates — swapping often. In mobbing, the whole team works on one thing together, rotating the driver every few minutes.",
+          "columns": {
+            "left": { "title": "Pair programming", "points": ["Two people, one task", "Driver and navigator roles", "Continuous review and knowledge transfer", "Good for tricky code and onboarding"] },
+            "right": { "title": "Mob programming", "points": ["Whole team, one task", "Driver rotates every few minutes", "Decisions made once, together", "Good for complex, cross-cutting work"] }
+          },
+          "explanation": "Both trade raw parallelism for fewer defects, shared knowledge and no review queue. Use them for hard problems, onboarding and risky changes rather than all day. Remote tools make both practical; rotate roles frequently so nobody just watches.",
+          "prerequisites": ["craft-review-giving"],
+          "resources": [
+            { "title": "Martin Fowler — On pair programming", "url": "https://martinfowler.com/articles/on-pair-programming.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "craft-seams",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["craft.legacy", "testing.legacy"],
+          "prompt": "What is a seam in legacy code?",
+          "answer": "A place where you can change the code's behaviour without editing it in that place — typically by injecting a dependency, overriding a method in a test subclass, or swapping an implementation through configuration. Seams let you put untestable code under test.",
+          "explanation": "Legacy code often constructs its dependencies internally (`new Database()` inside a method). Introducing a seam — passing the database in, with the old construction as a default — is often the first safe refactoring, enabling characterisation tests.",
+          "prerequisites": ["test-characterisation", "dp-composition-root"],
+          "resources": [
+            { "title": "Michael Feathers — Working Effectively with Legacy Code", "url": "https://www.oreilly.com/library/view/working-effectively-with/0131177052/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "craft-docstrings",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["craft.documentation", "craft.comments"],
+          "prompt": "API documentation (docstrings) vs inline comments",
+          "answer": "Docstrings document a function's contract for callers — what it does, parameters, return value, errors raised, examples — and feed IDE tooltips and generated docs. Inline comments explain non-obvious implementation choices for maintainers.",
+          "columns": {
+            "left": { "title": "Docstring / doc comment", "points": ["For callers: the contract", "Parameters, returns, errors, examples", "Shown in IDEs and generated docs", "Needed on public APIs"] },
+            "right": { "title": "Inline comment", "points": ["For maintainers: the why", "Constraints, workarounds, links", "Next to the tricky line", "Rarely needed if code is clear"] }
+          },
+          "explanation": "Public APIs deserve docstrings; private helpers with good names often do not. Executable examples in docs (doctests, Rust doc tests) keep documentation from drifting out of date.",
+          "prerequisites": ["craft-comments"],
+          "resources": [
+            { "title": "PEP 257 — Docstring conventions", "url": "https://peps.python.org/pep-0257/", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

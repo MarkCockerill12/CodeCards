@@ -48,7 +48,8 @@
           "prerequisites": ["go-interfaces-implicit"],
           "resources": [
             { "title": "Go FAQ — Why is my nil error value not equal to nil?", "url": "https://go.dev/doc/faq#nil_error", "kind": "docs" }
-          ]
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "false" }
         },
         {
           "id": "go-slice-aliasing",
@@ -124,6 +125,356 @@
           "prerequisites": ["go-channels"],
           "resources": [
             { "title": "Go blog — Introducing the race detector", "url": "https://go.dev/blog/race-detector", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "go-types",
+      "name": "Types, Methods & Generics",
+      "description": "Zero values, structs and embedding, receivers, maps, strings, defer and generics.",
+      "cards": [
+        {
+          "id": "go-zero-values",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["go.types", "go.core"],
+          "prompt": "What does this print?",
+          "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tvar n int\n\tvar s string\n\tvar b bool\n\tvar p *int\n\tvar xs []int\n\tfmt.Printf(\"%d %q %v %v %v\\n\", n, s, b, p, xs == nil)\n}",
+          "lang": "go",
+          "answer": "0 \"\" false <nil> true",
+          "explanation": "Every Go variable is initialised to its type's zero value: 0, \"\", false, nil for pointers, slices, maps, channels, funcs and interfaces, and zero-valued fields for structs. Idiomatic Go designs types so the zero value is useful — `sync.Mutex{}` and `bytes.Buffer{}` work without a constructor.",
+          "resources": [
+            { "title": "Effective Go — The zero value", "url": "https://go.dev/doc/effective_go#allocation_new", "kind": "docs" }
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "0 \"\" false <nil> true" }
+        },
+        {
+          "id": "go-receivers",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["go.methods", "go.types"],
+          "prompt": "Pointer receivers vs value receivers",
+          "answer": "A pointer receiver (`func (c *Counter) Inc()`) can mutate the value and avoids copying; a value receiver (`func (c Counter) Get()`) works on a copy.",
+          "columns": {
+            "left": { "title": "Pointer receiver `*T`", "points": ["Can modify the receiver", "No copy — cheap for big structs", "Only `*T` has it in its method set", "Required when the type holds a mutex"] },
+            "right": { "title": "Value receiver `T`", "points": ["Operates on a copy", "Mutations are silently lost", "Both `T` and `*T` have it in their method set", "Fine for small, immutable values"] }
+          },
+          "explanation": "Rules of thumb: use pointer receivers if any method mutates, if the struct is large, or if it contains a `sync.Mutex` (copying a mutex is a bug `go vet` flags) — and then use them consistently for every method. Value receivers suit small immutable types such as `time.Time`.",
+          "resources": [
+            { "title": "Go FAQ — Should I define methods on values or pointers?", "url": "https://go.dev/doc/faq#methods_on_values_or_pointers", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-embedding",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["go.types", "oop.composition"],
+          "prompt": "What is struct embedding, and how is it different from inheritance?",
+          "answer": "Embedding a type (`type Logger struct{ *log.Logger; prefix string }`) promotes its fields and methods to the outer type, so `l.Println(...)` works. It is composition with automatic delegation: the embedded value is a separate field, and there is no subtype relationship or virtual dispatch.",
+          "explanation": "If the outer type defines a method with the same name, it shadows the promoted one; the inner method never calls \"down\" into the outer type. Embedding an interface in a struct is a common way to implement part of an interface and delegate the rest.",
+          "prerequisites": ["go-interfaces-implicit"],
+          "resources": [
+            { "title": "Effective Go — Embedding", "url": "https://go.dev/doc/effective_go#embedding", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-maps",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["go.maps", "go.gotchas"],
+          "prompt": "Why does this panic?",
+          "code": "var counts map[string]int\nfor _, w := range words {\n\tcounts[w]++\n}",
+          "lang": "go",
+          "answer": "`counts` is a nil map. Reading a nil map returns zero values, but writing to one panics with \"assignment to entry in nil map\". Initialise it with `make(map[string]int)` or a literal.",
+          "explanation": "Other map facts: iteration order is deliberately randomised, so never rely on it (sort the keys); use the comma-ok form `v, ok := m[k]` to distinguish \"missing\" from \"zero\"; and maps are not safe for concurrent writes — use a mutex or `sync.Map`.",
+          "prerequisites": ["go-zero-values"],
+          "resources": [
+            { "title": "Go blog — Go maps in action", "url": "https://go.dev/blog/maps", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-strings-runes",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["go.strings", "text.unicode"],
+          "prompt": "What does this print?",
+          "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\ts := \"héllo\"\n\tfmt.Println(len(s), len([]rune(s)))\n\tfor i, r := range s {\n\t\tif i > 3 {\n\t\t\tbreak\n\t\t}\n\t\tfmt.Printf(\"%d %c\\n\", i, r)\n\t}\n}",
+          "lang": "go",
+          "answer": "6 5\n0 h\n1 é\n3 l",
+          "explanation": "`len` on a string counts bytes, and \"héllo\" is 6 bytes because é takes two in UTF-8. `range` over a string decodes runes (Unicode code points) and yields each rune's *byte offset* — note the jump from 1 to 3. Index with `s[i]` and you get a byte, not a character.",
+          "prerequisites": ["text-unicode-utf8"],
+          "resources": [
+            { "title": "Go blog — Strings, bytes, runes and characters", "url": "https://go.dev/blog/strings", "kind": "article" }
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "6 5\n0 h\n1 é\n3 l" }
+        },
+        {
+          "id": "go-defer",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["go.defer", "go.core"],
+          "prompt": "What does this print?",
+          "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tx := 1\n\tfor i := 0; i < 3; i++ {\n\t\tdefer fmt.Println(i, x)\n\t}\n\tx = 99\n\tfmt.Println(\"body\")\n}",
+          "lang": "go",
+          "answer": "body\n2 1\n1 1\n0 1",
+          "explanation": "Deferred calls run when the function returns, in last-in-first-out order. Their arguments are evaluated immediately at the `defer` statement — so `x` is captured as 1 even though it changes later. Defer is how Go does cleanup: `f, err := os.Open(p); ...; defer f.Close()`.",
+          "resources": [
+            { "title": "Go blog — Defer, Panic, and Recover", "url": "https://go.dev/blog/defer-panic-and-recover", "kind": "article" }
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "body\n2 1\n1 1\n0 1" }
+        },
+        {
+          "id": "go-panic-recover",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["go.errors", "go.defer"],
+          "prompt": "When is `panic`/`recover` appropriate in Go?",
+          "answer": "Panic is for unrecoverable programmer errors — impossible states, failed invariants, bad initialisation. `recover` only works inside a deferred function and is used at boundaries (an HTTP server recovering per request) so one bad request does not kill the process.",
+          "explanation": "Expected failures — bad input, I/O errors, missing records — are returned as `error` values. A library should never let a panic escape as its error-reporting mechanism. `net/http` already recovers panics per handler, which is why a crash in one handler logs a stack trace instead of exiting.",
+          "prerequisites": ["go-errors-explicit"],
+          "resources": [
+            { "title": "Go blog — Defer, Panic, and Recover", "url": "https://go.dev/blog/defer-panic-and-recover", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-error-wrapping",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["go.errors"],
+          "prompt": "What does this print?",
+          "code": "package main\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"io/fs\"\n)\n\nfunc open() error {\n\treturn fmt.Errorf(\"open settings: %w\", fs.ErrNotExist)\n}\n\nfunc load() error {\n\tif err := open(); err != nil {\n\t\treturn fmt.Errorf(\"load config: %w\", err)\n\t}\n\treturn nil\n}\n\nfunc main() {\n\terr := load()\n\tfmt.Println(err)\n\tfmt.Println(errors.Is(err, fs.ErrNotExist))\n}",
+          "lang": "go",
+          "answer": "load config: open settings: file does not exist\ntrue",
+          "explanation": "`%w` wraps an error, building a chain; `errors.Is` walks that chain looking for a sentinel, and `errors.As` looks for a particular type. Comparing with `==` would fail here because the returned error is the wrapper. Wrap with context at each layer so the final message reads like a stack of reasons.",
+          "prerequisites": ["go-errors-explicit"],
+          "resources": [
+            { "title": "Go blog — Working with errors in Go 1.13", "url": "https://go.dev/blog/go1.13-errors", "kind": "article" }
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "load config: open settings: file does not exist\ntrue" }
+        },
+        {
+          "id": "go-generics",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["go.generics"],
+          "prompt": "How do Go generics work, and what is a constraint?",
+          "answer": "Functions and types take type parameters in square brackets: `func Map[T, U any](xs []T, f func(T) U) []U`. A constraint is an interface restricting the allowed types — `any`, `comparable`, or a type set like `interface{ ~int | ~float64 }` (`cmp.Ordered` in the standard library).",
+          "explanation": "The `~` means \"any type whose underlying type is\", so a `type Celsius float64` qualifies. Generics arrived in Go 1.18; the `slices`, `maps` and `cmp` packages now cover most everyday needs. Reach for them for containers and algorithms, not to abstract everything.",
+          "resources": [
+            { "title": "Go tutorial — Getting started with generics", "url": "https://go.dev/doc/tutorial/generics", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-type-switch",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["go.interfaces", "go.types"],
+          "prompt": "How do you get the concrete type back out of an interface value?",
+          "answer": "A type assertion, `v, ok := x.(string)` (the comma-ok form avoids a panic), or a type switch: `switch v := x.(type) { case string: ... case int: ... default: ... }`, where `v` has the matching type in each branch.",
+          "explanation": "Type switches are Go's pattern-matching tool for closed sets of cases — decoding JSON into `any`, handling several error types. If you find yourself switching on types across a codebase, a method on an interface usually expresses it better.",
+          "resources": [
+            { "title": "Go spec — Type switches", "url": "https://go.dev/ref/spec#Type_switches", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "go-iota",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["go.core"],
+          "prompt": "Inside a `const ( ... )` block, the predeclared identifier ___ starts at 0 and increments by one for each constant, which makes it ideal for enumerations.",
+          "answer": "iota",
+          "explanation": "Go has no enum keyword; `type Weekday int` plus `const ( Sunday Weekday = iota; Monday; ... )` is the idiom. Implement `String()` (or generate it with `stringer`) so values print readably. Consider reserving 0 for \"unknown\" so an uninitialised value is not silently a valid choice.",
+          "resources": [
+            { "title": "Go spec — Iota", "url": "https://go.dev/ref/spec#Iota", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "go-patterns",
+      "name": "Concurrency Patterns",
+      "description": "select, WaitGroups, mutexes, worker pools, leaks and the loop-variable change.",
+      "cards": [
+        {
+          "id": "go-select",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["go.channels", "go.concurrency"],
+          "prompt": "What does `select` do, and how do you add a timeout?",
+          "answer": "`select` waits on several channel operations and runs whichever is ready first (choosing randomly if several are). Add a timeout with a `case <-time.After(d):` or, better, `case <-ctx.Done():`; a `default` case makes the select non-blocking.",
+          "explanation": "Watching `ctx.Done()` in every long-running select is how goroutines honour cancellation. In loops, prefer a single `time.NewTimer` or a context deadline over `time.After` per iteration.",
+          "prerequisites": ["go-channels"],
+          "resources": [
+            { "title": "Go spec — Select statements", "url": "https://go.dev/ref/spec#Select_statements", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "go-waitgroup",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["go.concurrency", "go.sync"],
+          "prompt": "Why does this sometimes exit before the workers finish, or panic?",
+          "code": "var wg sync.WaitGroup\nfor _, job := range jobs {\n\tgo func() {\n\t\twg.Add(1)\n\t\tdefer wg.Done()\n\t\tprocess(job)\n\t}()\n}\nwg.Wait()",
+          "lang": "go",
+          "answer": "`wg.Add(1)` must be called *before* starting the goroutine. Called inside it, `Wait` can run while the counter is still zero and return immediately. Go 1.25 adds `wg.Go(func() { ... })`, which does the Add and Done for you.",
+          "explanation": "A WaitGroup only counts; it does not collect errors or cancel siblings. For \"run these, stop on the first error\", use `golang.org/x/sync/errgroup` with a context.",
+          "prerequisites": ["go-goroutines"],
+          "resources": [
+            { "title": "Go package docs — sync.WaitGroup", "url": "https://pkg.go.dev/sync#WaitGroup", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-mutex-vs-channel",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["go.sync", "go.channels"],
+          "prompt": "You have a cache map read and written by many goroutines. Channel-owned state or a mutex?",
+          "answer": "A `sync.RWMutex` (or `sync.Mutex`) around the map. Mutexes are the right tool for guarding shared state; channels are for passing ownership of data and coordinating goroutines.",
+          "explanation": "A goroutine that owns the map and serves requests over channels works, but adds latency and complexity for no gain. Keep critical sections short, never hold a lock while doing I/O, and embed the mutex next to the data it protects.",
+          "prerequisites": ["go-channels"],
+          "resources": [
+            { "title": "Go wiki — Use a sync.Mutex or a channel?", "url": "https://go.dev/wiki/MutexOrChannel", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-goroutine-leak",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["go.concurrency", "go.gotchas"],
+          "prompt": "This returns early on timeout. What leaks, and how do you fix it?",
+          "code": "func fetch(ctx context.Context) (result, error) {\n\tch := make(chan result)\n\tgo func() { ch <- slowCall() }()\n\tselect {\n\tcase r := <-ch:\n\t\treturn r, nil\n\tcase <-time.After(time.Second):\n\t\treturn result{}, errTimeout\n\t}\n}",
+          "lang": "go",
+          "answer": "On timeout nobody ever receives from `ch`, so the goroutine blocks forever on its send — a goroutine leak that grows with every timed-out request. Make the channel buffered (`make(chan result, 1)`) so the send always completes, and pass a context so the work itself can stop.",
+          "explanation": "Every goroutine needs a clear exit path. Leaks show up as a steadily rising `runtime.NumGoroutine()` and in goroutine profiles from pprof; `go.uber.org/goleak` can fail tests that leak.",
+          "prerequisites": ["go-select"],
+          "resources": [
+            { "title": "Go blog — Go concurrency patterns: timing out", "url": "https://go.dev/blog/concurrency-timeouts", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-worker-pool",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["go.concurrency", "go.patterns"],
+          "prompt": "You must call an API for 100,000 items without exceeding 20 concurrent requests. What is the idiomatic structure?",
+          "answer": "A worker pool: a jobs channel, 20 goroutines ranging over it, a results channel, and a WaitGroup that closes results once all workers finish. Or use `errgroup` with `SetLimit(20)`.",
+          "explanation": "Bounded concurrency is the point — spawning 100,000 goroutines is cheap for Go but not for the API or your file descriptors. The producer closes the jobs channel when done, which is what ends each worker's `range` loop.",
+          "prerequisites": ["go-waitgroup"],
+          "resources": [
+            { "title": "Go blog — Go concurrency patterns: pipelines and cancellation", "url": "https://go.dev/blog/pipelines", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-loopvar",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["go.gotchas", "go.closures"],
+          "prompt": "With Go 1.22 or later, what does this print?",
+          "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tvar fns []func() int\n\tfor i := 0; i < 3; i++ {\n\t\tfns = append(fns, func() int { return i })\n\t}\n\tfor _, f := range fns {\n\t\tfmt.Print(f(), \" \")\n\t}\n\tfmt.Println()\n}",
+          "lang": "go",
+          "answer": "0 1 2",
+          "explanation": "Since Go 1.22 each loop iteration gets its own copy of the loop variable, so each closure captures a different `i`. Before 1.22 all three shared one variable and this printed `3 3 3` — the most common Go bug for a decade. The behaviour is selected by the `go` version in go.mod.",
+          "prerequisites": ["js-closure-counter"],
+          "resources": [
+            { "title": "Go blog — Fixing for loops in Go 1.22", "url": "https://go.dev/blog/loopvar-preview", "kind": "article" }
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "0 1 2" }
+        },
+        {
+          "id": "go-slice-growth",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["go.slices"],
+          "prompt": "What does this print?",
+          "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\ts := make([]int, 0, 5)\n\tfmt.Println(len(s), cap(s))\n\ts = append(s, 1, 2, 3)\n\tfmt.Println(len(s), cap(s))\n\ts = append(s, 4, 5, 6)\n\tfmt.Println(len(s), cap(s))\n}",
+          "lang": "go",
+          "answer": "0 5\n3 5\n6 10",
+          "explanation": "`make([]int, 0, 5)` creates length 0 with capacity 5. Appending within capacity reuses the backing array; exceeding it allocates a new, larger array (roughly doubling for small slices) and copies. Pre-size with `make` when you know the count to avoid repeated reallocations.",
+          "prerequisites": ["go-slice-aliasing"],
+          "resources": [
+            { "title": "Go blog — Arrays, slices (and strings): the mechanics of append", "url": "https://go.dev/blog/slices", "kind": "article" }
+          ],
+          "verify": { "runtime": "go", "expectedOutput": "0 5\n3 5\n6 10" }
+        }
+      ]
+    },
+    {
+      "id": "go-tooling",
+      "name": "Modules, Testing & Tooling",
+      "description": "go.mod, the standard toolchain, table-driven tests, benchmarks, profiling and project layout.",
+      "cards": [
+        {
+          "id": "go-modules",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["go.modules", "repo.dependencies"],
+          "prompt": "What do `go.mod` and `go.sum` contain?",
+          "answer": "`go.mod` declares the module path, the Go language version, and required dependency versions. `go.sum` holds cryptographic hashes of each dependency version so downloads can be verified. Commit both.",
+          "explanation": "Go uses minimal version selection: it builds with the *minimum* version satisfying every requirement, never silently picking something newer, which makes builds reproducible without a separate lockfile. `go mod tidy` adds missing and removes unused requirements.",
+          "resources": [
+            { "title": "Go Modules Reference", "url": "https://go.dev/ref/mod", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-table-tests",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["go.testing", "testing.unit"],
+          "prompt": "What is a table-driven test in Go?",
+          "answer": "A slice of test cases — each with a name, inputs and expected output — looped over, with each case run as a subtest via `t.Run(tc.name, ...)`. Adding a case is one line, and failures name the case.",
+          "explanation": "Subtests can run in parallel with `t.Parallel()` and can be selected with `go test -run TestParse/empty`. Use `t.Helper()` in assertion helpers so failures report the caller's line, and `t.Cleanup` for teardown.",
+          "resources": [
+            { "title": "Go wiki — Table-driven tests", "url": "https://go.dev/wiki/TableDrivenTests", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-vet-fmt",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["go.tooling", "craft.tooling"],
+          "prompt": "What do `gofmt`, `go vet` and `staticcheck` each do?",
+          "answer": "`gofmt` formats code canonically, ending style debates. `go vet` finds suspicious constructs the compiler accepts — Printf format mismatches, copied mutexes, unreachable code. `staticcheck` (or golangci-lint) adds hundreds of deeper checks: unused code, deprecated APIs, common bugs.",
+          "explanation": "Run all three plus `go test -race` in CI. Because every Go codebase is gofmt-formatted, reading unfamiliar Go code is unusually easy — a tooling decision that shaped the whole ecosystem.",
+          "resources": [
+            { "title": "Go command — go vet", "url": "https://pkg.go.dev/cmd/vet", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-benchmarks-pprof",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["go.tooling", "perf.profiling"],
+          "prompt": "An endpoint got slower after a refactor. How do you measure and locate the cost in Go?",
+          "answer": "Write a benchmark (`func BenchmarkX(b *testing.B)` using `for b.Loop()` in Go 1.24+), compare before and after with `benchstat`, and profile with `go test -cpuprofile` / `-memprofile` or `net/http/pprof` in the running service, viewing with `go tool pprof -http`.",
+          "explanation": "Always report allocations (`-benchmem`) — in Go, allocations and GC pressure are often the real cost. Flame graphs from pprof show which call paths dominate, and profile-guided optimisation (PGO) can feed a production CPU profile back into the compiler.",
+          "prerequisites": ["craft-premature-optimisation"],
+          "resources": [
+            { "title": "Go docs — Diagnostics", "url": "https://go.dev/doc/diagnostics", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-project-layout",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["go.modules", "repo.layout"],
+          "prompt": "What does the `internal/` directory do in a Go module, and how are packages organised?",
+          "answer": "Packages under `internal/` can only be imported by code rooted at internal's parent — the compiler enforces it — so you can share code between your own packages without making it public API. Commands live under `cmd/<name>/main.go`.",
+          "explanation": "Organise packages by what they provide (`billing`, `storage`), not by kind (`models`, `utils`). Package names are short, lower-case and not stuttering: `http.Server`, not `http.HTTPServer`. Start flat; add structure when size demands it.",
+          "resources": [
+            { "title": "Go docs — Organizing a Go module", "url": "https://go.dev/doc/modules/layout", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-cross-compile",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["go.tooling"],
+          "prompt": "To build a Linux ARM64 binary from any machine, set the environment variables ___ and GOARCH, e.g. `GOOS=linux GOARCH=arm64 go build`.",
+          "answer": "GOOS",
+          "explanation": "Go produces statically linked binaries by default (with `CGO_ENABLED=0`), so cross-compiling needs no target toolchain. That single-file deployment is why Go dominates CLI tools and container images — the image can be `FROM scratch` or distroless with just the binary.",
+          "resources": [
+            { "title": "Go command — environment variables", "url": "https://pkg.go.dev/cmd/go#hdr-Environment_variables", "kind": "docs" }
           ]
         }
       ]

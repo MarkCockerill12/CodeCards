@@ -17,7 +17,7 @@
           "difficulty": 3,
           "tags": ["cloud.aws", "cloud.azure", "cloud.gcp"],
           "prompt": "Map the core services across AWS, Azure and GCP.",
-          "answer": "Compute: EC2 / Virtual Machines / Compute Engine. Objects: S3 / Blob Storage / Cloud Storage. Functions: Lambda / Functions / Cloud Functions. Managed Kubernetes: EKS / AKS / GKE. Managed SQL: RDS / SQL Database / Cloud SQL. Identity: IAM / Entra ID / Cloud IAM.",
+          "answer": "Compute: EC2 / Virtual Machines / Compute Engine. Objects: S3 / Blob Storage / Cloud Storage. Functions: Lambda / Azure Functions / Cloud Run functions. Managed Kubernetes: EKS / AKS / GKE. Managed SQL: RDS / Azure SQL Database / Cloud SQL. Identity: IAM / Entra ID / Cloud IAM.",
           "columns": {
             "left": { "title": "AWS", "points": ["EC2, S3, Lambda, EKS", "RDS, DynamoDB, SQS/SNS", "VPC, Route 53, CloudFront", "Largest service catalogue"] },
             "right": { "title": "Azure / GCP", "points": ["VMs / Compute Engine", "Blob / Cloud Storage", "AKS / GKE — GKE is the most mature Kubernetes", "Azure: enterprise and AD integration; GCP: data and ML"] }
@@ -133,6 +133,128 @@
           "explanation": "It is useful mostly as a review checklist: walk each pillar against a design and the gaps show up quickly. The pillars trade against each other, so the point is making the trade explicit rather than pretending you can maximise all six.",
           "resources": [
             { "title": "AWS Well-Architected Framework", "url": "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cloud-services",
+      "name": "Core Services in Depth",
+      "description": "Object storage, messaging services, autoscaling, workload identity, account structure and pricing models.",
+      "cards": [
+        {
+          "id": "cloud-object-storage",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["cloud.storage"],
+          "prompt": "What are the key properties of object storage such as S3, and how is it different from a filesystem?",
+          "answer": "A flat namespace of buckets and keys holding immutable objects written and read whole over HTTP, with effectively unlimited capacity, eleven nines of durability and strong read-after-write consistency. There are no real directories, no appends and no in-place edits — you replace objects.",
+          "explanation": "Storage classes (standard, infrequent access, archive) plus lifecycle rules cut costs for ageing data. Block public access by default, enable versioning or object lock for important data, and use presigned URLs to let clients upload or download directly without proxying through your servers.",
+          "resources": [
+            { "title": "AWS — S3 user guide — What is Amazon S3?", "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-messaging",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["cloud.messaging", "distributed.messaging"],
+          "prompt": "Queue (SQS) vs pub/sub topic (SNS) vs event bus (EventBridge)",
+          "answer": "A queue delivers each message to one consumer for work distribution; a topic fans each message out to every subscriber; an event bus routes events to targets by matching rules on their content.",
+          "columns": {
+            "left": { "title": "Queue (SQS)", "points": ["Point-to-point: one consumer per message", "Buffers load; consumers pull", "Visibility timeout and redelivery", "Dead-letter queue for poison messages"] },
+            "right": { "title": "Topic / event bus", "points": ["Fan-out to every subscriber", "Push to queues, functions, HTTP", "Bus: content-based routing rules", "Decouples producers from consumer lists"] }
+          },
+          "explanation": "Common composition: publish to a topic or bus, subscribe one queue per consuming service so each has its own buffer, retries and dead-letter queue. Standard queues give at-least-once, unordered delivery — design idempotent consumers; FIFO variants trade throughput for ordering per group.",
+          "prerequisites": ["sd-queue-decoupling"],
+          "resources": [
+            { "title": "AWS — Messaging — choosing SQS, SNS or EventBridge", "url": "https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-autoscaling",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["cloud.scaling"],
+          "prompt": "Your service autoscales on CPU, but during traffic spikes latency degrades for minutes before new capacity helps. What do you change?",
+          "answer": "Scale on a signal closer to the demand (requests per target, queue depth, concurrency) rather than CPU, keep a warm minimum with headroom, shorten instance start time (smaller images, pre-warmed or pre-baked instances), and add scheduled or predictive scaling for known peaks.",
+          "explanation": "Reactive scaling always lags: metrics must breach, the policy must fire, and instances must boot and pass health checks. Set scale-in more conservatively than scale-out to avoid flapping, and cap the maximum so a bug or attack cannot scale your bill without bound.",
+          "prerequisites": ["sd-vertical-horizontal"],
+          "resources": [
+            { "title": "AWS — EC2 Auto Scaling — Target tracking scaling policies", "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-workload-identity",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cloud.iam", "security.credentials"],
+          "prompt": "How should workloads authenticate to cloud APIs without long-lived access keys?",
+          "answer": "Through platform identity: instance profiles or IAM roles for compute, workload identity for Kubernetes service accounts, and OIDC federation for external systems such as CI — each exchanging a platform-issued token for short-lived, automatically rotated credentials.",
+          "explanation": "Long-lived keys leak through repositories, laptops and logs and are rarely rotated. With federation there is nothing static to steal, and trust policies can restrict which repository, branch or namespace may assume a role.",
+          "prerequisites": ["cloud-iam-least-privilege", "cicd-secrets-pipeline"],
+          "resources": [
+            { "title": "AWS — IAM — Temporary security credentials", "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-landing-zone",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cloud.governance"],
+          "prompt": "Why do organisations split cloud usage into many accounts (or subscriptions/projects)?",
+          "answer": "Accounts are the strongest isolation boundary: separate accounts per environment and per workload limit the blast radius of a compromise or mistake, give clean cost attribution, and let organisation-level guardrails (service control policies, Azure Policy) apply per group.",
+          "explanation": "A landing zone sets this up consistently: centralised identity and SSO, logging to a locked-down security account, network hubs, and baseline guardrails. Retrofitting account structure onto one giant shared account later is painful.",
+          "prerequisites": ["cloud-shared-responsibility"],
+          "resources": [
+            { "title": "AWS — Organizing your AWS environment using multiple accounts", "url": "https://docs.aws.amazon.com/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-pricing-models",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["cloud.cost"],
+          "prompt": "On-demand vs reserved/savings plans vs spot instances",
+          "answer": "On-demand is pay-as-you-go with no commitment; reservations and savings plans trade a one- or three-year commitment for large discounts; spot instances use spare capacity at the deepest discounts but can be reclaimed at short notice.",
+          "columns": {
+            "left": { "title": "On-demand / committed", "points": ["On-demand: no commitment, highest rate", "Committed: 1–3 years for big discounts", "Commit only to measured baseline", "Unused commitments are still billed"] },
+            "right": { "title": "Spot", "points": ["Spare capacity, deepest discount", "Reclaimed with ~2 minutes' notice", "Batch, CI, stateless workers", "Diversify instance types to reduce interruptions"] }
+          },
+          "explanation": "Cover the steady baseline with commitments, burst with on-demand, and run interruption-tolerant work — batch jobs, CI runners, stateless workers behind a queue — on spot. Anything on spot must checkpoint or be safely retryable.",
+          "prerequisites": ["cloud-cost-drivers"],
+          "resources": [
+            { "title": "AWS — Amazon EC2 pricing", "url": "https://aws.amazon.com/ec2/pricing/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-dr-strategies",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["cloud.dr", "ops.reliability"],
+          "prompt": "Disaster-recovery strategies: backup-and-restore, pilot light, warm standby, active-active",
+          "answer": "In increasing cost and decreasing recovery time: restore from backups into a new region (hours); pilot light (data replicated, core minimal, scale up on failover — tens of minutes); warm standby (a scaled-down full copy running — minutes); active-active (serving from several regions — near zero).",
+          "columns": {
+            "left": { "title": "Backup & restore / pilot light", "points": ["Cheapest; RTO in hours", "Restore data and infrastructure from code", "Pilot light: replicated data, minimal core", "Scale up only when disaster strikes"] },
+            "right": { "title": "Warm standby / active-active", "points": ["Warm: scaled-down copy always running", "Active-active: every region serves traffic", "RTO minutes to near zero", "Hard: data consistency, cost, routing"] }
+          },
+          "explanation": "Choose from business RPO (how much data you may lose) and RTO (how long you may be down), not from ambition. The failure mode common to all of them is an untested failover: run game days, because the recovery path is exercised far less often than the normal one.",
+          "prerequisites": ["cloud-regions-az", "dbi-backup-pitr"],
+          "resources": [
+            { "title": "AWS — Disaster recovery options in the cloud", "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cloud-lock-in",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["cloud.strategy"],
+          "prompt": "Leadership worries about vendor lock-in. How do you reason about it rather than avoiding managed services altogether?",
+          "answer": "Treat lock-in as a cost to weigh, not a thing to avoid: managed services buy speed and reliability now; portability has a price paid every day (lowest-common-denominator designs, running more yourself). Keep portability where it is cheap — containers, open protocols (Postgres, S3-compatible APIs, OpenTelemetry), infrastructure as code — and accept deep integration where it pays.",
+          "explanation": "Multi-cloud \"just in case\" usually doubles operational cost for a migration that never happens. Isolate provider-specific code behind small adapters where the switch risk is real, and keep your data exportable — data gravity is the real lock-in.",
+          "prerequisites": ["cloud-managed-vs-self"],
+          "resources": [
+            { "title": "Martin Fowler — Don't get locked up into avoiding lock-in", "url": "https://martinfowler.com/articles/oss-lockin.html", "kind": "article" }
           ]
         }
       ]

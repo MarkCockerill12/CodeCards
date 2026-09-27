@@ -1,0 +1,191 @@
+{
+  "id": "discrete-math",
+  "name": "Discrete Maths for Programmers",
+  "icon": "∑",
+  "category": "Computer Science",
+  "color": "#BE185D",
+  "description": "The maths under programming: logic, sets and functions, counting, logarithms, modular arithmetic, probability, proofs and invariants, graph theory and computability.",
+  "modules": [
+    {
+      "id": "dm-logic-counting",
+      "name": "Logic, Sets & Counting",
+      "description": "Boolean logic and De Morgan's laws, sets and functions, permutations and combinations, logarithms, pigeonhole and modular arithmetic.",
+      "cards": [
+        {
+          "id": "dm-boolean-logic",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["math.logic", "craft.conditionals"],
+          "prompt": "What does this print?",
+          "code": "from itertools import product\ncases = list(product([True, False], repeat=2))\nprint(all((not (a and b)) == ((not a) or (not b)) for a, b in cases))\nprint(all((not (a or b)) == ((not a) and (not b)) for a, b in cases))",
+          "lang": "python",
+          "answer": "True\nTrue",
+          "explanation": "De Morgan's laws: `not (a and b)` equals `(not a) or (not b)`, and `not (a or b)` equals `(not a) and (not b)`. Checking every combination of inputs — a truth table — proves it. They are the everyday tool for simplifying and correctly negating conditions, such as turning \"keep if valid and active\" into \"skip if invalid or inactive\".",
+          "resources": [
+            { "title": "Wikipedia — De Morgan's laws", "url": "https://en.wikipedia.org/wiki/De_Morgan%27s_laws", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "True\nTrue" }
+        },
+        {
+          "id": "dm-sets-functions",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["math.sets"],
+          "prompt": "What are injective, surjective and bijective functions, and why do programmers care?",
+          "answer": "Injective (one-to-one): different inputs never map to the same output. Surjective (onto): every possible output is produced by some input. Bijective: both — a perfect pairing, so the function has an inverse.",
+          "explanation": "An encoding must be injective to be decodable (base64, UTF-8); a hash function from long strings to 64 bits cannot be, so collisions must exist. Lossless round trips (`decode(encode(x)) == x`) need a bijection on the values you care about — a property worth testing directly.",
+          "prerequisites": ["num-base64"],
+          "resources": [
+            { "title": "Wikipedia — Bijection, injection and surjection", "url": "https://en.wikipedia.org/wiki/Bijection,_injection_and_surjection", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dm-counting",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["math.combinatorics"],
+          "prompt": "What does this print?",
+          "code": "import math\nprint(math.perm(5, 2), math.comb(5, 2), 2 ** 10, math.factorial(5))",
+          "lang": "python",
+          "answer": "20 10 1024 120",
+          "explanation": "Permutations count ordered selections — P(5,2) = 5 × 4 = 20. Combinations count unordered ones — C(5,2) = 20 / 2! = 10. A set of n items has 2ⁿ subsets (each item is in or out), and n items can be ordered in n! ways. These formulas estimate brute-force search spaces, test-case counts and password strength.",
+          "prerequisites": ["algo-common-classes"],
+          "resources": [
+            { "title": "Wikipedia — Combination", "url": "https://en.wikipedia.org/wiki/Combination", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "20 10 1024 120" }
+        },
+        {
+          "id": "dm-logarithms",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["math.logarithms", "algo.complexity"],
+          "prompt": "Why does O(log n) appear so often, and why is the base of the logarithm irrelevant in Big O?",
+          "answer": "log₂ n is the number of times you can halve n before reaching 1 — so any algorithm that discards half the remaining work each step (binary search, balanced trees, divide and conquer) takes about log n steps. Logarithms in different bases differ only by a constant factor (log₂ n = log₁₀ n / log₁₀ 2), which Big O ignores.",
+          "explanation": "Intuition: log₂ of a thousand is about 10, of a million about 20, of a billion about 30. Doubling the input adds just one step — which is why O(log n) operations feel constant in practice.",
+          "prerequisites": ["algo-binary-search-complexity"],
+          "resources": [
+            { "title": "Wikipedia — Logarithm", "url": "https://en.wikipedia.org/wiki/Logarithm", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dm-pigeonhole",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["math.combinatorics", "crypto.hashing"],
+          "prompt": "What is the pigeonhole principle, and what does it prove in computing?",
+          "answer": "If n items are placed into m boxes with n > m, at least one box holds more than one item. So any hash from arbitrary inputs to a fixed-size output must have collisions, and no lossless compression scheme can shrink every possible file.",
+          "explanation": "It turns \"surely this is unique enough\" into a counting argument. Collisions cannot be prevented, only made improbable (large outputs) or handled (hash tables compare keys after matching hashes).",
+          "prerequisites": ["ds-hash-collision"],
+          "resources": [
+            { "title": "Wikipedia — Pigeonhole principle", "url": "https://en.wikipedia.org/wiki/Pigeonhole_principle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dm-modular-arithmetic",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["math.modular", "crypto.foundations"],
+          "prompt": "In Python, what does this print?",
+          "code": "print(-7 % 3)\nprint(pow(3, 200, 13))\nprint((123456789 * 987654321) % 7)",
+          "lang": "python",
+          "answer": "2\n9\n3",
+          "explanation": "Modular arithmetic works with remainders — clock arithmetic. Python's `%` takes the sign of the divisor, so `-7 % 3` is 2 (C and Java give -1). `pow(base, exp, mod)` computes huge modular powers efficiently by repeated squaring, the core operation of RSA and Diffie–Hellman. `(a * b) % m` equals `((a % m) * (b % m)) % m`, which keeps hash computations bounded.",
+          "prerequisites": ["py-floor-division"],
+          "resources": [
+            { "title": "Wikipedia — Modular arithmetic", "url": "https://en.wikipedia.org/wiki/Modular_arithmetic", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "2\n9\n3" }
+        }
+      ]
+    },
+    {
+      "id": "dm-probability-proofs",
+      "name": "Probability, Proofs & Computability",
+      "description": "Probability and expectation, the birthday paradox, Bayes and base rates, induction and invariants, graph theory and undecidability.",
+      "cards": [
+        {
+          "id": "dm-probability-basics",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["math.probability"],
+          "prompt": "What are independence, conditional probability and expected value?",
+          "answer": "Independent events do not affect each other, so P(A and B) = P(A) × P(B). Conditional probability P(A | B) is the chance of A given that B happened. Expected value is the probability-weighted average outcome — the long-run mean.",
+          "explanation": "Engineering uses them constantly: if each of 20 independent services is up 99.9% of the time, all are up only about 98% (0.999²⁰); a retry succeeds if any attempt does; expected cost drives decisions like whether to cache. The classic mistake is assuming independence between failures that share a cause — the same region, deploy or dependency.",
+          "prerequisites": ["obs-percentiles"],
+          "resources": [
+            { "title": "Wikipedia — Conditional probability", "url": "https://en.wikipedia.org/wiki/Conditional_probability", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dm-birthday",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["math.probability", "crypto.collisions"],
+          "prompt": "What does this print — the chance that at least two of 23 people share a birthday, and of a collision among 1 million random 64-bit IDs?",
+          "code": "import math\n\ndef p_collision(k, n):\n    return 1 - math.exp(sum(math.log1p(-i / n) for i in range(k)))\n\nprint(round(p_collision(23, 365), 3))\nprint(f'{p_collision(10**6, 2**64):.1e}')",
+          "lang": "python",
+          "answer": "0.507\n2.7e-08",
+          "explanation": "The probability of no collision among k items drawn from n possibilities is the product of (1 − i/n); 23 people already give over 50%. Collisions become likely around √n draws — the birthday bound. For 64-bit IDs that is about 4 billion, and a million IDs is still safe; 32-bit IDs would collide after roughly 77,000.",
+          "prerequisites": ["dm-probability-basics", "dm-pigeonhole"],
+          "resources": [
+            { "title": "Wikipedia — Birthday problem", "url": "https://en.wikipedia.org/wiki/Birthday_problem", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "0.507\n2.7e-08" }
+        },
+        {
+          "id": "dm-bayes",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["math.probability", "ml.evaluation"],
+          "prompt": "A fraud detector catches 99% of fraud and wrongly flags only 1% of legitimate transactions. Fraud is 1 in 1,000 transactions. If a transaction is flagged, how likely is it to be fraud?",
+          "answer": "About 9%. Out of 100,000 transactions, 100 are fraud and 99 of them are flagged; of the 99,900 legitimate ones, 1% — about 999 — are also flagged. So only 99 of roughly 1,098 flags are real fraud.",
+          "explanation": "This is Bayes' theorem and the base-rate fallacy: when the thing you are looking for is rare, even an accurate test produces mostly false positives. It governs alerting, security scanners, medical tests and ML classifiers — always ask about the base rate before trusting a flag.",
+          "prerequisites": ["dm-probability-basics", "ai-metrics"],
+          "resources": [
+            { "title": "Wikipedia — Base rate fallacy", "url": "https://en.wikipedia.org/wiki/Base_rate_fallacy", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dm-induction-invariants",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["math.proofs", "algo.correctness"],
+          "prompt": "What is proof by induction, and how do loop invariants use the same idea?",
+          "answer": "Induction proves a statement for all n by proving it for a base case and then showing that if it holds for n, it holds for n + 1. A loop invariant is a condition true before the loop and preserved by every iteration; combined with the exit condition it proves the loop's result correct.",
+          "explanation": "For binary search, the invariant \"if the target exists, it is within [low, high]\" is exactly what makes the boundary updates correct, and what off-by-one bugs violate. Stating the invariant as a comment or assertion is the cheapest way to get tricky loops right.",
+          "prerequisites": ["algo-binary-search-bug", "oop-invariants"],
+          "resources": [
+            { "title": "Mathematics for Computer Science (Lehman, Leighton, Meyer — MIT, free)", "url": "https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "dm-graph-theory",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["math.graphs", "ds.graphs"],
+          "prompt": "What are the core graph-theory terms every programmer should know?",
+          "answer": "Vertices (nodes) and edges; directed versus undirected; weighted edges; degree (number of edges at a node); paths and cycles; connected components; trees (connected and acyclic, with exactly n − 1 edges); DAGs (directed acyclic graphs); and bipartite graphs (two groups with edges only between them).",
+          "explanation": "Recognising the graph in a problem is most of the work: dependencies are a DAG (topological sort), networks are weighted graphs (shortest paths), matching problems are bipartite, and social networks raise connectivity questions. The algorithms then follow from the shape.",
+          "prerequisites": ["ds-graph-representation"],
+          "resources": [
+            { "title": "Wikipedia — Glossary of graph theory", "url": "https://en.wikipedia.org/wiki/Glossary_of_graph_theory", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dm-halting-problem",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["math.computability", "compilers.static-analysis"],
+          "prompt": "What is the halting problem, and what does it mean for tools that analyse code?",
+          "answer": "Turing proved no program can decide, for every program and input, whether it eventually halts. Rice's theorem generalises this: any non-trivial question about a program's behaviour — \"does it ever dereference null?\", \"is this code reachable?\" — is undecidable in general.",
+          "explanation": "That is why every static analyser, type checker and linter must approximate: it either rejects some correct programs (conservative — type systems) or misses some bugs (heuristic — linters), and why perfect automatic bug detection is impossible, not merely unsolved.",
+          "prerequisites": ["comp-grammars"],
+          "resources": [
+            { "title": "Wikipedia — Halting problem", "url": "https://en.wikipedia.org/wiki/Halting_problem", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

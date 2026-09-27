@@ -153,6 +153,227 @@
           ]
         }
       ]
+    },
+    {
+      "id": "git-daily",
+      "name": "Everyday Power Tools",
+      "description": "Fetch versus pull, stash, cherry-pick, interactive rebase, conflicts, tags, detached HEAD and the modern switch/restore commands.",
+      "cards": [
+        {
+          "id": "git-fetch-pull",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["git.remotes"],
+          "prompt": "`git fetch` vs `git pull`",
+          "answer": "`fetch` downloads new commits and updates remote-tracking branches (`origin/main`) without touching your work; `pull` is `fetch` followed by integrating the upstream branch into your current branch — a merge by default, or a rebase with `--rebase`.",
+          "columns": {
+            "left": { "title": "fetch", "points": ["Downloads objects and refs", "Updates origin/* only", "Never changes your working tree", "Always safe"] },
+            "right": { "title": "pull", "points": ["fetch + merge (or rebase)", "Changes your current branch", "Can create merge commits or conflicts", "Configure `pull.rebase` or `pull.ff`"] }
+          },
+          "explanation": "Fetching first lets you inspect what changed (`git log HEAD..origin/main`) before integrating. Setting `pull.rebase=true` (or `pull.ff=only`) avoids a stream of pointless \"Merge branch main\" commits on feature branches.",
+          "prerequisites": ["git-merge-vs-rebase"],
+          "resources": [
+            { "title": "Git docs — git-fetch", "url": "https://git-scm.com/docs/git-fetch", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-stash",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.workflow"],
+          "prompt": "What does `git stash` do, and what are its pitfalls?",
+          "answer": "It shelves uncommitted changes (staged and unstaged) onto a stack and resets the working tree, so you can switch context; `git stash pop` reapplies the latest and drops it, `apply` keeps it. `-u` includes untracked files.",
+          "explanation": "Stashes are easy to forget and are not tied to a branch — old ones pile up in `git stash list`. For anything longer than a quick switch, a WIP commit on a branch (amended later) or a separate worktree (`git worktree add`) is safer and more visible.",
+          "prerequisites": ["git-three-areas"],
+          "resources": [
+            { "title": "Git docs — git-stash", "url": "https://git-scm.com/docs/git-stash", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-cherry-pick",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["git.history"],
+          "prompt": "What does `git cherry-pick` do, and when is it the right tool?",
+          "answer": "It applies the changes introduced by specific existing commits onto the current branch as new commits (with new hashes). Typical use: backporting a fix from main to a release branch.",
+          "explanation": "Frequent cherry-picking between long-lived branches duplicates commits and invites confusing conflicts later, so treat it as a surgical tool. `-x` records the original commit hash in the message, which keeps backports traceable.",
+          "resources": [
+            { "title": "Git docs — git-cherry-pick", "url": "https://git-scm.com/docs/git-cherry-pick", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-interactive-rebase",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["git.history", "git.rebase"],
+          "prompt": "What can `git rebase -i` do to a branch's history?",
+          "answer": "Reorder commits, squash or fixup several into one, reword messages, edit a commit's contents, split a commit, or drop commits — all before the branch is shared. `git commit --fixup=<sha>` plus `rebase -i --autosquash` folds review fixes into the right commit automatically.",
+          "explanation": "The goal is a history of logical, reviewable, bisectable steps. It rewrites hashes, so only do it on commits nobody else has based work on; push the result with `--force-with-lease`.",
+          "prerequisites": ["git-merge-vs-rebase"],
+          "resources": [
+            { "title": "Pro Git — Rewriting history", "url": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-conflicts",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["git.merging"],
+          "prompt": "How should you resolve a merge conflict well?",
+          "answer": "Read both sides and understand the intent of each change (`git log --merge` and `git diff` help), edit to the correct combined result rather than picking a side blindly, remove the markers, run the tests, then `git add` and continue. Enable `merge.conflictStyle=zdiff3` to see the common ancestor.",
+          "explanation": "Seeing the base version shows what each side actually changed, which makes most conflicts obvious. `git rerere` remembers resolutions for repeated rebases. Frequent integration keeps conflicts small — the real fix is shorter-lived branches.",
+          "prerequisites": ["git-branching-strategies"],
+          "resources": [
+            { "title": "Pro Git — Advanced merging", "url": "https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-tags",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["git.releases"],
+          "prompt": "Lightweight tags vs annotated tags",
+          "answer": "A lightweight tag is just a named pointer to a commit; an annotated tag is a full git object with a tagger, date, message and optional signature.",
+          "columns": {
+            "left": { "title": "Lightweight", "points": ["`git tag v1.0`", "Just a ref to a commit", "No author, date or message", "Fine for private bookmarks"] },
+            "right": { "title": "Annotated", "points": ["`git tag -a v1.0 -m \"...\"`", "A real object with metadata", "Can be GPG/SSH signed (`-s`)", "The right choice for releases"] }
+          },
+          "explanation": "Use annotated (and ideally signed) tags for releases — `git describe` and many release tools consider only annotated tags by default. Tags are not pushed with a normal `git push`; use `git push origin v1.2.0` or `--follow-tags`. Never move a published release tag.",
+          "prerequisites": ["git-objects"],
+          "resources": [
+            { "title": "Pro Git — Tagging", "url": "https://git-scm.com/book/en/v2/Git-Basics-Tagging", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-detached-head",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["git.refs"],
+          "prompt": "Git says \"You are in 'detached HEAD' state\". What does that mean, and how do you avoid losing work?",
+          "answer": "HEAD points directly at a commit instead of at a branch — typically after checking out a tag or a specific hash. You can look around and even commit, but new commits belong to no branch and become unreachable when you switch away. Create a branch to keep them: `git switch -c my-fix`.",
+          "explanation": "If you already switched away, `git reflog` still lists the orphaned commits for about 90 days, so the work is recoverable. Detached HEAD is also the normal state inside a bisect and in many CI checkouts.",
+          "prerequisites": ["git-reflog-recovery"],
+          "resources": [
+            { "title": "Git docs — git-checkout#_detached_head", "url": "https://git-scm.com/docs/git-checkout#_detached_head", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-switch-restore",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.commands"],
+          "prompt": "Why were `git switch` and `git restore` added when `git checkout` already existed?",
+          "answer": "`checkout` did two unrelated jobs — changing branches and overwriting files — so a typo could silently discard work. `switch` only changes branches (`-c` creates one); `restore` only restores file contents (`--staged` unstages, `--source=<rev>` takes a file from another commit).",
+          "explanation": "The split makes intent explicit and mistakes rarer. `git restore <file>` discards unstaged changes irreversibly, so use it deliberately; `git restore --staged <file>` is the safe way to unstage.",
+          "prerequisites": ["git-three-areas"],
+          "resources": [
+            { "title": "Git docs — git-switch", "url": "https://git-scm.com/docs/git-switch", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-remotes",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["git.remotes", "git.collaboration"],
+          "prompt": "What are remotes, remote-tracking branches and upstreams, and how does the fork-and-pull-request flow use them?",
+          "answer": "A remote is a named URL of another copy of the repository (`origin` by convention). Remote-tracking branches (`origin/main`) record where the remote's branches were at your last fetch. A branch's upstream is the remote branch it pushes to and pulls from, set with `git push -u origin my-branch`.",
+          "explanation": "In the fork flow, `origin` is your fork and `upstream` is the original project: fetch from upstream to stay current, push branches to origin, and open pull requests from your fork to upstream. `git remote -v` and `git branch -vv` show how everything is wired.",
+          "prerequisites": ["git-fetch-pull"],
+          "resources": [
+            { "title": "Pro Git — Working with remotes", "url": "https://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes", "kind": "book" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "git-repo-management",
+      "name": "Repository Management",
+      "description": "Ignoring files, hooks, large files, submodules, searching history and signed commits.",
+      "cards": [
+        {
+          "id": "git-gitignore-tracked",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["git.ignore"],
+          "prompt": "You added `.env` to `.gitignore`, but it still appears in `git status` changes. Why?",
+          "code": "$ echo \".env\" >> .gitignore\n$ git status\nmodified:   .env",
+          "lang": "bash",
+          "answer": "`.gitignore` only affects untracked files; `.env` was already committed, so git keeps tracking it. Stop tracking it with `git rm --cached .env`, commit that, and — because it contained secrets and is in history — rotate those secrets.",
+          "explanation": "Removing it from the latest commit does not remove it from history; it remains in every clone. For secrets that were pushed, rotation is mandatory and history rewriting (`git filter-repo`) is optional cleanup.",
+          "prerequisites": ["sec-secrets"],
+          "resources": [
+            { "title": "Git docs — gitignore", "url": "https://git-scm.com/docs/gitignore", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-hooks",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["git.hooks", "craft.tooling"],
+          "prompt": "What are git hooks, and why can they not be your only enforcement?",
+          "answer": "Scripts git runs at points in its workflow — `pre-commit` (lint, format, secret scan), `commit-msg` (message format), `pre-push` (quick tests). Tools such as pre-commit, Husky and lefthook share hook configuration through the repository.",
+          "explanation": "Hooks run on developers' machines and can be skipped with `--no-verify` or simply not installed, so they are a convenience for fast feedback. The same checks must run in CI, which is the real gate.",
+          "resources": [
+            { "title": "Pro Git — Git hooks", "url": "https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-large-files",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["git.performance"],
+          "prompt": "Your repository takes 20 minutes to clone because someone committed video assets and build artefacts. What do you do?",
+          "answer": "Stop the bleeding: add the paths to `.gitignore` and move large binaries to Git LFS or external artefact storage. The history still contains the blobs, so rewrite it with `git filter-repo` (coordinating a re-clone for everyone) if clone size matters — or use partial and shallow clones as a stop-gap.",
+          "explanation": "Git stores every version of every file forever, and binary files do not delta-compress well. Build outputs never belong in git; large source assets belong in LFS from the start. `git count-objects -vH` and `git-sizer` show where the size comes from.",
+          "prerequisites": ["git-objects"],
+          "resources": [
+            { "title": "Git LFS", "url": "https://git-lfs.com/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-submodules",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["git.dependencies", "repo.structure"],
+          "prompt": "Git submodules vs a package manager dependency",
+          "answer": "A submodule embeds another repository at a pinned commit inside yours; a package-manager dependency pulls a versioned release from a registry.",
+          "columns": {
+            "left": { "title": "Submodule", "points": ["Pinned commit of another repo", "Source present in your tree", "Extra commands and easy to desync", "No version ranges or resolution"] },
+            "right": { "title": "Package dependency", "points": ["Versioned release from a registry", "Resolved and locked by the tool", "Familiar to every contributor", "Needs publishing infrastructure"] }
+          },
+          "explanation": "Submodules need `--recurse-submodules` on clone and update, and are easy to leave out of sync, which confuses newcomers. Prefer published packages for dependencies; use submodules only when you genuinely need another repository's source at a fixed commit and no package exists.",
+          "prerequisites": ["repo-mono-vs-poly"],
+          "resources": [
+            { "title": "Pro Git — Submodules", "url": "https://git-scm.com/book/en/v2/Git-Tools-Submodules", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-history-search",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["git.history", "debugging"],
+          "prompt": "How do you find when a specific line or function changed, or when a string was introduced?",
+          "answer": "`git log -S \"text\"` (the pickaxe) finds commits that added or removed that string; `-G regex` matches changed lines; `git log -L :funcName:file` shows the history of one function; `git blame -w -C` attributes lines while ignoring whitespace and following moves.",
+          "explanation": "Add large formatting commits to a `.git-blame-ignore-revs` file so `blame` skips them. Combined with good commit messages, these commands answer \"why is this code like this?\" — often faster than asking anyone.",
+          "prerequisites": ["git-commit-messages"],
+          "resources": [
+            { "title": "Git docs — git-log", "url": "https://git-scm.com/docs/git-log", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-signed-commits",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["git.security", "security.supply-chain"],
+          "prompt": "What does commit signing prove, and why does the author field alone prove nothing?",
+          "answer": "Anyone can set any name and email in `user.name` and `user.email`, so the author field is a claim. A signature made with the committer's GPG or SSH key proves the commit came from the holder of that key, which hosting platforms show as \"Verified\".",
+          "explanation": "Branch protection can require signed commits. Signing with SSH keys (`gpg.format=ssh`) reuses keys developers already have. It is one link in supply-chain integrity alongside protected branches, reviews and signed release artefacts.",
+          "prerequisites": ["crypto-signatures"],
+          "resources": [
+            { "title": "Pro Git — Signing your work", "url": "https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work", "kind": "book" }
+          ]
+        }
+      ]
     }
   ]
 }

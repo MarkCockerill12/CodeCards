@@ -147,6 +147,121 @@
           ]
         }
       ]
+    },
+    {
+      "id": "mem-systems",
+      "name": "Allocators, Tools & the OS",
+      "description": "How malloc works, stack frames, copy-on-write, TLBs and huge pages, NUMA, OOM behaviour and leak-hunting tools.",
+      "cards": [
+        {
+          "id": "mem-malloc",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["memory.allocators"],
+          "prompt": "What does `malloc` actually do, and where does the memory come from?",
+          "answer": "A user-space allocator carves blocks out of larger regions it obtains from the kernel (`brk`/`sbrk` for the heap, `mmap` for large allocations). It keeps free lists or bins per size class, a small header per block, and per-thread caches to avoid lock contention.",
+          "explanation": "`free` usually returns memory to the allocator, not the OS, which is why RSS often stays high after a spike. Alternative allocators — jemalloc, tcmalloc, mimalloc — trade memory overhead for less fragmentation and better multithreaded throughput, and swapping one in is a common production fix.",
+          "prerequisites": ["mem-stack-heap"],
+          "resources": [
+            { "title": "Wikipedia — C dynamic memory allocation — implementations", "url": "https://en.wikipedia.org/wiki/C_dynamic_memory_allocation#Implementations", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-stack-frame",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["memory.stack", "os.abi"],
+          "prompt": "What is in a stack frame, and why does deep recursion overflow?",
+          "answer": "Each call pushes a frame: the return address, saved registers, the previous frame pointer, spilled arguments and the function's local variables. The frame is popped on return. The stack is a fixed-size region per thread (commonly 1–8 MB), so enough nested frames exceed it.",
+          "explanation": "The frames are also what a debugger walks to print a stack trace and what a stack buffer overflow corrupts — overwriting the saved return address is the classic exploit, which stack canaries detect. Large local arrays belong on the heap for the same size reason.",
+          "prerequisites": ["mem-stack-heap", "algo-recursion-stack"],
+          "resources": [
+            { "title": "Wikipedia — Call stack", "url": "https://en.wikipedia.org/wiki/Call_stack", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-copy-on-write",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["memory.virtual", "os.processes"],
+          "prompt": "What is copy-on-write, and where does it show up?",
+          "answer": "Two users share the same memory pages marked read-only; only when one writes does the kernel (or runtime) copy the affected page for it. `fork` uses it so the child shares the parent's memory until either side modifies it.",
+          "explanation": "It also appears in filesystems and snapshots (ZFS, Btrfs, container image layers), Redis background saves, and immutable string or collection implementations. The catch: a forked process that then writes widely — or reference-count updates in CPython touching every object — triggers copying and memory growth.",
+          "prerequisites": ["mem-virtual-memory", "os-fork-exec"],
+          "resources": [
+            { "title": "Wikipedia — Copy-on-write", "url": "https://en.wikipedia.org/wiki/Copy-on-write", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-tlb-hugepages",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["memory.virtual", "perf.memory"],
+          "prompt": "What is the TLB, and why do huge pages help large-memory workloads?",
+          "answer": "The translation lookaside buffer caches recent virtual-to-physical page translations. With 4 KB pages a large working set needs far more entries than the TLB holds, so misses force slow page-table walks. Huge pages (2 MB or 1 GB) cover the same memory with far fewer entries.",
+          "explanation": "Databases and JVMs with multi-gigabyte heaps benefit most. Transparent huge pages do it automatically but can cause latency spikes from compaction, which is why some databases recommend disabling THP and configuring explicit huge pages instead.",
+          "prerequisites": ["mem-virtual-memory"],
+          "resources": [
+            { "title": "Linux kernel docs — Transparent Hugepage Support", "url": "https://docs.kernel.org/admin-guide/mm/transhuge.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "mem-numa",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["memory.hardware", "perf.memory"],
+          "prompt": "What is NUMA, and why can a thread run slower on a bigger server?",
+          "answer": "Non-uniform memory access: on multi-socket machines each CPU socket has its own local memory, and reaching another socket's memory is noticeably slower. A thread scheduled on one socket but using memory allocated on another pays that penalty on every miss.",
+          "explanation": "NUMA-aware systems pin threads and allocate memory on the same node (`numactl`, first-touch allocation). Databases and high-performance services tune this; for most applications, keeping one process per socket or letting the kernel's automatic balancing work is enough.",
+          "prerequisites": ["mem-cache-hierarchy"],
+          "resources": [
+            { "title": "Wikipedia — Non-uniform memory access", "url": "https://en.wikipedia.org/wiki/Non-uniform_memory_access", "kind": "article" }
+          ]
+        },
+        {
+          "id": "mem-oom-killer",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["memory.linux", "os.memory"],
+          "prompt": "A container is killed with exit code 137 and no error in the application logs. What happened, and how do you confirm it?",
+          "answer": "It exceeded its cgroup memory limit and the kernel's OOM killer sent SIGKILL (128 + 9 = 137), which cannot be caught or logged by the process. Confirm with `kubectl describe pod` (reason OOMKilled), `dmesg`/`journalctl -k`, or container runtime events.",
+          "explanation": "Linux overcommits memory, so allocations succeed and the failure arrives later when pages are touched. Fixes: find the leak or peak usage, set runtime limits below the container limit (JVM `MaxRAMPercentage`, Node `--max-old-space-size`), and size requests and limits from measured usage.",
+          "prerequisites": ["k8s-requests-limits", "bash-exit-codes"],
+          "resources": [
+            { "title": "Kubernetes — Assign memory resources to containers", "url": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "mem-leak-tools",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["memory.debugging", "tools.profiling"],
+          "prompt": "Which tools find memory errors and leaks in native code, and which in managed runtimes?",
+          "answer": "Native: AddressSanitizer (out-of-bounds, use-after-free, with LeakSanitizer for leaks), Valgrind memcheck (slower, no recompile), and heap profilers such as heaptrack or jemalloc profiling. Managed: heap dumps analysed by dominator tree — Eclipse MAT for Java, dotnet-dump/dotMemory for .NET, Chrome DevTools heap snapshots for JavaScript, tracemalloc for Python.",
+          "explanation": "For a leak, compare two snapshots taken some time apart and look at what grew; the retaining path shows which reference keeps it alive. Run sanitizers in CI — they catch memory corruption when it happens instead of when it crashes much later.",
+          "prerequisites": ["mem-leak-managed", "mem-use-after-free"],
+          "resources": [
+            { "title": "Clang — AddressSanitizer", "url": "https://clang.llvm.org/docs/AddressSanitizer.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "mem-ownership-models",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["memory.safety", "memory.gc"],
+          "prompt": "Manual memory management vs garbage collection vs ownership (Rust)",
+          "answer": "Manual (C, C++ raw) gives full control and no runtime cost but trusts the programmer; GC (Java, Go, C#, JS) removes use-after-free at the cost of pauses and memory headroom; ownership (Rust) proves safety at compile time with deterministic frees and no collector.",
+          "columns": {
+            "left": { "title": "Manual / GC", "points": ["Manual: malloc/free, new/delete", "Manual: fastest, and the source of most CVEs", "GC: safe by default, easy to write", "GC: pauses, headroom, finalisation is unpredictable"] },
+            "right": { "title": "Ownership", "points": ["Compiler tracks one owner per value", "Freed deterministically at scope end", "No GC, no use-after-free in safe code", "Borrow checker learning curve"] }
+          },
+          "explanation": "Each moves the cost somewhere: to bugs (manual), to runtime and memory (GC), or to learning and compile-time friction (ownership). Modern C++ with RAII and smart pointers sits between manual and ownership, but without compile-time guarantees.",
+          "prerequisites": ["mem-gc-strategies", "rs-ownership-rules"],
+          "resources": [
+            { "title": "The Rust Book — What is ownership?", "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

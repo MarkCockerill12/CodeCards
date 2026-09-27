@@ -1,0 +1,343 @@
+{
+  "id": "php",
+  "name": "PHP",
+  "icon": "🐘",
+  "category": "Languages",
+  "color": "#777BB4",
+  "description": "Modern PHP 8: type juggling and strict types, arrays, closures, enums and readonly classes, OOP and traits, plus secure web development with PDO, sessions, Composer and the request lifecycle.",
+  "modules": [
+    {
+      "id": "php-essentials",
+      "name": "Language Essentials",
+      "description": "Loose versus strict comparison, strict_types, arrays as ordered maps, value semantics, null handling, match, closures and generators.",
+      "cards": [
+        {
+          "id": "php-comparison",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["php.types", "php.gotchas"],
+          "prompt": "In PHP 8, what does this print?",
+          "code": "<?php\nvar_dump(0 == \"a\");\nvar_dump(\"1\" == \"01\");\nvar_dump(\"10\" == \"1e1\");\nvar_dump(null == false);\nvar_dump(0 === \"0\");",
+          "lang": "php",
+          "answer": "bool(false)\nbool(true)\nbool(true)\nbool(true)\nbool(false)",
+          "explanation": "`==` juggles types: numeric strings compare as numbers (\"1\" == \"01\", \"10\" == \"1e1\") and `null == false`. PHP 8 fixed the worst case — `0 == \"a\"` is now false (it was true in PHP 7) because non-numeric strings are no longer converted to 0. `===` compares type and value with no juggling; use it by default.",
+          "prerequisites": ["js-eq-vs-strict"],
+          "resources": [
+            { "title": "PHP Manual — Comparison operators", "url": "https://www.php.net/manual/en/language.operators.comparison.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "bool(false)\nbool(true)\nbool(true)\nbool(true)\nbool(false)" }
+        },
+        {
+          "id": "php-strict-types",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["php.types"],
+          "prompt": "What does this print?",
+          "code": "<?php\ndeclare(strict_types=1);\n\nfunction double(int $n): int\n{\n    return $n * 2;\n}\n\ntry {\n    echo double(\"5\");\n} catch (TypeError $e) {\n    echo get_class($e), \"\\n\";\n}",
+          "lang": "php",
+          "answer": "TypeError",
+          "explanation": "By default PHP coerces scalar arguments to the declared type, so `double(\"5\")` would quietly return 10. `declare(strict_types=1)` at the top of the *calling* file turns that coercion into a `TypeError`. Use it in every file, together with parameter, return and property types, and run a static analyser.",
+          "prerequisites": ["php-comparison"],
+          "resources": [
+            { "title": "PHP Manual — Type declarations — strict typing", "url": "https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "TypeError" }
+        },
+        {
+          "id": "php-arrays",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["php.arrays"],
+          "prompt": "What does this print?",
+          "code": "<?php\n$a = [1 => 'a', \"1\" => 'b', true => 'c', \"01\" => 'd'];\necho json_encode($a), \"\\n\";",
+          "lang": "php",
+          "answer": "{\"1\":\"c\",\"01\":\"d\"}",
+          "explanation": "A PHP array is an ordered hash map serving as list, dictionary, set and stack at once. Keys are integers or strings, and integer-like strings are cast: `\"1\"` and `true` both become the integer key 1, overwriting earlier values, while `\"01\"` stays a string. Insertion order is preserved.",
+          "prerequisites": ["js-map-vs-object"],
+          "resources": [
+            { "title": "PHP Manual — Arrays", "url": "https://www.php.net/manual/en/language.types.array.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "{\"1\":\"c\",\"01\":\"d\"}" }
+        },
+        {
+          "id": "php-value-semantics",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["php.arrays", "php.objects"],
+          "prompt": "What does this print?",
+          "code": "<?php\nfunction addItem(array $list): int\n{\n    $list[] = 'x';\n    return count($list);\n}\n\n$items = ['a'];\necho addItem($items), ' ', count($items), \"\\n\";\n\n$o = new stdClass();\n$o->n = 1;\nfunction bump(stdClass $x): void { $x->n++; }\nbump($o);\necho $o->n, \"\\n\";",
+          "lang": "php",
+          "answer": "2 1\n2",
+          "explanation": "Arrays are passed and assigned by value (copy-on-write makes that cheap until one side modifies it), so the function's append does not affect the caller. Objects are passed as handles, so methods and property changes are visible to the caller. Use `&$param` only when you truly need a reference.",
+          "prerequisites": ["java-pass-by-value"],
+          "resources": [
+            { "title": "PHP Manual — Objects and references", "url": "https://www.php.net/manual/en/language.oop5.references.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "2 1\n2" }
+        },
+        {
+          "id": "php-null-match",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["php.operators"],
+          "prompt": "What does this print?",
+          "code": "<?php\n$config = ['port' => 0];\necho $config['port'] ?? 8080, \"\\n\";\necho $config['host'] ?? 'localhost', \"\\n\";\n$user = null;\nvar_dump($user?->address?->city);\necho match (true) {\n    5 > 10 => 'big',\n    5 > 1 => 'medium',\n    default => 'small',\n}, \"\\n\";",
+          "lang": "php",
+          "answer": "0\nlocalhost\nNULL\nmedium",
+          "explanation": "`??` returns the left side unless it is null or undefined — so a configured `0` survives, unlike with `?:` or `||`-style checks — and it suppresses the undefined-key warning. `?->` short-circuits a chain to null. `match` is an expression with strict (`===`) comparison, no fall-through, and an `UnhandledMatchError` if nothing matches.",
+          "prerequisites": ["js-optional-chaining"],
+          "resources": [
+            { "title": "PHP Manual — match", "url": "https://www.php.net/manual/en/control-structures.match.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "0\nlocalhost\nNULL\nmedium" }
+        },
+        {
+          "id": "php-closures",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["php.closures"],
+          "prompt": "What does this print?",
+          "code": "<?php\n$count = 1;\n$byValue = function () use ($count) { return $count; };\n$byRef = function () use (&$count) { return $count; };\n$arrow = fn() => $count;\n$count = 5;\necho $byValue(), ' ', $byRef(), ' ', $arrow(), \"\\n\";",
+          "lang": "php",
+          "answer": "1 5 1",
+          "explanation": "Anonymous functions capture nothing automatically: `use ($count)` copies the value when the closure is created, and `use (&$count)` captures a reference that sees later changes. Arrow functions (`fn() => ...`) capture outer variables automatically, but by value at creation time.",
+          "prerequisites": ["js-closure-definition"],
+          "resources": [
+            { "title": "PHP Manual — Anonymous functions", "url": "https://www.php.net/manual/en/functions.anonymous.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "1 5 1" }
+        },
+        {
+          "id": "php-generators",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["php.generators", "fp.laziness"],
+          "prompt": "What does this print?",
+          "code": "<?php\nfunction numbers(): Generator\n{\n    for ($i = 1; $i <= 3; $i++) {\n        echo \"yield $i\\n\";\n        yield $i;\n    }\n}\n\nforeach (numbers() as $n) {\n    echo \"got $n\\n\";\n    if ($n === 2) {\n        break;\n    }\n}",
+          "lang": "php",
+          "answer": "yield 1\ngot 1\nyield 2\ngot 2",
+          "explanation": "A function containing `yield` returns a Generator that runs lazily, pausing at each `yield` until the consumer asks for the next value — so breaking out of the loop means the third value is never produced. Generators process huge files or result sets in constant memory.",
+          "prerequisites": ["py-generator-lazy"],
+          "resources": [
+            { "title": "PHP Manual — Generators", "url": "https://www.php.net/manual/en/language.generators.overview.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "yield 1\ngot 1\nyield 2\ngot 2" }
+        },
+        {
+          "id": "php-strpos-trap",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["php.strings", "php.gotchas"],
+          "prompt": "Why does this treat \"https://example.com\" as not being a URL?",
+          "code": "<?php\nfunction isUrl(string $s): bool\n{\n    return strpos($s, 'http') == false ? false : true;\n}",
+          "lang": "php",
+          "answer": "`strpos` returns the position of the match, and a match at the very start is position 0, which `== false` treats as not found. Compare strictly — `strpos(...) === false` — or, in PHP 8, use `str_starts_with`, `str_contains` or `str_ends_with`, which return booleans.",
+          "explanation": "Many PHP functions return a value or `false` on failure, where the value can be falsy (0, empty string). Always compare those results with `===`. Static analysers such as PHPStan flag this pattern.",
+          "prerequisites": ["php-comparison"],
+          "resources": [
+            { "title": "PHP Manual — str_starts_with", "url": "https://www.php.net/manual/en/function.str-starts-with.php", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "php-oop",
+      "name": "Objects & Modern PHP",
+      "description": "Classes, constructor promotion and readonly, enums, interfaces and traits, late static binding, and the exception hierarchy.",
+      "cards": [
+        {
+          "id": "php-constructor-readonly",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["php.oop", "php.immutability"],
+          "prompt": "What do constructor property promotion and `readonly` give you?",
+          "answer": "Promotion declares and assigns properties straight from the constructor signature: `public function __construct(private readonly string $email) {}`. `readonly` properties can be initialised once, from inside the class, and never changed again; `readonly class` (PHP 8.2) makes every property readonly.",
+          "explanation": "Together they make immutable value objects short to write. Readonly is shallow — a readonly property holding an object still allows that object to change — and \"withers\" (`withEmail()` returning a modified clone) replace setters.",
+          "prerequisites": ["oop-value-objects"],
+          "resources": [
+            { "title": "PHP Manual — Constructors and destructors — constructor promotion", "url": "https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.constructor.promotion", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-enums",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["php.enums"],
+          "prompt": "What does this print?",
+          "code": "<?php\nenum Status: string\n{\n    case Active = 'active';\n    case Banned = 'banned';\n\n    public function label(): string\n    {\n        return ucfirst($this->value);\n    }\n}\n\necho Status::from('banned')->label(), \"\\n\";\nvar_dump(Status::tryFrom('unknown'));",
+          "lang": "php",
+          "answer": "Banned\nNULL",
+          "explanation": "Enums (PHP 8.1) define a closed set of cases; backed enums map each case to a string or int. `from()` converts a stored value to a case and throws on an unknown value, while `tryFrom()` returns null. Enums can have methods and implement interfaces, replacing class constants and magic strings.",
+          "prerequisites": ["ts-enum-vs-union"],
+          "resources": [
+            { "title": "PHP Manual — Enumerations", "url": "https://www.php.net/manual/en/language.enumerations.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "Banned\nNULL" }
+        },
+        {
+          "id": "php-traits",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["php.oop", "oop.composition"],
+          "prompt": "Traits vs interfaces vs abstract classes in PHP",
+          "answer": "An interface declares a contract with no implementation; an abstract class shares implementation through single inheritance; a trait copies methods and properties into any class that `use`s it — horizontal reuse without an \"is-a\" relationship.",
+          "columns": {
+            "left": { "title": "Interface / abstract class", "points": ["Interface: contract only, many per class", "Abstract: shared code, single inheritance", "Both define a type you can hint against", "Is-a relationships"] },
+            "right": { "title": "Trait", "points": ["Methods copied into the using class", "Many traits per class", "Not a type — cannot be type-hinted", "Horizontal reuse; watch for name clashes"] }
+          },
+          "explanation": "Traits suit small, cohesive helpers (timestamps, logging), but they are compile-time copy-paste: they can hide dependencies and clash by name (resolved with `insteadof`). Type-hint against interfaces, and prefer composition for anything with its own state or collaborators.",
+          "prerequisites": ["oop-abstract-vs-interface", "oop-diamond-mixins"],
+          "resources": [
+            { "title": "PHP Manual — Traits", "url": "https://www.php.net/manual/en/language.oop5.traits.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-late-static-binding",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["php.oop"],
+          "prompt": "What does this print?",
+          "code": "<?php\nclass A\n{\n    public static function make(): self { return new self(); }\n    public static function makeStatic(): static { return new static(); }\n}\n\nclass B extends A {}\n\necho get_class(B::make()), ' ', get_class(B::makeStatic()), \"\\n\";",
+          "lang": "php",
+          "answer": "A B",
+          "explanation": "`self` refers to the class where the method is written; `static` refers to the class the method was called on — late static binding. Factory methods on a base class should use `new static()` (and a `static` return type) so subclasses get instances of themselves.",
+          "prerequisites": ["oop-static-dynamic-dispatch"],
+          "resources": [
+            { "title": "PHP Manual — Late static bindings", "url": "https://www.php.net/manual/en/language.oop5.late-static-bindings.php", "kind": "docs" }
+          ],
+          "verify": { "runtime": "php", "expectedOutput": "A B" }
+        },
+        {
+          "id": "php-exceptions",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["php.errors"],
+          "prompt": "How is PHP's error and exception hierarchy organised?",
+          "answer": "Everything throwable implements `Throwable`, which has two branches: `Exception` for application and library errors you may handle, and `Error` for engine problems — `TypeError`, `ValueError`, `ArgumentCountError`, calls to undefined methods. `catch (Exception $e)` does not catch `Error`s.",
+          "explanation": "Since PHP 8, many former warnings throw instead. Catch specific types where you can handle them, register one top-level handler that logs `Throwable`, and chain causes with the `$previous` argument when wrapping exceptions.",
+          "prerequisites": ["craft-error-handling"],
+          "resources": [
+            { "title": "PHP Manual — Errors in PHP 7+", "url": "https://www.php.net/manual/en/language.errors.php7.php", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "php-web",
+      "name": "PHP on the Web",
+      "description": "The request lifecycle, SQL with PDO, output escaping, passwords and sessions, file inclusion, Composer, PHP-FPM and OPcache, and quality tooling.",
+      "cards": [
+        {
+          "id": "php-lifecycle",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["php.runtime", "web.architecture"],
+          "prompt": "What is PHP's traditional \"shared-nothing\" request model?",
+          "answer": "Each HTTP request runs a fresh script execution — typically in a PHP-FPM worker behind nginx or Apache — that builds its objects, handles the request, sends the response and discards everything. No state survives between requests unless stored externally (database, cache, session store).",
+          "explanation": "This makes PHP robust — a leak or crash affects only one request — and simple to scale horizontally, at the cost of bootstrapping the framework on every request, which OPcache largely offsets. Long-running runtimes (Swoole, RoadRunner, FrankenPHP worker mode) trade that isolation for speed and bring back leak and shared-state concerns.",
+          "prerequisites": ["ctr-stateless"],
+          "resources": [
+            { "title": "PHP Manual — FastCGI Process Manager (FPM)", "url": "https://www.php.net/manual/en/install.fpm.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-pdo-sql",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["php.security", "sql.injection"],
+          "prompt": "What is the vulnerability, and what is the correct PDO code?",
+          "code": "<?php\n$email = $_GET['email'];\n$rows = $pdo->query(\"SELECT * FROM users WHERE email = '$email'\")->fetchAll();",
+          "lang": "php",
+          "answer": "User input is interpolated into SQL — SQL injection. Use a prepared statement with bound parameters: `$stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?'); $stmt->execute([$email]);`, with PDO configured to throw exceptions and with emulated prepares disabled.",
+          "explanation": "Parameter binding keeps data out of the SQL text entirely; escaping functions do not. Identifiers such as column names for sorting cannot be bound — check them against an allowlist. Every mainstream PHP ORM (Doctrine, Eloquent) parameterises for you, until someone uses a raw query.",
+          "prerequisites": ["sql-injection"],
+          "resources": [
+            { "title": "PHP Manual — PDO — prepared statements", "url": "https://www.php.net/manual/en/pdo.prepared-statements.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-output-escaping",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["php.security", "security.xss"],
+          "prompt": "What is wrong with this template line?",
+          "code": "<p>You searched for: <?= $_GET['q'] ?></p>",
+          "lang": "php",
+          "answer": "The query parameter is echoed raw into HTML, so `?q=<script>…</script>` executes in visitors' browsers — reflected XSS. Escape on output: `htmlspecialchars($q, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`, or better, use a template engine that escapes by default (Twig, Blade).",
+          "explanation": "Escaping must match the context — HTML body, attribute, JavaScript and URL each differ — which is why auto-escaping template engines are safer than remembering to call functions. Validate input on the way in, but always encode on the way out.",
+          "prerequisites": ["sec-xss-types"],
+          "resources": [
+            { "title": "PHP Manual — htmlspecialchars", "url": "https://www.php.net/manual/en/function.htmlspecialchars.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-passwords-sessions",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["php.security", "security.authn"],
+          "prompt": "How should PHP applications store passwords and manage sessions?",
+          "answer": "Passwords: `password_hash($password, PASSWORD_DEFAULT)` (bcrypt or Argon2, salted automatically), `password_verify()` to check, and `password_needs_rehash()` to upgrade old hashes at login. Sessions: call `session_regenerate_id(true)` after login, and set cookies with `secure`, `httponly` and `samesite`.",
+          "explanation": "Never use `md5` or `sha1` for passwords. Also set `session.use_strict_mode=1` so PHP rejects uninitialised session IDs, and store sessions in a shared backend (Redis, database) when running several servers.",
+          "prerequisites": ["sec-password-storage", "sec-session-management"],
+          "resources": [
+            { "title": "PHP Manual — password_hash", "url": "https://www.php.net/manual/en/function.password-hash.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-file-inclusion",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["php.security", "appsec.path-traversal"],
+          "prompt": "What can an attacker do with `?page=../../../../etc/passwd` or a crafted value here?",
+          "code": "<?php\n$page = $_GET['page'] ?? 'home';\ninclude __DIR__ . \"/pages/$page.php\";",
+          "lang": "php",
+          "answer": "Local file inclusion: `include` executes or reveals any file the process can read — config files with secrets, or uploaded files containing PHP code (leading to remote code execution). Map allowed page names to files through an allowlist, and never build include paths from user input.",
+          "explanation": "Setting `allow_url_include=Off` (the default) blocks remote inclusion, but local inclusion needs only a readable file. Combined with a file-upload feature it is a classic path to full server compromise.",
+          "prerequisites": ["as-path-traversal"],
+          "resources": [
+            { "title": "OWASP — Testing for local file inclusion", "url": "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-composer",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["php.tooling", "repo.dependencies"],
+          "prompt": "What do Composer and PSR-4 autoloading provide?",
+          "answer": "Composer is PHP's dependency manager: `composer.json` declares dependencies and version constraints, `composer.lock` pins exact versions (commit it for applications), and packages come from Packagist. PSR-4 autoloading maps namespaces to directories, so classes load automatically without `require` statements.",
+          "explanation": "Run `composer install` (from the lockfile) in CI and deployments, `composer update` only deliberately, and `composer audit` to check for known vulnerabilities. Optimise the autoloader for production with `--optimize-autoloader --no-dev`.",
+          "prerequisites": ["repo-lockfile"],
+          "resources": [
+            { "title": "Composer — Basic usage", "url": "https://getcomposer.org/doc/01-basic-usage.md", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-fpm-opcache",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["php.runtime", "php.performance"],
+          "prompt": "What are PHP-FPM, OPcache and the JIT?",
+          "answer": "PHP-FPM is a pool of PHP worker processes that a web server (usually nginx) forwards requests to over FastCGI; pool size limits concurrency and memory. OPcache stores compiled script bytecode in shared memory, so scripts are not re-parsed on every request. The JIT (PHP 8) compiles hot bytecode to machine code.",
+          "explanation": "OPcache is essential in production and often doubles throughput; the JIT mainly helps CPU-heavy code, not typical database-bound web requests. Size `pm.max_children` from available memory divided by per-worker memory, or requests queue and time out under load.",
+          "prerequisites": ["php-lifecycle", "conc-pool-sizing"],
+          "resources": [
+            { "title": "PHP Manual — OPcache", "url": "https://www.php.net/manual/en/book.opcache.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-quality-tooling",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["php.tooling", "craft.tooling"],
+          "prompt": "What does a well-run modern PHP project use for quality?",
+          "answer": "PHPUnit or Pest for tests, a static analyser (PHPStan or Psalm, at a strict level) to catch type errors and bugs before runtime, a formatter following the PER coding style (PHP-CS-Fixer), `declare(strict_types=1)` everywhere, and Rector to automate upgrades between PHP versions.",
+          "explanation": "Static analysis provides much of the safety PHP's dynamic nature lacks: with typed code and a strict PHPStan level, whole classes of null and type bugs disappear. PHP-FIG's PSR standards (autoloading, logging, HTTP messages, containers) keep libraries interoperable across frameworks.",
+          "prerequisites": ["craft-static-analysis", "php-strict-types"],
+          "resources": [
+            { "title": "PHPStan — Getting started", "url": "https://phpstan.org/user-guide/getting-started", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

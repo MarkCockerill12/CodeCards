@@ -128,6 +128,97 @@
           ]
         }
       ]
+    },
+    {
+      "id": "repo-hygiene",
+      "name": "Repository Hygiene & Tooling",
+      "description": "Standard repository files, twelve-factor config, task runners, dependency automation, editor config and generated code.",
+      "cards": [
+        {
+          "id": "repo-standard-files",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["repo.docs", "repo.governance"],
+          "prompt": "Besides the README, which standard files should a healthy repository have?",
+          "answer": "`LICENSE` (legal terms of use), `CONTRIBUTING.md` (how to set up, test and propose changes), `SECURITY.md` (how to report vulnerabilities privately), `CODEOWNERS` (who must review which paths), `.gitignore`, `.editorconfig`, a changelog for published software, and issue and PR templates.",
+          "explanation": "Hosting platforms surface these files automatically — a SECURITY.md adds a \"report a vulnerability\" link, CODEOWNERS auto-requests reviewers. Without a LICENSE, public code is legally \"all rights reserved\", whatever the author intended.",
+          "prerequisites": ["repo-readme", "craft-licences"],
+          "resources": [
+            { "title": "GitHub Docs — Setting up your project for healthy contributions", "url": "https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-env-config",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["repo.config", "security.secrets"],
+          "prompt": "What is wrong with how this project handles configuration?",
+          "code": "# .env  (committed)\nDATABASE_URL=postgres://admin:hunter2@prod-db:5432/app\nSTRIPE_KEY=sk_live_51H...\n\n# config.js\nconst db = process.env.NODE_ENV === \"production\"\n  ? \"postgres://prod-db/app\"\n  : \"postgres://localhost/app\";",
+          "lang": "bash",
+          "answer": "Real secrets are committed in `.env`, and configuration differs by environment through code branches. Commit a `.env.example` with placeholder keys and documentation, git-ignore the real `.env`, load secrets from a secret manager in deployed environments, and read all settings from the environment in one validated config module.",
+          "explanation": "Validating configuration at startup (with a schema) turns \"undefined is not a function\" deep in a request into a clear error at boot. The example file doubles as documentation of every setting the app needs.",
+          "prerequisites": ["sec-secrets", "git-gitignore-tracked"],
+          "resources": [
+            { "title": "The Twelve-Factor App — Config", "url": "https://12factor.net/config", "kind": "article" }
+          ]
+        },
+        {
+          "id": "repo-task-runner",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["repo.tooling", "dev.experience"],
+          "prompt": "Why give a repository a single entry point for common tasks (Makefile, npm scripts, just, Taskfile)?",
+          "answer": "So every contributor and CI run the same commands the same way: `make test`, `npm run lint`, `just dev`. It documents the workflow executably, hides tool-specific flags, and means CI configuration just calls the same targets people run locally.",
+          "explanation": "When CI runs something developers cannot easily reproduce, failures become guesswork. Keep the targets few and conventional — setup, dev, test, lint, build — and make `setup` idempotent so it doubles as onboarding.",
+          "prerequisites": ["cicd-pipeline-stages"],
+          "resources": [
+            { "title": "just — command runner manual", "url": "https://just.systems/man/en/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-dependency-updates",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["repo.dependencies", "security.supply-chain"],
+          "prompt": "Dependencies are two years out of date and upgrading now is a multi-week project. How do you avoid this happening again?",
+          "answer": "Automate small, frequent updates: Renovate or Dependabot opens PRs for new versions, grouped sensibly and scheduled, with CI running the full test suite on each. Auto-merge low-risk patch updates when tests pass, and review majors deliberately.",
+          "explanation": "Small regular upgrades are cheap; one huge upgrade across several major versions is expensive and risky. Up-to-date dependencies also mean security fixes can be applied in hours instead of turning into a crisis.",
+          "prerequisites": ["repo-lockfile", "as-dependency-hygiene"],
+          "resources": [
+            { "title": "Renovate documentation", "url": "https://docs.renovatebot.com/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-editorconfig",
+          "type": "cloze",
+          "difficulty": 1,
+          "tags": ["repo.tooling"],
+          "prompt": "A `.___` file at the repository root tells editors which indentation, line endings, charset and final-newline rules to use per file type.",
+          "answer": "editorconfig",
+          "explanation": "It stops whitespace churn from mixed editor settings before a formatter ever runs, and is supported natively by most editors. Pair it with a `.gitattributes` rule such as `* text=auto eol=lf` so line endings are normalised in the repository regardless of operating system.",
+          "prerequisites": ["plat-windows-vs-unix"],
+          "resources": [
+            { "title": "EditorConfig", "url": "https://editorconfig.org/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-generated-code",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["repo.codegen"],
+          "prompt": "Committing generated code vs generating it during the build",
+          "answer": "Committed generated code (API clients, protobuf stubs, ORM models) is visible in reviews and works without the generator installed; build-time generation keeps the repository free of noise and can never drift from its source.",
+          "columns": {
+            "left": { "title": "Commit generated code", "points": ["Visible and reviewable diffs", "No generator needed to build", "Drifts unless CI checks it", "Noisy diffs in PRs"] },
+            "right": { "title": "Generate at build time", "points": ["Single source of truth", "Cleaner repository and reviews", "Every build needs the toolchain", "Harder to browse the generated API"] }
+          },
+          "explanation": "If you commit it, CI must regenerate and fail when the output differs, or it silently drifts. Mark generated files (`linguist-generated` in `.gitattributes`) so reviews collapse them. Never hand-edit generated files — change the source or the template.",
+          "prerequisites": ["repo-monorepo-tooling"],
+          "resources": [
+            { "title": "GitHub Docs — Customizing how changed files appear on GitHub", "url": "https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

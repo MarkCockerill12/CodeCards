@@ -188,6 +188,173 @@
           ]
         }
       ]
+    },
+    {
+      "id": "ds-core-ops",
+      "name": "Sets, Queues & Traversals",
+      "description": "Set algebra, priority queues, ring buffers, tree traversals and choosing the right structure.",
+      "cards": [
+        {
+          "id": "ds-set-ops",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["ds.sets", "python.stdlib"],
+          "prompt": "What does this print?",
+          "code": "a = {1, 2, 3}\nb = {3, 4, 5}\nprint(sorted(a & b))\nprint(sorted(a | b))\nprint(sorted(a - b))\nprint(sorted(a ^ b))",
+          "lang": "python",
+          "answer": "[3]\n[1, 2, 3, 4, 5]\n[1, 2]\n[1, 2, 4, 5]",
+          "explanation": "Sets give O(1) average membership plus set algebra: intersection `&`, union `|`, difference `-` and symmetric difference `^`. They deduplicate for free and turn \"is x in this list?\" from O(n) into O(1). Elements must be hashable, and iteration order is not guaranteed — hence the `sorted` calls.",
+          "resources": [
+            { "title": "Python docs — Set types", "url": "https://docs.python.org/3/library/stdtypes.html#set-types-set-frozenset", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "[3]\n[1, 2, 3, 4, 5]\n[1, 2]\n[1, 2, 4, 5]" }
+        },
+        {
+          "id": "ds-priority-queue",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ds.heap", "ds.priority-queue"],
+          "prompt": "A job scheduler must always run the highest-priority pending job next, while jobs keep arriving. Which structure?",
+          "answer": "A priority queue, implemented as a binary heap: O(log n) insert, O(log n) remove-highest, O(1) peek. A sorted list would make every insert O(n).",
+          "explanation": "Break ties with an insertion counter so equal-priority jobs stay FIFO and items never need to be compared directly — Python's `heapq` idiom is pushing `(priority, counter, job)`. Changing a priority in place needs an indexed heap or lazy deletion (push a new entry, skip stale ones on pop).",
+          "prerequisites": ["ds-heap"],
+          "resources": [
+            { "title": "Python docs — heapq", "url": "https://docs.python.org/3/library/heapq.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ds-ring-buffer",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ds.queue", "ds.arrays"],
+          "prompt": "What is a ring (circular) buffer, and where is it used?",
+          "answer": "A fixed-size array with head and tail indices that wrap around modulo the capacity, giving O(1) enqueue and dequeue with no allocation. When full, it either rejects writes or overwrites the oldest entry.",
+          "explanation": "Ring buffers are everywhere bounded memory matters: audio and network I/O buffers, kernel log buffers, \"last N events\" telemetry, and lock-free single-producer single-consumer queues. Power-of-two capacities let `index & (n - 1)` replace the modulo.",
+          "prerequisites": ["ds-stack-queue"],
+          "resources": [
+            { "title": "Wikipedia — Circular buffer", "url": "https://en.wikipedia.org/wiki/Circular_buffer", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-tree-traversals",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["ds.trees", "algo.recursion"],
+          "prompt": "For this BST, what do in-order, pre-order and post-order traversals print?",
+          "code": "tree = (4, (2, (1, None, None), (3, None, None)), (6, None, None))\n\ndef order(t, kind):\n    if t is None:\n        return []\n    v, l, r = t\n    L, R = order(l, kind), order(r, kind)\n    return {'in': L + [v] + R, 'pre': [v] + L + R, 'post': L + R + [v]}[kind]\n\nfor k in ('in', 'pre', 'post'):\n    print(f'{k:<4}', order(tree, k))",
+          "lang": "python",
+          "answer": "in   [1, 2, 3, 4, 6]\npre  [4, 2, 1, 3, 6]\npost [1, 3, 2, 6, 4]",
+          "explanation": "In-order (left, node, right) visits a BST in sorted order. Pre-order (node first) is how you serialise or copy a tree; post-order (node last) is how you delete one or evaluate an expression tree. Level-order is BFS with a queue.",
+          "prerequisites": ["ds-bst-balance"],
+          "resources": [
+            { "title": "Wikipedia — Tree traversal", "url": "https://en.wikipedia.org/wiki/Tree_traversal", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "in   [1, 2, 3, 4, 6]\npre  [4, 2, 1, 3, 6]\npost [1, 3, 2, 6, 4]" }
+        },
+        {
+          "id": "ds-bst-ops",
+          "type": "complexity",
+          "difficulty": 3,
+          "tags": ["ds.trees", "algo.complexity"],
+          "prompt": "Balanced BST (red-black, AVL): cost of search, insert, delete, min/max, and in-order iteration of all n keys?",
+          "answer": "Search, insert and delete O(log n); min/max O(log n) (O(1) if cached); full ordered iteration O(n).",
+          "complexity": { "time": "O(log n) search/insert/delete; O(n) full iteration", "space": "O(n)" },
+          "explanation": "Balanced trees trade the hash table's O(1) average for guaranteed O(log n) and ordering — which buys floor/ceiling queries, range scans and sorted iteration. That is why `TreeMap`, `std::map` and database indexes use trees rather than hashes.",
+          "prerequisites": ["ds-bst-balance"],
+          "resources": [
+            { "title": "Wikipedia — Self-balancing binary search tree", "url": "https://en.wikipedia.org/wiki/Self-balancing_binary_search_tree", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-choosing",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["ds.choice"],
+          "prompt": "Pick a structure for each: (a) dedupe a million user IDs, (b) \"undo\" in an editor, (c) keep the 10 most recent log lines, (d) find all words with a prefix, (e) answer \"which users are within this price range\" repeatedly.",
+          "answer": "(a) hash set, (b) stack, (c) ring buffer / bounded deque, (d) trie, (e) balanced tree or sorted array with binary search (a B-tree index in a database).",
+          "explanation": "Name the operations first — lookup, ordered iteration, range queries, push/pop at which end — then pick the structure whose cheap operations match. Most performance problems in application code are a list used where a set or map belonged.",
+          "prerequisites": ["ds-trie", "ds-ring-buffer"],
+          "resources": [
+            { "title": "Open Data Structures (free textbook)", "url": "https://opendatastructures.org/", "kind": "book" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ds-advanced",
+      "name": "Advanced & Probabilistic Structures",
+      "description": "Fenwick and segment trees, skip lists, HyperLogLog, count-min sketch and persistent structures.",
+      "cards": [
+        {
+          "id": "ds-fenwick-segment",
+          "type": "compare",
+          "difficulty": 5,
+          "tags": ["ds.trees", "algo.prefix-sums"],
+          "prompt": "Fenwick (binary indexed) tree vs segment tree",
+          "answer": "Both answer range queries while supporting updates in O(log n), where a plain prefix-sum array needs O(n) per update.",
+          "columns": {
+            "left": { "title": "Fenwick tree", "points": ["Array of n cells, index tricks with `i & -i`", "Point update + prefix query O(log n)", "Sums and other invertible operations", "About ten lines of code"] },
+            "right": { "title": "Segment tree", "points": ["Tree of ~2n–4n nodes", "Any associative op: min, max, gcd", "Lazy propagation for range updates", "More code, more flexible"] }
+          },
+          "explanation": "A Fenwick tree is tiny and fast for invertible aggregates like sums; a segment tree handles anything associative (min, max, gcd) and, with lazy propagation, range updates. They power leaderboards, order statistics and competitive-programming range problems.",
+          "prerequisites": ["algo-prefix-sums"],
+          "resources": [
+            { "title": "CP-Algorithms — Fenwick tree", "url": "https://cp-algorithms.com/data_structures/fenwick.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-skip-list",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ds.lists", "ds.probabilistic"],
+          "prompt": "What is a skip list, and why do Redis sorted sets use one?",
+          "answer": "A sorted linked list with extra \"express lane\" levels: each node is promoted to the next level with probability ½, so search skips most nodes — O(log n) expected for search, insert and delete, with no rebalancing rotations.",
+          "explanation": "Skip lists are simpler than balanced trees, support range scans naturally, and are easier to make concurrent (lock-free variants exist, such as Java's `ConcurrentSkipListMap`). Redis combines a skip list with a hash table for sorted sets.",
+          "prerequisites": ["ds-bst-balance"],
+          "resources": [
+            { "title": "Wikipedia — Skip list", "url": "https://en.wikipedia.org/wiki/Skip_list", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-hyperloglog",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ds.probabilistic", "data.analytics"],
+          "prompt": "You need the number of distinct visitors per page across billions of events, with a tiny memory budget. What do you use?",
+          "answer": "HyperLogLog: it hashes each item and tracks the maximum run of leading zeros in buckets, estimating cardinality with ~1–2% error in about 12 KB — regardless of how many distinct items there are.",
+          "explanation": "HLL sketches merge by taking the maximum per bucket, so per-day or per-shard counts combine exactly into totals. Redis (`PFADD`/`PFCOUNT`), BigQuery `APPROX_COUNT_DISTINCT` and most analytics systems use it. Exact distinct counts would need memory proportional to the distinct set.",
+          "prerequisites": ["ds-bloom-filter"],
+          "resources": [
+            { "title": "Redis docs — HyperLogLog", "url": "https://redis.io/docs/latest/develop/data-types/probabilistic/hyperloglogs/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-count-min",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["ds.probabilistic", "data.streaming"],
+          "prompt": "What does a count-min sketch estimate, and in which direction is it wrong?",
+          "answer": "The frequency of items in a stream, using a small 2-D array of counters and several hash functions: increment one counter per row, and estimate by taking the minimum across rows. It can overestimate (collisions add counts) but never underestimates.",
+          "explanation": "It answers \"roughly how often has X occurred?\" and heavy-hitter questions — top URLs, abusive IPs — in fixed memory. Like Bloom filters, its error is one-sided and tunable by width and depth.",
+          "prerequisites": ["ds-bloom-filter"],
+          "resources": [
+            { "title": "Wikipedia — Count–min sketch", "url": "https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ds-persistent",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ds.immutable", "fp.immutability"],
+          "prompt": "How can an immutable (persistent) data structure be efficient if every update returns a new version?",
+          "answer": "Structural sharing: an update copies only the path from the root to the changed node (O(log n) nodes in a tree), and the new version shares every other node with the old one. Both versions stay valid and cheap.",
+          "explanation": "This is how Clojure vectors, Scala and Immutable.js collections, and git trees work. You get free snapshots, undo history and thread safety without locks. The cost is some constant-factor overhead compared to a mutable array.",
+          "prerequisites": ["git-objects"],
+          "resources": [
+            { "title": "Wikipedia — Persistent data structure", "url": "https://en.wikipedia.org/wiki/Persistent_data_structure", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

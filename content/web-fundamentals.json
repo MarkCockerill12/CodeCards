@@ -134,10 +134,213 @@
           "tags": ["web.security", "web.cookies"],
           "prompt": "A session cookie should be `HttpOnly; Secure; SameSite=___` to block script access, plaintext transport and most cross-site sends.",
           "answer": "Lax",
-          "explanation": "`SameSite=Lax` is the modern default: sent on top-level navigations but not on cross-site subrequests, which kills most CSRF. Use `Strict` for high-value actions, and `None; Secure` only when a cookie genuinely must cross sites — as in embedded third-party contexts.",
+          "explanation": "`SameSite=Lax` sends the cookie on top-level navigations but not on cross-site subrequests, which kills most CSRF — and it is what Chromium applies when a cookie omits the attribute. Set it explicitly rather than relying on browser defaults. Use `Strict` for high-value actions, and `None; Secure` only when a cookie genuinely must cross sites, as in embedded third-party contexts.",
           "prerequisites": ["web-storage-options"],
           "resources": [
             { "title": "MDN — Set-Cookie SameSite", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#samesitesamesite-value", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "web-http",
+      "name": "HTTP in Practice",
+      "description": "Messages and headers, caching and validation, redirects, compression and real-time transports.",
+      "cards": [
+        {
+          "id": "web-http-anatomy",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["web.http"],
+          "prompt": "What are the parts of an HTTP request and response?",
+          "answer": "Request: a method, a target path, the protocol version, headers (Host, Accept, Authorization, Cookie…) and an optional body. Response: a status code and reason, headers (Content-Type, Cache-Control, Set-Cookie…) and an optional body.",
+          "explanation": "HTTP is stateless — each request stands alone, and state rides along in cookies or tokens. Headers carry most of the protocol's power: content negotiation, caching, authentication, CORS and security policy. Browser DevTools' network panel shows every part of every exchange.",
+          "resources": [
+            { "title": "MDN — An overview of HTTP", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-http-caching",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.caching", "web.http"],
+          "prompt": "How do `Cache-Control`, `ETag` and `If-None-Match` work together?",
+          "answer": "`Cache-Control` says whether and how long a response may be reused (`max-age=31536000, immutable`, `no-cache` = revalidate every time, `no-store` = never store, `private` = browser only). When stale, the browser revalidates with `If-None-Match: <etag>`; if unchanged the server answers `304 Not Modified` with no body.",
+          "explanation": "The standard strategy: content-hashed asset filenames (`app.3f9a1c.js`) cached for a year as immutable, and HTML served with `no-cache` so it always revalidates and points at the newest assets. `no-cache` does not mean \"do not cache\" — `no-store` does.",
+          "prerequisites": ["sd-caching-layers"],
+          "resources": [
+            { "title": "MDN — HTTP caching", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-redirects",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["web.http", "web.seo"],
+          "prompt": "301/308 vs 302/303/307 redirects",
+          "answer": "301 and 308 are permanent — browsers and search engines cache them and transfer ranking. 302, 303 and 307 are temporary. 307 and 308 guarantee the method and body are preserved; 301 and 302 historically let clients change POST to GET, and 303 explicitly means \"now GET this\".",
+          "columns": {
+            "left": { "title": "Permanent (301, 308)", "points": ["Cached by browsers, often indefinitely", "Search engines move ranking to the new URL", "308 keeps method and body", "HTTP→HTTPS, domain moves"] },
+            "right": { "title": "Temporary (302, 303, 307)", "points": ["Not cached by default", "Original URL keeps its ranking", "303: follow with GET (Post/Redirect/Get)", "307 keeps method and body"] }
+          },
+          "explanation": "Use 308/301 for moved content and HTTP→HTTPS, 303 after a successful form POST (the Post/Redirect/Get pattern prevents duplicate submissions on refresh), and 307 for temporary moves of non-GET requests. Permanent redirects are cached hard, so test before shipping them.",
+          "resources": [
+            { "title": "MDN — Redirections in HTTP", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Redirections", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-compression",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["web.performance"],
+          "prompt": "How is text content compressed over HTTP, and what should not be compressed?",
+          "answer": "The client advertises `Accept-Encoding: gzip, br, zstd`; the server compresses and labels it with `Content-Encoding`. Brotli typically beats gzip for text, especially when precompressed at build time at high levels.",
+          "explanation": "Compress HTML, CSS, JavaScript, JSON and SVG; skip already-compressed formats such as JPEG, PNG, WebP, video and zip. Compressing responses that mix secrets with attacker-controlled input can leak those secrets through response sizes (the BREACH attack).",
+          "resources": [
+            { "title": "MDN — Compression in HTTP", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Compression", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-realtime",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["web.realtime"],
+          "prompt": "Polling vs Server-Sent Events vs WebSockets",
+          "answer": "Polling repeatedly asks for updates; SSE keeps one HTTP response open and streams server-to-client events; WebSockets upgrade to a full-duplex, message-based connection.",
+          "columns": {
+            "left": { "title": "Polling / SSE", "points": ["Polling: simple, wasteful, delayed", "SSE: server → client only", "SSE: plain HTTP, auto-reconnect, event IDs", "SSE: text only"] },
+            "right": { "title": "WebSockets", "points": ["Bidirectional, low overhead per message", "Binary or text frames", "Stateful connections complicate scaling", "You build reconnection and heartbeats"] }
+          },
+          "explanation": "Choose the simplest thing that fits: SSE for notifications, feeds and LLM token streaming (plain HTTP, automatic reconnect); WebSockets for chat, multiplayer and collaboration that need low-latency client messages too. Both need attention to proxies, timeouts and reconnection with backoff.",
+          "resources": [
+            { "title": "MDN — Using server-sent events", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-security-headers",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.security", "security.headers"],
+          "prompt": "Which HTTP security headers should most sites send?",
+          "answer": "`Strict-Transport-Security` (force HTTPS, with `includeSubDomains`), `Content-Security-Policy` (including `frame-ancestors` against clickjacking), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy` to disable unused browser features.",
+          "explanation": "HSTS prevents SSL-stripping downgrades after the first visit (preloading covers the first). `frame-ancestors` supersedes `X-Frame-Options`. Check the result with a scanner such as Mozilla Observatory, and test CSP in report-only mode first.",
+          "prerequisites": ["web-csp"],
+          "resources": [
+            { "title": "OWASP — HTTP Headers Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "web-apps",
+      "name": "Building for the Browser",
+      "description": "Bundling and code splitting, images, workers and PWAs, the rendering frame, CDNs, SEO and progressive enhancement.",
+      "cards": [
+        {
+          "id": "web-bundling",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.tooling", "web.performance"],
+          "prompt": "What do bundlers do, and what are tree shaking and code splitting?",
+          "answer": "Bundlers (Vite, esbuild, webpack, Rollup) resolve imports, transpile, and emit optimised files. Tree shaking drops exports nothing imports, using ESM's static structure. Code splitting produces separate chunks loaded on demand with dynamic `import()`, so each page downloads only what it uses.",
+          "explanation": "Watch bundle size with an analyser: one careless import of a whole utility library or a date library's locales can double it. Side-effectful modules defeat tree shaking, which is what the `sideEffects` field in package.json declares.",
+          "prerequisites": ["js-esm-vs-cjs"],
+          "resources": [
+            { "title": "web.dev — Reduce JavaScript payloads with code splitting", "url": "https://web.dev/articles/reduce-javascript-payloads-with-code-splitting", "kind": "article" }
+          ]
+        },
+        {
+          "id": "web-images",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["web.performance", "web.images"],
+          "prompt": "What are the essentials of shipping images on the web?",
+          "answer": "Modern formats (AVIF/WebP), correctly sized variants via `srcset` and `sizes`, explicit `width` and `height` to reserve space, `loading=\"lazy\"` for below-the-fold images, and `fetchpriority=\"high\"` (never lazy) for the LCP hero image.",
+          "explanation": "Images are usually the heaviest part of a page. Missing dimensions cause layout shift (CLS); lazy-loading the hero delays LCP. Every meaningful image needs `alt` text; decorative images get `alt=\"\"` so screen readers skip them.",
+          "prerequisites": ["web-core-web-vitals"],
+          "resources": [
+            { "title": "web.dev — Optimize images", "url": "https://web.dev/learn/images", "kind": "article" }
+          ]
+        },
+        {
+          "id": "web-workers-pwa",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["web.workers", "web.pwa"],
+          "prompt": "Web Worker vs Service Worker",
+          "answer": "A Web Worker runs JavaScript on a background thread for CPU-heavy work, talking to the page via messages. A Service Worker is a proxy between the page and the network that intercepts requests, enabling offline support, caching strategies and push notifications — the heart of a PWA.",
+          "columns": {
+            "left": { "title": "Web Worker", "points": ["Background thread for computation", "Created and owned by one page", "postMessage to communicate", "Parsing, image processing, crypto"] },
+            "right": { "title": "Service Worker", "points": ["Network proxy for the whole origin", "Lives independently of pages", "Offline caching, background sync, push", "HTTPS only; has its own update lifecycle"] }
+          },
+          "explanation": "Neither can touch the DOM. Service workers outlive pages and update on their own lifecycle, so a buggy one can pin users to stale assets — always version caches and plan an update and kill-switch path.",
+          "resources": [
+            { "title": "MDN — Service Worker API", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-raf",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.rendering", "web.performance"],
+          "prompt": "What happens in one rendering frame, and what is `requestAnimationFrame` for?",
+          "answer": "Each frame (about 16.7 ms at 60 Hz): run tasks and microtasks, then `requestAnimationFrame` callbacks, then style, layout, paint and composite. rAF schedules visual updates to run just before the next paint, synchronised with the display.",
+          "explanation": "Animating with `setTimeout` drifts and can update twice or not at all in a frame; rAF also pauses in background tabs. Any task longer than ~50 ms blocks input and rendering — it shows up as poor INP — so split long work into chunks or move it to a worker.",
+          "prerequisites": ["css-layout-vs-paint", "js-microtask-order"],
+          "resources": [
+            { "title": "MDN — Window: requestAnimationFrame()", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-cdn",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["web.cdn", "web.performance"],
+          "prompt": "Users in Australia see slow loads from a server in Frankfurt. What helps most?",
+          "answer": "A CDN: edge servers near users cache static assets (and cacheable HTML/API responses), cutting round trips from ~300 ms to ~20 ms. TLS also terminates at the edge, so connection setup is local.",
+          "explanation": "Latency is bounded by the speed of light, so distance only shrinks by moving content closer. Cache keys and `Cache-Control` decide what the CDN may store; never cache personalised responses publicly. For dynamic, uncacheable data, regional replicas or edge compute are the next step.",
+          "prerequisites": ["web-http-caching"],
+          "resources": [
+            { "title": "MDN — CDN", "url": "https://developer.mozilla.org/en-US/docs/Glossary/CDN", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-seo-basics",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["web.seo"],
+          "prompt": "What technical basics matter most for search engines?",
+          "answer": "Crawlable, server-rendered HTML with a unique `<title>` and meta description per page, semantic headings, descriptive link text, a canonical URL for duplicate content, a sitemap and sensible `robots.txt`, fast Core Web Vitals, mobile-friendly layout, and structured data (JSON-LD) where relevant.",
+          "explanation": "Content that only appears after client-side JavaScript runs may be indexed late or not at all by some crawlers, which is a common reason to prefer SSR or static generation for public pages. Semantic, accessible HTML and good SEO largely overlap.",
+          "prerequisites": ["web-ssr-csr"],
+          "resources": [
+            { "title": "Google Search Central — SEO starter guide", "url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-progressive-enhancement",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["web.resilience", "web.architecture"],
+          "prompt": "Why should a checkout form still submit when the JavaScript bundle fails to load?",
+          "answer": "Progressive enhancement: build on a working HTML baseline (a real `<form>` with `action` and `method`), then layer JavaScript on top for a nicer experience. Scripts fail more than people think — flaky networks, blockers, CDN outages, old browsers — and core tasks should survive that.",
+          "explanation": "It also improves accessibility and resilience for free, and frameworks with server actions and form handling make it cheap. Decide per feature: rich editors can require JS; logging in, searching and paying generally should not.",
+          "prerequisites": ["html-semantics"],
+          "resources": [
+            { "title": "MDN — Progressive enhancement", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Progressive_Enhancement", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-sri",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["web.security", "security.supply-chain"],
+          "prompt": "What does Subresource Integrity protect against?",
+          "answer": "A compromised CDN or third-party host serving modified JavaScript or CSS. `<script src=\"…\" integrity=\"sha384-…\" crossorigin=\"anonymous\">` makes the browser refuse to run the file if its hash does not match the one you pinned.",
+          "explanation": "SRI only works for static files that never change at that URL, so it pairs with versioned library URLs. For first-party assets, content-hashed filenames on your own origin achieve the same thing. It is the browser-side counterpart of lockfile integrity hashes.",
+          "prerequisites": ["as-supply-chain"],
+          "resources": [
+            { "title": "MDN — Subresource Integrity", "url": "https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity", "kind": "docs" }
           ]
         }
       ]

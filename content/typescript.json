@@ -174,12 +174,234 @@
           "prompt": "`enum` vs a union of string literals",
           "answer": "Enums emit runtime code and are nominal-ish; literal unions are pure types with zero runtime cost.",
           "columns": {
-            "left": { "title": "enum Status { ... }", "points": ["Emits a JavaScript object (except `const enum`)", "Numeric enums accept any number — unsound", "Awkward across module and bundler boundaries", "Reverse mapping for numeric members"] },
+            "left": { "title": "enum Status { ... }", "points": ["Emits a JavaScript object (except `const enum`)", "Numeric enums still accept any `number` variable — loosely checked", "Awkward across module and bundler boundaries; unsupported by type-stripping runtimes", "Reverse mapping for numeric members"] },
             "right": { "title": "type Status = 'a' | 'b'", "points": ["Erased entirely — no runtime footprint", "Values are plain strings, easy to log and serialise", "Narrows perfectly in switches", "Pair with `as const` objects when you need a value list"] }
           },
           "explanation": "Most modern codebases prefer literal unions plus an `as const` object when a runtime list is required. It serialises naturally, works across bundlers, and never surprises anyone reading the emitted JavaScript.",
           "resources": [
             { "title": "TypeScript Handbook — Enums", "url": "https://www.typescriptlang.org/docs/handbook/enums.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ts-type-operators",
+      "name": "Type Operators & Modelling",
+      "description": "keyof, typeof, indexed and mapped types, literal inference and modelling data precisely.",
+      "cards": [
+        {
+          "id": "ts-keyof-typeof",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["ts.type-operators"],
+          "prompt": "What are the types `Keys` and `Level`?",
+          "code": "const LEVELS = { debug: 0, info: 1, error: 2 } as const;\n\ntype Keys = keyof typeof LEVELS;\ntype Level = (typeof LEVELS)[Keys];",
+          "lang": "typescript",
+          "answer": "`Keys` is `'debug' | 'info' | 'error'` and `Level` is `0 | 1 | 2`.",
+          "explanation": "`typeof` lifts a value into the type world, `keyof` produces the union of an object type's keys, and indexed access `T[K]` looks up property types. `as const` keeps the literal values (and makes them readonly) instead of widening to `number`. Deriving types from one runtime object keeps both in sync forever.",
+          "resources": [
+            { "title": "TypeScript Handbook — Keyof type operator", "url": "https://www.typescriptlang.org/docs/handbook/2/keyof-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-mapped-types",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ts.mapped-types", "ts.generics"],
+          "prompt": "What is a mapped type, and how would you write `Readonly<T>` yourself?",
+          "answer": "`type MyReadonly<T> = { readonly [K in keyof T]: T[K] };` — a mapped type iterates over a union of keys and produces a property for each. Modifiers can be added or removed with `+`/`-` (`-?` removes optionality, as `Required` does).",
+          "explanation": "Key remapping with `as` lets you rename or filter keys: `{ [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K] }` builds getter names. Most built-in utility types are one-line mapped or conditional types.",
+          "prerequisites": ["ts-utility-types"],
+          "resources": [
+            { "title": "TypeScript Handbook — Mapped types", "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-template-literal-types",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["ts.type-operators"],
+          "prompt": "What is the type `Route`?",
+          "code": "type Method = 'GET' | 'POST';\ntype Resource = 'users' | 'orders';\ntype Route = `${Method} /${Resource}`;",
+          "lang": "typescript",
+          "answer": "`'GET /users' | 'GET /orders' | 'POST /users' | 'POST /orders'`",
+          "explanation": "Template literal types distribute over unions, producing every combination. Combined with `infer` they can also parse strings at the type level — for example extracting `:id` parameters from a route pattern — which is how typed routers and event emitters work.",
+          "resources": [
+            { "title": "TypeScript Handbook — Template literal types", "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-union-intersection",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["ts.unions"],
+          "prompt": "Union (`A | B`) vs intersection (`A & B`)",
+          "answer": "A union value is one of the types, so you may only use members common to all until you narrow. An intersection value is all of the types at once, so it has every member.",
+          "columns": {
+            "left": { "title": "A | B (union)", "points": ["\"Either A or B\"", "Only shared members are accessible", "Narrow with typeof, in, or a discriminant", "Models alternatives: results, events, states"] },
+            "right": { "title": "A & B (intersection)", "points": ["\"Both A and B\"", "All members of both are accessible", "Conflicting properties become `never`", "Models mixins, composition, branding"] }
+          },
+          "explanation": "The names feel backwards at first: a union of object types has *fewer* usable properties, an intersection has *more*. Intersections of incompatible primitives (`string & number`) collapse to `never`, which is exactly what makes branding work when combined with an object tag.",
+          "resources": [
+            { "title": "TypeScript Handbook — Everyday types — union types", "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-as-const-readonly",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ts.inference", "ts.immutability"],
+          "prompt": "What does `readonly` guarantee, and what does it not?",
+          "answer": "It is a compile-time check that prevents assignment through that reference: `readonly` properties, `ReadonlyArray<T>` / `readonly T[]`, and `as const` for deep literal inference. It emits nothing, so it does not freeze the object at runtime.",
+          "explanation": "Readonly is shallow for properties and not a guarantee of immutability: another reference typed as mutable can still change the object. Accept `readonly T[]` in function parameters — it documents that you will not mutate the caller's array and accepts both mutable and readonly arrays.",
+          "resources": [
+            { "title": "TypeScript Handbook — Object types — readonly properties", "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-assertion-vs-guard",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["ts.narrowing", "ts.safety"],
+          "prompt": "Why is this unsafe, and what should replace it?",
+          "code": "const res = await fetch('/api/me');\nconst user = (await res.json()) as User;\nconsole.log(user.name.toUpperCase());",
+          "lang": "typescript",
+          "answer": "`as User` is an assertion: it tells the compiler to trust you and checks nothing at runtime, so malformed JSON flows through typed as `User`. Parse into `unknown` and validate — with a schema library such as Zod, or a type guard that actually checks the fields.",
+          "explanation": "Assertions (`as`) and non-null assertions (`!`) are the escape hatches that most often hide real bugs. A type predicate `(x): x is User` is only as correct as its body, so schema validators that derive the type from the runtime check are the safest option at trust boundaries.",
+          "prerequisites": ["ts-any-vs-unknown"],
+          "resources": [
+            { "title": "TypeScript Handbook — Everyday types — type assertions", "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-unchecked-index",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["ts.strictness", "ts.safety"],
+          "prompt": "This compiles under `strict` but crashes at runtime. Why, and which flag catches it?",
+          "code": "const names: string[] = ['ada', 'linus'];\nconst lookup: Record<string, number> = {};\n\nconsole.log(names[5].toUpperCase());\nconsole.log(lookup['missing'].toFixed(2));",
+          "lang": "typescript",
+          "answer": "Index access on arrays and records is typed as `T`, not `T | undefined`, so the compiler assumes `names[5]` exists. Enabling `noUncheckedIndexedAccess` types it as `string | undefined`, forcing a check before `.toUpperCase()`.",
+          "explanation": "This flag is not part of `strict` because it is noisy in loops, but it catches a real class of crash — out-of-range indexes and missing record keys. Iterating with `for...of` or `.map` avoids the noise, because those give defined elements.",
+          "prerequisites": ["ts-strict-flags"],
+          "resources": [
+            { "title": "TSConfig reference — noUncheckedIndexedAccess", "url": "https://www.typescriptlang.org/tsconfig/#noUncheckedIndexedAccess", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-overloads",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["ts.functions"],
+          "prompt": "When should you use function overloads, and what is the usual alternative?",
+          "answer": "Overloads declare several call signatures above one implementation, for when the return type depends on the argument type in ways a single signature cannot express. The implementation signature itself is not callable from outside.",
+          "explanation": "Prefer a union parameter or a generic where possible — overloads are checked only against the implementation's looser signature, so it is easy to lie. A conditional return type or a discriminated options object is often clearer than three overloads.",
+          "resources": [
+            { "title": "TypeScript Handbook — More on functions — overloads", "url": "https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-object-types-top",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["ts.types"],
+          "prompt": "`object` vs `{}` vs `unknown`",
+          "answer": "`unknown` accepts every value; `{}` accepts every value except `null` and `undefined` (primitives included); `object` accepts only non-primitive values.",
+          "columns": {
+            "left": { "title": "unknown / {}", "points": ["`unknown`: literally anything, must narrow to use", "`{}`: anything except null/undefined", "`{}` accepts `42` and `\"hi\"`", "Neither lets you read properties freely"] },
+            "right": { "title": "object", "points": ["Any non-primitive: objects, arrays, functions", "Rejects strings, numbers, booleans", "Useful for \"must be a reference\"", "Still needs narrowing to read keys"] }
+          },
+          "explanation": "`{}` does not mean \"empty object\" — `const x: {} = 42` compiles. Use `Record<string, never>` for a genuinely empty object, `object` for \"any non-primitive\", and `unknown` for untyped input you will narrow.",
+          "resources": [
+            { "title": "TypeScript Handbook — TypeScript for the new programmer — the type system", "url": "https://www.typescriptlang.org/docs/handbook/typescript-from-scratch.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ts-tooling",
+      "name": "Compiler, Modules & Declarations",
+      "description": "tsconfig, module resolution, declaration files, type-only imports and how TypeScript meets the runtime.",
+      "cards": [
+        {
+          "id": "ts-declaration-files",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ts.declarations", "ts.tooling"],
+          "prompt": "What is a `.d.ts` file, and where do types for untyped packages come from?",
+          "answer": "A declaration file containing only types — no implementation — describing JavaScript that exists elsewhere. Libraries ship their own (`\"types\"` in package.json); for untyped packages the community publishes them as `@types/<name>` from DefinitelyTyped.",
+          "explanation": "You can write `declare module \"legacy-lib\";` as a stopgap (everything becomes `any`) or author proper declarations. `declare global` augments global types, and interface declaration merging extends third-party types such as a framework's request object.",
+          "resources": [
+            { "title": "TypeScript Handbook — Declaration files — introduction", "url": "https://www.typescriptlang.org/docs/handbook/declaration-files/introduction.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-type-only-imports",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["ts.modules", "ts.tooling"],
+          "prompt": "What do `import type` and `verbatimModuleSyntax` solve?",
+          "answer": "`import type { User }` is guaranteed to be erased, so no runtime import of the module remains. `verbatimModuleSyntax` makes the rule explicit: imports without `type` are kept as written, imports with `type` are dropped — no guessing by the compiler.",
+          "explanation": "Single-file transpilers (esbuild, SWC, Babel, Node type stripping) compile one file at a time and cannot know whether an imported name is only a type. Marking type imports explicitly keeps their output correct and avoids accidental side-effect imports and circular-dependency surprises.",
+          "prerequisites": ["ts-erasure"],
+          "resources": [
+            { "title": "TSConfig reference — verbatimModuleSyntax", "url": "https://www.typescriptlang.org/tsconfig/#verbatimModuleSyntax", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-module-resolution",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["ts.modules", "ts.tooling"],
+          "prompt": "A package works at runtime but TypeScript says it cannot find its types, or the reverse. What is the likely cause and fix?",
+          "answer": "A mismatch between how TypeScript resolves modules and how your runtime or bundler does. Set `module`/`moduleResolution` to match reality: `nodenext` for code run directly by Node (which honours `exports` and requires file extensions in ESM), or `bundler` for code consumed by Vite, webpack or esbuild.",
+          "explanation": "The legacy `node` (node10) resolution ignores package.json `exports`, so it disagrees with modern packages. Getting this setting right removes most \"works in tests, fails in build\" import errors.",
+          "resources": [
+            { "title": "TypeScript — Modules reference: module resolution", "url": "https://www.typescriptlang.org/docs/handbook/modules/reference.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-tsc-vs-transpilers",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["ts.tooling"],
+          "prompt": "`tsc` type-checking vs fast transpilers (esbuild, SWC, Node type stripping)",
+          "answer": "`tsc` type-checks the whole program and can emit JavaScript; fast transpilers only strip types, file by file, without checking anything.",
+          "columns": {
+            "left": { "title": "tsc", "points": ["Whole-program type checking", "Understands every TS feature", "Slow on large projects", "Run as `tsc --noEmit` in CI"] },
+            "right": { "title": "esbuild / SWC / Node", "points": ["Strip types only — no checking", "Orders of magnitude faster", "One file at a time: needs `isolatedModules`", "Used by bundlers and dev servers"] }
+          },
+          "explanation": "The standard setup splits the jobs: a fast transpiler in the dev server and build, plus `tsc --noEmit` in CI and the editor for checking. Features that need type information to emit (enums, namespaces, parameter properties) are why `erasableSyntaxOnly` exists for type-stripping runtimes.",
+          "resources": [
+            { "title": "TSConfig reference — isolatedModules", "url": "https://www.typescriptlang.org/tsconfig/#isolatedModules", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-generic-defaults",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["ts.generics", "ts.inference"],
+          "prompt": "What is the inferred type of `a` and `b`?",
+          "code": "type Box<T> = { value: T };\n\nfunction box<T = string>(value?: T): Box<T> {\n  return { value: value as T };\n}\n\nconst a = box(42);\nconst b = box();",
+          "lang": "typescript",
+          "answer": "`a` is `Box<number>` (inferred from the argument) and `b` is `Box<string>` (the default, because nothing could be inferred).",
+          "explanation": "Type parameters are inferred from arguments when possible, fall back to their default when not, and to their constraint when there is no default. Put inferable parameters first and defaulted ones last. `NoInfer<T>` (5.4) stops an argument from influencing inference when it should only be checked against it.",
+          "prerequisites": ["ts-generic-constraint"],
+          "resources": [
+            { "title": "TypeScript Handbook — Generics", "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ts-variance",
+          "type": "flip",
+          "difficulty": 5,
+          "tags": ["ts.generics", "ts.soundness"],
+          "prompt": "Why does TypeScript let you assign `Dog[]` to `Animal[]`, and why is that unsound?",
+          "answer": "Arrays (and method parameters) are checked covariantly for convenience. But a mutable `Animal[]` alias lets you push a `Cat` into what is really a `Dog[]`, so the original array now holds a cat.",
+          "explanation": "TypeScript deliberately trades soundness for ergonomics in a few places: array covariance, method parameter bivariance, and `any`. `strictFunctionTypes` makes function-typed properties contravariant in their parameters, and `readonly` arrays are safely covariant — another reason to accept `readonly T[]`.",
+          "prerequisites": ["ts-structural-typing"],
+          "resources": [
+            { "title": "TypeScript FAQ — type system behaviour", "url": "https://github.com/microsoft/TypeScript/wiki/FAQ", "kind": "docs" }
           ]
         }
       ]

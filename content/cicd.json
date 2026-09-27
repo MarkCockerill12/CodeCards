@@ -133,6 +133,116 @@
           ]
         }
       ]
+    },
+    {
+      "id": "cicd-engineering",
+      "name": "Pipeline Engineering",
+      "description": "Caching, matrices, merge queues, environments and approvals, migrations, release automation, signing and preview environments.",
+      "cards": [
+        {
+          "id": "cicd-caching",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["cicd.performance"],
+          "prompt": "How do you make CI fast without making it unreliable?",
+          "answer": "Cache dependency downloads keyed on the lockfile hash, cache build outputs where the tool supports it (remote build caches), run independent jobs in parallel, run only affected tests in monorepos, and fail fast with cheap checks first.",
+          "explanation": "A cache must be keyed on everything that affects its contents; a stale cache that restores the wrong dependencies causes baffling failures. Treat CI duration as a product metric — a 40-minute pipeline changes how often people integrate.",
+          "prerequisites": ["cicd-pipeline-stages"],
+          "resources": [
+            { "title": "GitHub Docs — Caching dependencies to speed up workflows", "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-matrix",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["cicd.testing"],
+          "prompt": "What is a build matrix, and when is it worth the cost?",
+          "answer": "One job definition expanded over combinations of variables — operating systems, runtime versions, database versions — each run in parallel. It is worth it for libraries and tools that promise support for several platforms or versions.",
+          "explanation": "Applications usually need only their production target plus the next upgrade. Keep matrices small and meaningful: every cell multiplies CI minutes and flake exposure. Use `fail-fast: false` when you want the full picture of which combinations break.",
+          "resources": [
+            { "title": "GitHub Docs — Running variations of jobs in a workflow", "url": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-merge-queue",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["cicd.trunk", "git.workflow"],
+          "prompt": "Two pull requests each pass CI, are merged minutes apart, and main is now broken. How can that happen, and what prevents it?",
+          "answer": "Each PR was tested against an older main, not against main plus the other PR — semantic conflicts that merge cleanly as text still break. A merge queue tests each PR on top of the current main plus everything queued ahead of it, merging only when that combination passes.",
+          "explanation": "\"Require branches to be up to date\" also works but forces serial rebases that do not scale on busy repositories. Merge queues keep trunk green at high merge rates, which trunk-based development depends on.",
+          "prerequisites": ["git-branching-strategies"],
+          "resources": [
+            { "title": "GitHub Docs — Managing a merge queue", "url": "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-environments",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["cicd.deploy", "security.ci"],
+          "prompt": "What should protect deployments to production in a pipeline?",
+          "answer": "Deployment environments with their own secrets, required reviewers or approval rules where appropriate, restrictions on which branches may deploy, wait timers or change windows if the business needs them, and an audit log of who deployed what and when.",
+          "explanation": "Scope production credentials to the production environment so a workflow run from a feature branch or a fork can never obtain them. Automated gates (tests, security scans, SLO checks) are preferable to manual approval as the main safety mechanism.",
+          "prerequisites": ["cicd-secrets-pipeline"],
+          "resources": [
+            { "title": "GitHub Docs — Managing environments for deployment", "url": "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-migrations",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["cicd.deploy", "db.migrations"],
+          "prompt": "Where do database migrations run in a deployment pipeline, and what must be true of them?",
+          "answer": "As an explicit step before the new code is rolled out (a job or init container that runs once, not every pod racing at startup). Each migration must be backwards compatible with the code currently running — expand first, deploy code, contract later — so old and new versions can coexist during the rollout.",
+          "explanation": "Destructive changes (drop, rename, type change) go in a later release, after no running code depends on the old shape. Keep migrations small, run them against a production-sized copy first, and set lock timeouts so a migration cannot freeze the database.",
+          "prerequisites": ["dbi-migration-safety", "cicd-rollback"],
+          "resources": [
+            { "title": "Prisma Data Guide — Expand and contract pattern", "url": "https://www.prisma.io/dataguide/types/relational/expand-and-contract-pattern", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-release-automation",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["cicd.release", "repo.versioning"],
+          "prompt": "How can versioning and changelogs be automated?",
+          "answer": "Derive the next version from commit messages (Conventional Commits: `fix:` → patch, `feat:` → minor, `!` or `BREAKING CHANGE` → major) with tools such as semantic-release, release-please or Changesets, which also generate the changelog, tag the release and publish packages.",
+          "explanation": "Automation removes the \"who bumps the version?\" step and keeps changelogs honest, but only if commit and PR titles follow the convention — enforce them with a lint check. For applications deployed continuously, a commit SHA is often all the version you need.",
+          "prerequisites": ["repo-semver", "git-commit-messages"],
+          "resources": [
+            { "title": "Conventional Commits 1.0.0", "url": "https://www.conventionalcommits.org/en/v1.0.0/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "cicd-artifact-signing",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["cicd.supply-chain", "security.supply-chain"],
+          "prompt": "What do artifact signing and provenance add to a pipeline?",
+          "answer": "Signing (for example Sigstore cosign, keyless via the CI's OIDC identity) proves an image or package came from your pipeline and was not altered. Provenance attestations (SLSA) record how it was built — source commit, builder, inputs — so deployers can verify policy before running it.",
+          "explanation": "Admission controllers or deployment steps can then refuse unsigned or unattested artifacts, so a stolen registry credential alone cannot push something that will run. Pair with SBOMs to know what is inside every artifact.",
+          "prerequisites": ["as-supply-chain"],
+          "resources": [
+            { "title": "SLSA — Supply-chain Levels for Software Artifacts", "url": "https://slsa.dev/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-preview-envs",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["cicd.environments"],
+          "prompt": "What are preview (ephemeral) environments, and what do they cost?",
+          "answer": "A short-lived deployment for each pull request, with its own URL, so reviewers, designers and QA can try the change before it merges. Destroyed automatically when the PR closes.",
+          "explanation": "They shorten feedback loops dramatically for front-end and product work. Costs: infrastructure per open PR, seeding realistic but safe data (never production personal data), and handling shared dependencies such as databases and third-party sandboxes.",
+          "prerequisites": ["iac-modules"],
+          "resources": [
+            { "title": "Vercel docs — Preview deployments", "url": "https://vercel.com/docs/deployments/environments", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

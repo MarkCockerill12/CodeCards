@@ -1,0 +1,352 @@
+{
+  "id": "kotlin",
+  "name": "Kotlin",
+  "icon": "🟣",
+  "category": "Languages",
+  "color": "#7F52FF",
+  "description": "Null safety, data and sealed classes, extension functions, scope functions, collections and sequences, coroutines and Flow, and interop with Java.",
+  "modules": [
+    {
+      "id": "kt-essentials",
+      "name": "Language Essentials",
+      "description": "val and var, null safety, smart casts, string templates, when, ranges, extension functions and default arguments.",
+      "cards": [
+        {
+          "id": "kt-val-var",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "`val` vs `var`",
+          "answer": "`val` declares a read-only reference that cannot be reassigned; `var` declares a mutable one. Prefer `val` everywhere and use `var` only when the variable genuinely changes.",
+          "columns": {
+            "left": { "title": "val", "points": ["Assigned once; cannot be reassigned", "Like Java `final` / JS `const`", "The default choice", "Object it points to may still be mutable"] },
+            "right": { "title": "var", "points": ["Can be reassigned", "Needed for counters, accumulators, state", "Use sparingly", "Type still fixed at declaration"] }
+          },
+          "explanation": "`val` makes the *reference* immutable, not the object: a `val list = mutableListOf(1)` can still be modified with `list.add(2)`. Kotlin infers types, so `val count = 0` is an `Int` without an annotation; `const val` is a compile-time constant for primitives and strings.",
+          "resources": [
+            { "title": "Kotlin docs — Basic syntax — variables", "url": "https://kotlinlang.org/docs/basic-syntax.html#variables", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-null-safety",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["kotlin.null-safety"],
+          "prompt": "What does this print?",
+          "code": "fun main() {\n    val missing: String? = null\n    println(missing?.length)\n    println(missing?.length ?: -1)\n    val name: String? = \"Kotlin\"\n    if (name != null) {\n        println(name.length - 1)\n    }\n}",
+          "lang": "kotlin",
+          "answer": "null\n-1\n5",
+          "explanation": "Types are non-nullable by default; `String?` may hold null. `?.` (safe call) returns null instead of throwing, `?:` (Elvis) supplies a fallback, and inside `if (name != null)` the compiler smart-casts `name` to `String`. `!!` asserts non-null and throws `NullPointerException` if wrong — treat it as a code smell.",
+          "prerequisites": ["js-optional-chaining"],
+          "resources": [
+            { "title": "Kotlin docs — Null safety", "url": "https://kotlinlang.org/docs/null-safety.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "null\n-1\n5" }
+        },
+        {
+          "id": "kt-smart-casts",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["kotlin.types"],
+          "prompt": "What is a smart cast, and when does Kotlin refuse to perform one?",
+          "answer": "After a type or null check (`if (x is String)`, `x != null`), the compiler treats `x` as the narrower type in that branch with no explicit cast. It refuses when the value could change between the check and the use — a `var` property, a property with a custom getter, or one declared in another module.",
+          "explanation": "The fix for a mutable property is to copy it to a local `val` first (`val current = state`) or use `?.let { }`. This is the same control-flow narrowing TypeScript does, backed by stronger guarantees because Kotlin knows which values can change.",
+          "prerequisites": ["kt-null-safety", "ts-narrowing"],
+          "resources": [
+            { "title": "Kotlin docs — Type checks and casts — smart casts", "url": "https://kotlinlang.org/docs/typecasts.html#smart-casts", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-when",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["kotlin.control-flow"],
+          "prompt": "What does this print?",
+          "code": "fun describe(n: Int): String = when (n) {\n    0 -> \"zero\"\n    in 1..9 -> \"small\"\n    in 13..19 -> \"teen\"\n    else -> \"big\"\n}\n\nfun main() {\n    listOf(0, 7, 15, 42).forEach { println(describe(it)) }\n}",
+          "lang": "kotlin",
+          "answer": "zero\nsmall\nteen\nbig",
+          "explanation": "`when` is Kotlin's expression-based switch: branches can match values, ranges (`in 1..9`), types (`is String`) or arbitrary conditions, and the whole `when` returns a value. Used as an expression over a sealed type or enum, it must be exhaustive, so the compiler flags missing cases.",
+          "resources": [
+            { "title": "Kotlin docs — Conditions and loops — when", "url": "https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "zero\nsmall\nteen\nbig" }
+        },
+        {
+          "id": "kt-ranges-division",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["kotlin.basics", "num.integers"],
+          "prompt": "What does this print?",
+          "code": "fun main() {\n    println(\"${7 / 2} ${7.0 / 2}\")\n    println((1..5 step 2).joinToString(\" \"))\n    println((5 downTo 3).joinToString(\" \"))\n    println((0 until 3).joinToString(\" \"))\n}",
+          "lang": "kotlin",
+          "answer": "3 3.5\n1 3 5\n5 4 3\n0 1 2",
+          "explanation": "Integer division truncates (`7 / 2` is 3); make one operand a `Double` for a fractional result. `1..5` is an inclusive range, `step` skips, `downTo` counts down, and `0 until 3` (or `0..<3`) excludes the end — the idiom for indices.",
+          "prerequisites": ["py-floor-division"],
+          "resources": [
+            { "title": "Kotlin docs — Ranges and progressions", "url": "https://kotlinlang.org/docs/ranges.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "3 3.5\n1 3 5\n5 4 3\n0 1 2" }
+        },
+        {
+          "id": "kt-extension-functions",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["kotlin.extensions"],
+          "prompt": "What does this print?",
+          "code": "fun String.greet() = \"Hello, $this!\"\nfun Int.isEvenNumber() = this % 2 == 0\n\nfun main() {\n    println(\"Ada\".greet())\n    println(42.isEvenNumber())\n}",
+          "lang": "kotlin",
+          "answer": "Hello, Ada!\ntrue",
+          "explanation": "Extension functions add methods to existing types without inheritance or wrappers: `fun String.greet()` is called as `\"Ada\".greet()`, with the receiver available as `this`. They are resolved statically from the declared type, so they cannot override members or access private state.",
+          "prerequisites": ["cs-extension-methods"],
+          "resources": [
+            { "title": "Kotlin docs — Extensions", "url": "https://kotlinlang.org/docs/extensions.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "Hello, Ada!\ntrue" }
+        },
+        {
+          "id": "kt-default-named-args",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["kotlin.functions"],
+          "prompt": "What do default and named arguments replace in Kotlin?",
+          "answer": "Parameters can have defaults (`fun connect(host: String, port: Int = 443, timeoutMs: Long = 5_000)`) and callers can name arguments (`connect(\"db\", timeoutMs = 1_000)`), which removes most Java-style overload chains and many builder classes.",
+          "explanation": "Named arguments make boolean and numeric parameters readable at the call site. For Java callers, `@JvmOverloads` generates the overloads Java needs, because Java cannot use Kotlin defaults directly.",
+          "prerequisites": ["dp-builder"],
+          "resources": [
+            { "title": "Kotlin docs — Functions — default arguments", "url": "https://kotlinlang.org/docs/functions.html#default-arguments", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kt-types",
+      "name": "Classes & Types",
+      "description": "Data classes, final-by-default classes, sealed hierarchies, objects and companions, equality, scope functions, lazy and generics.",
+      "cards": [
+        {
+          "id": "kt-data-classes",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["kotlin.classes", "kotlin.data-classes"],
+          "prompt": "What does this print?",
+          "code": "data class User(val name: String, val age: Int)\n\nfun main() {\n    val a = User(\"Ada\", 36)\n    println(a)\n    println(a == User(\"Ada\", 36))\n    println(a.copy(age = 37))\n    val (name, age) = a\n    println(\"$name $age\")\n}",
+          "lang": "kotlin",
+          "answer": "User(name=Ada, age=36)\ntrue\nUser(name=Ada, age=37)\nAda 36",
+          "explanation": "A `data class` generates `equals`, `hashCode`, `toString`, `copy` and `componentN` functions from the primary-constructor properties. `copy` creates a modified clone — the idiomatic way to \"change\" immutable values — and destructuring uses the component functions.",
+          "prerequisites": ["java-record"],
+          "resources": [
+            { "title": "Kotlin docs — Data classes", "url": "https://kotlinlang.org/docs/data-classes.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "User(name=Ada, age=36)\ntrue\nUser(name=Ada, age=37)\nAda 36" }
+        },
+        {
+          "id": "kt-final-by-default",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["kotlin.classes", "oop.inheritance"],
+          "prompt": "Why are Kotlin classes and methods final by default, and how do you allow inheritance?",
+          "answer": "To avoid the fragile-base-class problem: a class must be designed for extension, so inheritance is opt-in. Mark the class and each overridable member `open`, and mark overrides with `override`. Abstract classes and interfaces are open implicitly.",
+          "explanation": "Frameworks that generate subclasses or proxies (Spring, JPA) need open classes, which is why the `kotlin-spring` and `kotlin-jpa` compiler plugins open annotated classes automatically. In application code, prefer composition and interfaces.",
+          "prerequisites": ["oop-composition-inheritance"],
+          "resources": [
+            { "title": "Kotlin docs — Inheritance", "url": "https://kotlinlang.org/docs/inheritance.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-sealed-classes",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["kotlin.sealed", "fp.types"],
+          "prompt": "What does this print?",
+          "code": "sealed interface Result\ndata object Loading : Result\ndata class Success(val items: List<String>) : Result\ndata class Failure(val reason: String) : Result\n\nfun render(r: Result): String = when (r) {\n    Loading -> \"loading...\"\n    is Success -> \"${r.items.size} items\"\n    is Failure -> \"failed: ${r.reason}\"\n}\n\nfun main() {\n    listOf(Loading, Success(listOf(\"a\", \"b\", \"c\")), Failure(\"timeout\"))\n        .forEach { println(render(it)) }\n}",
+          "lang": "kotlin",
+          "answer": "loading...\n3 items\nfailed: timeout",
+          "explanation": "A sealed interface or class restricts its subclasses to the same module and package, so the compiler knows every case. `when` over it needs no `else` and fails to compile if a new subtype is not handled — Kotlin's algebraic data types, ideal for UI state and results.",
+          "prerequisites": ["fp-adts"],
+          "resources": [
+            { "title": "Kotlin docs — Sealed classes and interfaces", "url": "https://kotlinlang.org/docs/sealed-classes.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "loading...\n3 items\nfailed: timeout" }
+        },
+        {
+          "id": "kt-object-companion",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["kotlin.classes"],
+          "prompt": "What are `object` declarations and companion objects?",
+          "answer": "`object Registry { ... }` declares a singleton, created lazily and thread-safely on first access. A `companion object` inside a class holds members called on the class itself (`User.create(...)`) — Kotlin has no `static` keyword — and can implement interfaces. `object : Listener { ... }` creates an anonymous object.",
+          "explanation": "Singletons are still global state, with the testing problems that brings; prefer passing dependencies in. Use `@JvmStatic` when Java callers need a real static method on the class.",
+          "prerequisites": ["dp-singleton-problems"],
+          "resources": [
+            { "title": "Kotlin docs — Object declarations and expressions", "url": "https://kotlinlang.org/docs/object-declarations.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-equality",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["kotlin.equality"],
+          "prompt": "What does this print?",
+          "code": "data class Point(val x: Int, val y: Int)\n\nfun main() {\n    val a = Point(1, 2)\n    val b = Point(1, 2)\n    println(\"${a == b} ${a === b}\")\n    val c = a\n    println(\"${a == c} ${a === c}\")\n}",
+          "lang": "kotlin",
+          "answer": "true false\ntrue true",
+          "explanation": "`==` checks structural equality (calls `equals`, and is null-safe); `===` checks referential identity. Two data class instances with the same values are `==` but not `===`. After `val c = a`, both names point to the same object, so both checks are true.",
+          "prerequisites": ["oop-identity-equality"],
+          "resources": [
+            { "title": "Kotlin docs — Equality", "url": "https://kotlinlang.org/docs/equality.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "true false\ntrue true" }
+        },
+        {
+          "id": "kt-scope-functions",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["kotlin.scope-functions"],
+          "prompt": "What does this print?",
+          "code": "fun main() {\n    val list = mutableListOf<String>().apply {\n        add(\"a\")\n        add(\"b\")\n    }\n    println(list)\n    val length = \"hello\".let { it.length }\n    println(length)\n    list.also { println(\"logged: $it\") }\n}",
+          "lang": "kotlin",
+          "answer": "[a, b]\n5\nlogged: [a, b]",
+          "explanation": "`apply` runs a block with the object as `this` and returns the object — for configuring. `let` runs a block with the object as `it` and returns the block's result — for transforming or null-checking (`x?.let { }`). `also` returns the object after a side effect; `run` and `with` return the result with `this` as receiver.",
+          "resources": [
+            { "title": "Kotlin docs — Scope functions", "url": "https://kotlinlang.org/docs/scope-functions.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "[a, b]\n5\nlogged: [a, b]" }
+        },
+        {
+          "id": "kt-lazy-lateinit",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["kotlin.properties"],
+          "prompt": "`by lazy` vs `lateinit var`",
+          "answer": "`by lazy { ... }` computes a `val` on first access and caches it (thread-safe by default); `lateinit var` declares a non-null `var` that will be assigned later — by dependency injection or a setup method — and throws if read before assignment.",
+          "columns": {
+            "left": { "title": "by lazy", "points": ["Read-only `val`", "Initialiser runs on first access, once", "Thread-safe by default", "Expensive, maybe-unused values"] },
+            "right": { "title": "lateinit var", "points": ["Mutable `var`, non-null type", "Assigned later by you or a framework", "Throws UninitializedPropertyAccessException if read early", "DI fields, test setup"] }
+          },
+          "explanation": "Use `lazy` for expensive values that may never be needed; use `lateinit` for framework-injected fields and test fixtures. `lateinit` only works for non-primitive types, and `::field.isInitialized` checks it.",
+          "resources": [
+            { "title": "Kotlin docs — Properties — late-initialized properties", "url": "https://kotlinlang.org/docs/properties.html#late-initialized-properties-and-variables", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-generics-variance",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["kotlin.generics"],
+          "prompt": "What do `out`, `in` and `reified` mean in Kotlin generics?",
+          "answer": "`out T` (covariance) means the type only produces T — `List<out Animal>` accepts a `List<Dog>`. `in T` (contravariance) means it only consumes T — a `Comparator<in Dog>` accepts a `Comparator<Animal>`. `reified` on an `inline` function's type parameter keeps the type at runtime, allowing `is T` and `T::class`.",
+          "explanation": "Kotlin declares variance at the definition site (`interface Source<out T>`), where Java needs `? extends` at every use. Reified parameters work around JVM type erasure: `inline fun <reified T> parse(json: String): T` needs no `Class<T>` argument.",
+          "prerequisites": ["java-generics-wildcards", "cs-generic-variance"],
+          "resources": [
+            { "title": "Kotlin docs — Generics: in, out, where", "url": "https://kotlinlang.org/docs/generics.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kt-ecosystem",
+      "name": "Coroutines, Collections & Interop",
+      "description": "Collections and sequences, coroutines and structured concurrency, Flow, Java interop and platform types, and Gradle.",
+      "cards": [
+        {
+          "id": "kt-collections",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["kotlin.collections"],
+          "prompt": "What does this print?",
+          "code": "fun main() {\n    val mutable = mutableListOf(1, 2)\n    val readOnly: List<Int> = mutable\n    mutable.add(3)\n    println(readOnly)\n    println(readOnly.groupBy { if (it % 2 == 0) \"even\" else \"odd\" }.toSortedMap())\n    println(readOnly.sumOf { it })\n}",
+          "lang": "kotlin",
+          "answer": "[1, 2, 3]\n{even=[2], odd=[1, 3]}\n6",
+          "explanation": "`List` is a read-only *view*, not an immutable list: here the same object is also referenced as a `MutableList`, so the change is visible through the read-only reference. The standard library's collection operations — `map`, `filter`, `groupBy`, `associate`, `sumOf`, `partition` — cover most data transformations.",
+          "resources": [
+            { "title": "Kotlin docs — Collections overview", "url": "https://kotlinlang.org/docs/collections-overview.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "[1, 2, 3]\n{even=[2], odd=[1, 3]}\n6" }
+        },
+        {
+          "id": "kt-sequences",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["kotlin.collections", "fp.laziness"],
+          "prompt": "What does this print?",
+          "code": "fun main() {\n    val result = listOf(1, 2, 3, 4, 5).asSequence()\n        .map { println(\"map $it\"); it * 2 }\n        .filter { println(\"filter $it\"); it > 3 }\n        .first()\n    println(result)\n}",
+          "lang": "kotlin",
+          "answer": "map 1\nfilter 2\nmap 2\nfilter 4\n4",
+          "explanation": "A `Sequence` processes elements lazily, one at a time through the whole chain, and stops as soon as `first` is satisfied — so only two elements are mapped. The same chain on a `List` would map every element eagerly and allocate an intermediate list at each step.",
+          "prerequisites": ["java-stream-lazy"],
+          "resources": [
+            { "title": "Kotlin docs — Sequences", "url": "https://kotlinlang.org/docs/sequences.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "kotlin", "expectedOutput": "map 1\nfilter 2\nmap 2\nfilter 4\n4" }
+        },
+        {
+          "id": "kt-coroutines",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["kotlin.coroutines", "concurrency.async"],
+          "prompt": "What are Kotlin coroutines, and what do `suspend`, `launch` and `async` do?",
+          "answer": "Lightweight units of work that can suspend without blocking a thread. A `suspend` function can pause at suspension points (network calls, `delay`) and resume later; `launch` starts a coroutine that returns a `Job` (fire and track), and `async` returns a `Deferred` whose result you `await`.",
+          "explanation": "Coroutines come from the `kotlinx.coroutines` library. Thousands can share a few threads; `Dispatchers.IO` handles blocking I/O and `Dispatchers.Default` CPU work. Blocking calls inside a coroutine on the wrong dispatcher stall every coroutine sharing that thread.",
+          "prerequisites": ["conc-async-models"],
+          "resources": [
+            { "title": "Kotlin docs — Coroutines basics", "url": "https://kotlinlang.org/docs/coroutines-basics.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-structured-concurrency",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["kotlin.coroutines", "concurrency.structured"],
+          "prompt": "What is wrong with launching work this way from a screen or request handler?",
+          "code": "fun onRefreshClicked() {\n    GlobalScope.launch {\n        val items = api.fetchItems()\n        adapter.submit(items)\n    }\n}",
+          "lang": "kotlin",
+          "answer": "`GlobalScope` coroutines are tied to nothing: they keep running after the screen closes or the request ends, leak resources, and their failures are not propagated to anyone. Launch in a lifecycle-bound scope (`viewModelScope`, a request scope) or use `coroutineScope { }` so children are cancelled with their parent and errors propagate.",
+          "explanation": "Structured concurrency is built into kotlinx.coroutines: a parent waits for its children, and cancelling the parent cancels them. `GlobalScope` opts out of all of that and is marked as a delicate API for this reason.",
+          "prerequisites": ["kt-coroutines", "conc-structured"],
+          "resources": [
+            { "title": "Kotlin docs — Coroutines — structured concurrency", "url": "https://kotlinlang.org/docs/coroutines-basics.html#structured-concurrency", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-flow",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["kotlin.coroutines", "kotlin.flow"],
+          "prompt": "What is a Kotlin `Flow`, and how do cold flows differ from `StateFlow`?",
+          "answer": "A `Flow` is an asynchronous stream of values built on coroutines, transformed with operators like `map`, `filter` and `debounce` and consumed with `collect`. A plain flow is cold: its producer block runs anew for each collector. `StateFlow` and `SharedFlow` are hot: they emit whether or not anyone collects, and `StateFlow` always holds a current value.",
+          "explanation": "Flows respect structured concurrency — collection is cancelled with its scope — and support backpressure naturally, because emission suspends until the collector is ready. `StateFlow` is the usual way to expose observable UI state from a view model.",
+          "prerequisites": ["kt-coroutines"],
+          "resources": [
+            { "title": "Kotlin docs — Asynchronous Flow", "url": "https://kotlinlang.org/docs/flow.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-java-interop",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["kotlin.interop", "java.core"],
+          "prompt": "What are platform types, and why do they matter when calling Java from Kotlin?",
+          "answer": "Java does not say whether a reference may be null, so Kotlin sees Java return types as platform types (`String!`): you may treat them as nullable or non-null, and the compiler will not check. Treat one as non-null when Java actually returns null and you get a `NullPointerException` at runtime.",
+          "explanation": "Nullability annotations in the Java code (`@Nullable`, `@NonNull`, JSpecify) let Kotlin infer proper types. At Java boundaries, declare explicit Kotlin types on the values you receive so a surprise null fails immediately and visibly.",
+          "prerequisites": ["kt-null-safety"],
+          "resources": [
+            { "title": "Kotlin docs — Calling Java from Kotlin — null safety and platform types", "url": "https://kotlinlang.org/docs/java-interop.html#null-safety-and-platform-types", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kt-tooling",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["kotlin.tooling", "kotlin.multiplatform"],
+          "prompt": "Where does Kotlin run, and how are Kotlin projects built?",
+          "answer": "On the JVM (servers with Spring or Ktor, and Android, where it is Google's preferred language), and — through Kotlin Multiplatform — natively on iOS and desktop, and as JavaScript or WebAssembly, sharing business logic across platforms. Builds usually use Gradle with the Kotlin DSL (`build.gradle.kts`).",
+          "explanation": "Kotlin compiles to JVM bytecode, so it interoperates with Java libraries in both directions and mixed-language projects are normal. ktlint or detekt handle style and static analysis; the K2 compiler (Kotlin 2.0+) brought much faster compilation.",
+          "prerequisites": ["java-maven-gradle"],
+          "resources": [
+            { "title": "Kotlin docs — Kotlin Multiplatform", "url": "https://kotlinlang.org/docs/multiplatform.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -16,11 +16,11 @@
           "type": "flip",
           "difficulty": 3,
           "tags": ["security.owasp", "appsec"],
-          "prompt": "Name the OWASP Top 10 (2021) categories.",
-          "answer": "A01 Broken access control, A02 Cryptographic failures, A03 Injection, A04 Insecure design, A05 Security misconfiguration, A06 Vulnerable and outdated components, A07 Identification and authentication failures, A08 Software and data integrity failures, A09 Security logging and monitoring failures, A10 Server-side request forgery.",
-          "explanation": "It is a ranked awareness document, not a checklist for coverage. Note that A04 (insecure design) and A08 (supply chain) were the additions — recognition that most breaches now come from architecture and dependencies, not a missing escape function.",
+          "prompt": "Name the OWASP Top 10 (2025) categories.",
+          "answer": "A01 Broken access control, A02 Security misconfiguration, A03 Software supply chain failures, A04 Cryptographic failures, A05 Injection, A06 Insecure design, A07 Authentication failures, A08 Software or data integrity failures, A09 Security logging and alerting failures, A10 Mishandling of exceptional conditions.",
+          "explanation": "It is a ranked awareness document, not a coverage checklist. Compared with 2021, supply-chain failures became their own category, SSRF was folded into broken access control, and mishandling of exceptional conditions (failing open, leaking errors) is new — a sign that most serious breaches now come from design, configuration and dependencies rather than a single missing escape function.",
           "resources": [
-            { "title": "OWASP Top 10", "url": "https://owasp.org/Top10/", "kind": "article" }
+            { "title": "OWASP Top 10:2025", "url": "https://owasp.org/Top10/2025/", "kind": "docs" }
           ]
         },
         {
@@ -131,6 +131,198 @@
           "explanation": "Validate structure and type at the edge (a schema library such as Zod or Pydantic), then encode contextually at every output sink. Validation and encoding are different jobs; doing only one of them is where injection bugs live.",
           "resources": [
             { "title": "OWASP — Input validation cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "as-vuln-classes",
+      "name": "Vulnerability Classes in Code",
+      "description": "Path traversal, command injection, file uploads, XXE, template injection, mass assignment, open redirects and TOCTOU races.",
+      "cards": [
+        {
+          "id": "as-path-traversal",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["appsec.path-traversal", "appsec.injection"],
+          "prompt": "What can an attacker read with `?name=../../etc/passwd`?",
+          "code": "BASE = Path('/srv/app/uploads')\n\n@app.get('/download')\ndef download(name: str):\n    return send_file(BASE / name)",
+          "lang": "python",
+          "answer": "Any file the process can access: `../` sequences escape the uploads directory (path traversal). Resolve the final path and verify it is still inside the base directory — `(BASE / name).resolve().is_relative_to(BASE)` — or better, never use user input as a filename: look files up by an ID.",
+          "explanation": "Naive filters that strip `../` fail against encodings (`%2e%2e%2f`), absolute paths and double-dot variants. Canonicalise first, then check containment. Running with minimal filesystem permissions limits the damage when a check is missed.",
+          "prerequisites": ["as-input-validation"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Input Validation", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-command-injection",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["appsec.injection", "appsec.command-injection"],
+          "prompt": "Why is this exploitable, and what is the safe version?",
+          "code": "@app.get('/ping')\ndef ping(host: str):\n    out = subprocess.run(f'ping -c 1 {host}', shell=True, capture_output=True)\n    return out.stdout",
+          "lang": "python",
+          "answer": "With `shell=True` the string is interpreted by a shell, so `host=example.com; rm -rf /` runs a second command. Pass an argument list without a shell — `subprocess.run([\"ping\", \"-c\", \"1\", host])` — and validate `host` against an allowlist pattern; add `--` where the tool supports it so input cannot become an option.",
+          "explanation": "Without a shell there are no metacharacters to abuse, but argument injection remains possible: a value beginning with `-` can be parsed as a flag. Better still, use a library API instead of shelling out at all.",
+          "prerequisites": ["as-injection-general"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — OS Command Injection Defense", "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-file-upload",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["appsec.file-upload"],
+          "prompt": "What are the rules for accepting file uploads safely?",
+          "answer": "Allowlist extensions and verify content type by inspecting the file, not trusting the client's header; limit size; generate your own random filename; store outside the web root (ideally object storage on a separate domain); never execute or include uploaded files; scan for malware; and serve with `Content-Disposition: attachment` and `nosniff`.",
+          "explanation": "Uploaded HTML or SVG served from your own origin is stored XSS; an uploaded `.php` in the web root is remote code execution. Image-processing libraries parsing hostile files have their own vulnerabilities, so keep them patched and process uploads in isolation.",
+          "prerequisites": ["as-path-traversal"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — File Upload", "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-xxe",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["appsec.xxe", "appsec.parsing"],
+          "prompt": "What is XXE, and how do you prevent it?",
+          "answer": "XML External Entity injection: an XML document defines an entity pointing at a file or URL (`<!ENTITY x SYSTEM \"file:///etc/passwd\">`), and a permissive parser expands it — leaking files, performing SSRF, or exhausting memory (\"billion laughs\"). Disable DTDs and external entity resolution in the parser.",
+          "explanation": "Many XML libraries historically enabled these features by default. Use hardened parsers (Python's `defusedxml`), or prefer JSON when you control the format. Remember XML hides inside DOCX, SVG and SAML.",
+          "prerequisites": ["sec-ssrf"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — XML External Entity Prevention", "url": "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-ssti",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["appsec.injection", "appsec.templates"],
+          "prompt": "Why is rendering this greeting a remote-code-execution risk?",
+          "code": "@app.get('/hello')\ndef hello(name: str):\n    return render_template_string('Hello ' + name)",
+          "lang": "python",
+          "answer": "User input is concatenated into the template *source*, so `{{ ... }}` expressions the user supplies are evaluated by the template engine — server-side template injection. Keep templates fixed and pass user data as variables: `render_template_string(\"Hello {{ name }}\", name=name)`.",
+          "explanation": "Template engines expose object graphs powerful enough to reach the OS from an expression, so SSTI is usually full RCE. The general rule for every injection class: data goes in parameters, never into the code or query text itself.",
+          "prerequisites": ["as-injection-general"],
+          "resources": [
+            { "title": "PortSwigger Web Security Academy — Server-side template injection", "url": "https://portswigger.net/web-security/server-side-template-injection", "kind": "article" }
+          ]
+        },
+        {
+          "id": "as-mass-assignment",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["appsec.access-control", "api.validation"],
+          "prompt": "What can a user do by sending `{\"name\": \"x\", \"is_admin\": true}`?",
+          "code": "@app.patch('/me')\ndef update_me(body: dict):\n    for key, value in body.items():\n        setattr(current_user, key, value)\n    db.commit()",
+          "lang": "python",
+          "answer": "Mass assignment: every field in the request body is copied onto the model, so the user makes themselves an administrator — or changes their balance, owner ID or verification status. Bind only an explicit allowlist of fields, using a dedicated input DTO or schema for each endpoint.",
+          "explanation": "Separate input models from database models. Frameworks offer tools — Pydantic request models, `[Bind]` attributes, strong parameters — but they only help if the allowlist is the default rather than something someone has to remember.",
+          "prerequisites": ["as-idor"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Mass Assignment", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-open-redirect",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["appsec.redirects", "security.phishing"],
+          "prompt": "What is an open redirect, and why does it matter?",
+          "answer": "An endpoint like `/login?next=https://evil.example` that redirects wherever a parameter says. Attackers use your trusted domain in phishing links, and in OAuth flows an open redirect can leak authorisation codes or tokens.",
+          "explanation": "Only redirect to relative paths or an allowlist of destinations; reject protocol-relative `//evil.example` and backslash tricks, which browsers treat as absolute URLs. Validate after parsing the URL, not with string prefix checks.",
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Unvalidated Redirects and Forwards", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-toctou-race",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["appsec.race-conditions", "concurrency.races"],
+          "prompt": "A gift card worth £50 is redeemed twenty times by sending twenty simultaneous requests. What went wrong and how do you fix it?",
+          "answer": "A check-then-act race: each request read \"balance £50, not redeemed\" before any of them wrote the update. Make the check and update atomic — a conditional update (`UPDATE cards SET redeemed = true WHERE id = ? AND redeemed = false`, then check rows affected), row locks, or a unique constraint.",
+          "explanation": "Business-logic races (double spending, coupon reuse, bypassing limits) are found by firing parallel requests, which tools such as Burp's single-packet attack make easy. Anything involving money, quotas or one-time use needs atomicity at the data layer.",
+          "prerequisites": ["conc-race-condition", "conc-optimistic-pessimistic"],
+          "resources": [
+            { "title": "PortSwigger Web Security Academy — Race conditions", "url": "https://portswigger.net/web-security/race-conditions", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "as-program",
+      "name": "Secure Development Practice",
+      "description": "Standards and code review, secure defaults and error handling, secrets, security tests and threat-driven design.",
+      "cards": [
+        {
+          "id": "as-asvs",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["appsec.standards"],
+          "prompt": "What is OWASP ASVS, and how does it differ from the Top 10?",
+          "answer": "The Application Security Verification Standard is a detailed list of testable security requirements — authentication, session management, access control, validation, cryptography, logging and more — organised into three levels by assurance needed. The Top 10 is an awareness list of risk categories.",
+          "explanation": "Use the Top 10 to explain priorities and ASVS to define \"done\": pick a level, turn its requirements into acceptance criteria and test cases, and use it as the checklist for design and code reviews.",
+          "prerequisites": ["as-owasp-top10"],
+          "resources": [
+            { "title": "OWASP Application Security Verification Standard", "url": "https://owasp.org/www-project-application-security-verification-standard/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-secure-code-review",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["appsec.code-review", "craft.code-review"],
+          "prompt": "What should a security-focused code review look for?",
+          "answer": "Follow untrusted data from every entry point to every sink (SQL, shell, HTML, file paths, deserialisation, redirects, outbound URLs); confirm an authorisation check on every object access; check secrets handling, cryptography use, error handling that fails closed, logging of sensitive data, and new dependencies.",
+          "explanation": "Automation (SAST, secret scanning, dependency review) handles the mechanical part; humans are better at authorisation logic and business-rule flaws, which tools barely see. Changes to authentication, authorisation, crypto or input parsing deserve a second security-minded reviewer.",
+          "prerequisites": ["craft-review-giving"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Secure Code Review", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Code_Review_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-fail-closed",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["appsec.error-handling", "security.principles"],
+          "prompt": "What happens here when the permissions service is down?",
+          "code": "def can_view(user, doc):\n    try:\n        return perms_client.check(user.id, 'view', doc.id)\n    except Exception:\n        log.warning('perms service unavailable')\n        return True",
+          "lang": "python",
+          "answer": "The exception handler returns `True`, so an outage grants access to everyone — failing open. Security decisions must fail closed: deny on error, log it, and alert. OWASP 2025 lists mishandling of exceptional conditions as its own category for exactly this pattern.",
+          "explanation": "Failing open often comes from an understandable wish for availability. If the business decides some feature must degrade open, make that explicit, narrow and monitored — never an accident of a broad `except`.",
+          "prerequisites": ["sec-defence-depth"],
+          "resources": [
+            { "title": "OWASP Top 10:2025 — A10 Mishandling of Exceptional Conditions", "url": "https://owasp.org/Top10/2025/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-secrets-management",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["appsec.secrets", "ops.secrets"],
+          "prompt": "Where should application secrets live, and how should the application get them?",
+          "answer": "In a secret manager (Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager), fetched at runtime by a workload identity — never in code, images or committed config. Prefer short-lived dynamic credentials (database users issued per deployment) that expire on their own, and design for rotation without redeploying.",
+          "explanation": "Environment variables are acceptable delivery but leak into crash dumps, child processes and debug pages. Scan repositories and CI logs for secrets, scope each secret to the one service that needs it, and log access to them.",
+          "prerequisites": ["sec-secrets"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Secrets Management", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "as-security-tests",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["appsec.testing", "testing.security"],
+          "prompt": "Which security properties should be covered by ordinary automated tests?",
+          "answer": "Authorisation: for each endpoint, tests proving another user's object returns 403/404 and an anonymous call returns 401. Also input-validation boundaries, security headers present, CSRF protection active, rate limits enforced, and dangerous features (debug endpoints) disabled in production builds.",
+          "explanation": "Access-control regressions are the most common serious bug class and the easiest to test for: a table of (role, endpoint, expected status) run in CI catches a forgotten decorator immediately. Add a regression test for every security bug fixed.",
+          "prerequisites": ["as-idor", "test-regression"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Authorization Testing Automation", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html", "kind": "docs" }
           ]
         }
       ]

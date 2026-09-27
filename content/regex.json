@@ -146,6 +146,126 @@
           ]
         }
       ]
+    },
+    {
+      "id": "re-toolkit",
+      "name": "Classes, Flags & Replacement",
+      "description": "Character classes, escaping, flags, backreferences, substitution, splitting and Unicode.",
+      "cards": [
+        {
+          "id": "re-char-classes",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["regex.classes"],
+          "prompt": "What do `\\d`, `\\w`, `\\s`, `.`, `[abc]`, `[^abc]` and `[a-z]` match?",
+          "answer": "`\\d` a digit, `\\w` a word character (letter, digit, underscore), `\\s` whitespace; the capital versions negate them. `.` matches any character except newline (unless the dotall flag is set). `[abc]` matches one listed character, `[^abc]` any character not listed, and `[a-z]` a range.",
+          "explanation": "In Unicode-aware engines `\\d` and `\\w` match far more than ASCII — Python 3 `\\d` matches Arabic-Indic digits too. Use `[0-9]` (or the ASCII flag) when you mean ASCII digits, for example when validating input you will pass to `int()`.",
+          "resources": [
+            { "title": "Regular-Expressions.info — Character classes", "url": "https://www.regular-expressions.info/charclass.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "re-escaping",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["regex.escaping", "regex.security"],
+          "prompt": "This should match the literal filename, but it also matches `reportXcsv`. Why?",
+          "code": "import re\nfilename = 'report.csv'\nprint(bool(re.fullmatch(filename, 'reportXcsv')))   # True!",
+          "lang": "python",
+          "answer": "`.` is a metacharacter matching any character. Escape it (`report\\.csv`) — and when building a pattern from user input, always escape it with `re.escape()` or its equivalent, otherwise the input can change the pattern's meaning or trigger catastrophic backtracking.",
+          "explanation": "Metacharacters needing escapes: `. ^ $ * + ? { } [ ] \\ | ( )`. Use raw strings in Python (`r\"\\d+\"`) so backslashes reach the regex engine intact. Unescaped user input in a regex is an injection bug, just like unescaped input in SQL.",
+          "prerequisites": ["re-redos"],
+          "resources": [
+            { "title": "Python docs — re: re.escape", "url": "https://docs.python.org/3/library/re.html#re.escape", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-flags",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["regex.flags"],
+          "prompt": "What do the common flags `i`, `m`, `s`, `g` and `x` do?",
+          "answer": "`i` case-insensitive; `m` multiline — `^` and `$` match at every line; `s` dotall — `.` also matches newlines; `g` global — find all matches (JavaScript); `x` verbose — whitespace and `#` comments inside the pattern are ignored, so complex patterns can be laid out readably.",
+          "explanation": "Verbose mode is the cheapest readability upgrade for any pattern longer than a line. In JavaScript, a `g` regex used with `test()` or `exec()` is stateful via `lastIndex` — reusing one across calls gives alternating true/false results.",
+          "prerequisites": ["re-anchors-boundaries"],
+          "resources": [
+            { "title": "Python docs — re: Flags", "url": "https://docs.python.org/3/library/re.html#flags", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-sub-backrefs",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["regex.replacement", "regex.groups"],
+          "prompt": "What does this print?",
+          "code": "import re\nprint(re.sub(r'(\\d{4})-(\\d{2})-(\\d{2})', r'\\3/\\2/\\1', '2026-09-10'))\nprint(re.sub(r'\\b(\\w+) \\1\\b', r'\\1', 'the the cat'))",
+          "lang": "python",
+          "answer": "10/09/2026\nthe cat",
+          "explanation": "In a replacement, `\\1` (or `\\g<name>`, `$1` in JavaScript) inserts what a group captured, so groups can be reordered. Inside a pattern, a backreference such as `\\1` matches the same text again — `\\b(\\w+) \\1\\b` finds doubled words. Backreferences are exactly the feature linear-time engines give up.",
+          "prerequisites": ["re-groups"],
+          "resources": [
+            { "title": "Python docs — re: re.sub", "url": "https://docs.python.org/3/library/re.html#re.sub", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "10/09/2026\nthe cat" }
+        },
+        {
+          "id": "re-findall-split",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["regex.api"],
+          "prompt": "What does this print?",
+          "code": "import re\nprint(re.findall(r'\\d+', 'pi is 3.14159'))\nprint(re.findall(r'(\\w)=(\\d)', 'a=1, b=2'))\nprint(re.split(r'[,;\\s]+', 'a, b;c  d'))",
+          "lang": "python",
+          "answer": "['3', '14159']\n[('a', '1'), ('b', '2')]\n['a', 'b', 'c', 'd']",
+          "explanation": "`findall` returns every match; with capturing groups it returns the groups instead of the whole match — tuples when there are several. `split` on a pattern handles multiple delimiters at once. Use `finditer` for large inputs to get match objects lazily, with positions.",
+          "resources": [
+            { "title": "Python docs — re: re.findall", "url": "https://docs.python.org/3/library/re.html#re.findall", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "['3', '14159']\n[('a', '1'), ('b', '2')]\n['a', 'b', 'c', 'd']" }
+        },
+        {
+          "id": "re-match-search",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["regex.api", "python.stdlib"],
+          "prompt": "`re.match` vs `re.search` vs `re.fullmatch`",
+          "answer": "`match` anchors at the start of the string only; `search` finds the first match anywhere; `fullmatch` requires the entire string to match.",
+          "columns": {
+            "left": { "title": "match / fullmatch", "points": ["`match`: must start at position 0", "`match`: trailing text is ignored", "`fullmatch`: whole string must match", "`fullmatch`: the right tool for validation"] },
+            "right": { "title": "search", "points": ["First match anywhere in the string", "Like most other languages' default", "Use `^` to anchor when needed", "Returns a match object or None"] }
+          },
+          "explanation": "Validation should use `fullmatch` (or explicit `^...$`, remembering `$` also matches before a trailing newline in Python). Using `match` to validate lets trailing junk through: `re.match(r\"\\d+\", \"123abc\")` succeeds.",
+          "resources": [
+            { "title": "Python docs — re: search() vs match()", "url": "https://docs.python.org/3/library/re.html#search-vs-match", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-unicode",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["regex.unicode", "text.unicode"],
+          "prompt": "Your name-validation regex `^[A-Za-z]+$` rejects \"José\" and \"Łukasz\". How should it change?",
+          "answer": "Use Unicode properties: `^\\p{L}+$` matches letters in any script (JavaScript needs the `u` or `v` flag; Python needs the third-party `regex` module). Better still, reconsider validating names at all beyond length and control characters.",
+          "explanation": "Real names include spaces, hyphens, apostrophes and characters from every script, and some people have one name only. Overly strict validation is a common and avoidable exclusion bug. Normalise to NFC before matching so composed and decomposed forms behave the same.",
+          "prerequisites": ["text-normalization"],
+          "resources": [
+            { "title": "Regular-Expressions.info — Unicode regular expressions", "url": "https://www.regular-expressions.info/unicode.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "re-testing",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["regex.practice", "testing.unit"],
+          "prompt": "How do you keep a non-trivial regex correct and maintainable?",
+          "answer": "Write it in verbose mode with comments, give groups names, and unit-test it with a table of inputs that must match and inputs that must not — including edge cases such as empty strings, very long inputs and near-misses. Use an explainer tool (regex101) while developing.",
+          "explanation": "Tests are what let you change a regex later without fear. Add a pathological long input to check it finishes quickly; if a pattern keeps growing, replace it with a small parser.",
+          "prerequisites": ["re-when-not"],
+          "resources": [
+            { "title": "regex101 — online regex tester and debugger", "url": "https://regex101.com/", "kind": "tool" }
+          ]
+        }
+      ]
     }
   ]
 }

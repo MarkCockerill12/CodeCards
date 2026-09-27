@@ -147,6 +147,180 @@
           ]
         }
       ]
+    },
+    {
+      "id": "dp-creational-structural",
+      "name": "Creational & Structural Patterns",
+      "description": "Factory method and abstract factory, builder, adapter, facade and proxy.",
+      "cards": [
+        {
+          "id": "dp-factory",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["patterns.creational"],
+          "prompt": "Factory method vs abstract factory",
+          "answer": "A factory method is one method that decides which concrete class to instantiate (often overridden or switched on input). An abstract factory is an object that creates a whole family of related objects — buttons, menus and dialogs for one UI theme — so the families stay consistent.",
+          "columns": {
+            "left": { "title": "Factory method", "points": ["One method creating one product", "Subclasses or input decide the class", "`Notification.create(channel)`", "Often just a function"] },
+            "right": { "title": "Abstract factory", "points": ["An object creating a family of products", "Guarantees products match each other", "`ui = DarkThemeFactory()`", "Heavier; use when families swap together"] }
+          },
+          "explanation": "Both decouple callers from concrete classes. In most modern code a plain function or a constructor parameter does the job; reach for a formal abstract factory only when several related products must be swapped together.",
+          "prerequisites": ["dp-categories"],
+          "resources": [
+            { "title": "Refactoring.Guru — Factory Method", "url": "https://refactoring.guru/design-patterns/factory-method", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-builder",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["patterns.creational"],
+          "prompt": "When is the builder pattern worth using?",
+          "answer": "When constructing an object needs many optional parameters or several steps, and a constructor call would be unreadable (`new Request(url, null, null, true, 30, null)`). A builder names each step — `Request.builder().url(u).timeout(30).retries(3).build()` — and validates everything once in `build()`.",
+          "explanation": "Languages with named and default arguments (Python, Kotlin, C#) or object literals (JavaScript) often make builders unnecessary. They still shine for immutable objects assembled in stages and for test data builders.",
+          "prerequisites": ["test-data-builders"],
+          "resources": [
+            { "title": "Refactoring.Guru — Builder", "url": "https://refactoring.guru/design-patterns/builder", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-adapter",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["patterns.structural"],
+          "prompt": "Your code expects a `PaymentGateway` interface, and you must integrate a vendor SDK with a completely different API. Which pattern?",
+          "answer": "Adapter: a class implementing `PaymentGateway` that translates each call into the vendor SDK's methods and its responses and errors back into your types. The rest of your code never sees the vendor API.",
+          "explanation": "Adapters are the infrastructure side of ports and adapters: they keep third-party vocabulary out of your domain, and make swapping vendors — or faking them in tests — a matter of writing one new class.",
+          "prerequisites": ["oop-dependency-inversion"],
+          "resources": [
+            { "title": "Refactoring.Guru — Adapter", "url": "https://refactoring.guru/design-patterns/adapter", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-facade",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["patterns.structural"],
+          "prompt": "What does a facade do, and how does it differ from an adapter?",
+          "answer": "A facade offers one simple interface over a complex subsystem — `VideoConverter.convert(file, \"mp4\")` hiding codecs, buffers and muxers. An adapter translates one existing interface into another that callers expect; a facade simplifies rather than translates.",
+          "explanation": "Facades reduce coupling to a subsystem's internals and give a natural place for defaults. The risk is a facade that grows into a god object; keep it thin and let advanced callers reach the subsystem directly when they must.",
+          "prerequisites": ["dp-adapter"],
+          "resources": [
+            { "title": "Refactoring.Guru — Facade", "url": "https://refactoring.guru/design-patterns/facade", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-proxy",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["patterns.structural"],
+          "prompt": "What is the proxy pattern, and what are its common forms?",
+          "answer": "An object with the same interface as another that controls access to it. Forms: virtual proxy (lazy loading of something expensive), remote proxy (a local stub for a network service, as in RPC clients), protection proxy (access checks), and caching or logging proxies.",
+          "explanation": "ORM lazy-loading relations are virtual proxies — which is exactly how N+1 queries sneak in. Proxies and decorators look alike structurally; the difference is intent — a proxy controls access to the same thing, a decorator adds behaviour.",
+          "prerequisites": ["dp-decorator-vs-inheritance"],
+          "resources": [
+            { "title": "Refactoring.Guru — Proxy", "url": "https://refactoring.guru/design-patterns/proxy", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-composite",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["patterns.structural", "ds.trees"],
+          "prompt": "What is the composite pattern, and where does it appear?",
+          "answer": "It lets you treat individual objects and groups of objects through the same interface, building tree structures: a `Folder` and a `File` both implement `size()`, and a folder's `size()` sums its children's. Callers never need to know whether they hold a leaf or a branch.",
+          "explanation": "Composites are everywhere trees are: file systems, UI component trees, scene graphs, organisation charts, expression trees and nested menus. Operations become simple recursion over the tree; the trade-off is that leaf-only or branch-only operations fit awkwardly into the shared interface.",
+          "prerequisites": ["dp-categories", "ds-tree-traversals"],
+          "resources": [
+            { "title": "Refactoring.Guru — Composite", "url": "https://refactoring.guru/design-patterns/composite", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dp-behavioural-2",
+      "name": "Behavioural Patterns II",
+      "description": "Command, state, template method, chain of responsibility, iterator and visitor.",
+      "cards": [
+        {
+          "id": "dp-command",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["patterns.behavioural"],
+          "prompt": "What is the command pattern, and what does turning a request into an object enable?",
+          "answer": "It encapsulates an action and its parameters as an object with an `execute` method. Because the request is data, you can queue it, log it, retry it, schedule it, send it elsewhere, and implement undo by storing commands with an `undo` method.",
+          "explanation": "Editors' undo stacks, job queues, database migrations and CQRS commands are all this idea. In languages with closures, a command can be as simple as a function plus its arguments.",
+          "prerequisites": ["dp-functional-alternatives"],
+          "resources": [
+            { "title": "Refactoring.Guru — Command", "url": "https://refactoring.guru/design-patterns/command", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-state",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["patterns.behavioural", "design.state-machines"],
+          "prompt": "An `Order` class has `if status == ...` checks repeated in every method, and invalid transitions keep slipping through. Which pattern helps?",
+          "answer": "The state pattern (or an explicit state machine): represent each status as a state object or table entry that defines which operations and transitions are allowed. `order.ship()` delegates to the current state, which either transitions or rejects the action.",
+          "explanation": "Making transitions explicit turns \"paid → cancelled → shipped\" style bugs into errors in one place. A transition table is often simpler than one class per state, and it doubles as documentation you can draw.",
+          "prerequisites": ["gd-state-machine"],
+          "resources": [
+            { "title": "Refactoring.Guru — State", "url": "https://refactoring.guru/design-patterns/state", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-template-method",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["patterns.behavioural", "oop.inheritance"],
+          "prompt": "What is the template method pattern, and what is its main drawback?",
+          "answer": "A base class defines the skeleton of an algorithm and calls overridable steps (`parse()`, `validate()`, `save()`) that subclasses implement. It fixes the order of steps while letting the details vary.",
+          "explanation": "It relies on inheritance, so subclasses become coupled to the base's internal sequence, and understanding a subclass means reading both. Passing the varying steps in as functions or strategies (composition) usually achieves the same with less coupling.",
+          "prerequisites": ["oop-composition-inheritance"],
+          "resources": [
+            { "title": "Refactoring.Guru — Template Method", "url": "https://refactoring.guru/design-patterns/template-method", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-chain-of-responsibility",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["patterns.behavioural", "web.middleware"],
+          "prompt": "What is the chain of responsibility, and where do you use it every day?",
+          "answer": "A request passes along a chain of handlers, each of which may handle it, transform it, or pass it to the next. HTTP middleware (authentication → logging → rate limiting → handler), servlet filters, and event bubbling in the DOM are all chains.",
+          "explanation": "Order matters and is a common source of bugs — authentication must run before authorisation, compression after body generation. Keep each handler single-purpose and make the chain's order explicit in one place.",
+          "prerequisites": ["js-event-delegation"],
+          "resources": [
+            { "title": "Refactoring.Guru — Chain of Responsibility", "url": "https://refactoring.guru/design-patterns/chain-of-responsibility", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-visitor",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["patterns.behavioural", "compilers.ast"],
+          "prompt": "What problem does the visitor pattern solve, and what replaces it in modern languages?",
+          "answer": "Adding new operations over a fixed set of node types (an AST: type checking, printing, optimising) without editing every node class — each operation is a visitor with one method per node type, dispatched by double dispatch.",
+          "explanation": "It is the object-oriented answer to the expression problem. Languages with sum types and exhaustive pattern matching (Rust enums, sealed interfaces with `switch` in Java, TypeScript discriminated unions) express the same thing more directly, with the compiler checking you handled every type.",
+          "prerequisites": ["oop-vs-functional", "java-sealed-patterns"],
+          "resources": [
+            { "title": "Refactoring.Guru — Visitor", "url": "https://refactoring.guru/design-patterns/visitor", "kind": "article" }
+          ]
+        },
+        {
+          "id": "dp-iterator",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["patterns.behavioural", "language.iteration"],
+          "prompt": "The ___ pattern provides sequential access to a collection's elements without exposing its internal structure — built into modern languages as `for...of`, `for x in`, and `IEnumerable`.",
+          "answer": "iterator",
+          "explanation": "Most GoF behavioural patterns became language features: iterators and generators, observers as events and reactive streams, strategies as first-class functions. Knowing the pattern still explains how the feature works and how to implement it for your own collections.",
+          "prerequisites": ["js-iterable-protocol"],
+          "resources": [
+            { "title": "Refactoring.Guru — Iterator", "url": "https://refactoring.guru/design-patterns/iterator", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

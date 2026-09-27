@@ -119,7 +119,7 @@
           },
           "explanation": "The usual compromise: short-lived JWT access tokens (minutes) plus a revocable refresh token. Always pin the algorithm on verification — accepting `alg: none` or letting the token choose HMAC vs RSA is a classic critical bug.",
           "resources": [
-            { "title": "OWASP — JSON Web Token cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html", "kind": "docs" }
+            { "title": "RFC 8725 — JSON Web Token Best Current Practices", "url": "https://www.rfc-editor.org/rfc/rfc8725", "kind": "spec" }
           ]
         },
         {
@@ -132,6 +132,139 @@
           "explanation": "Token bucket allows bursts while capping the average — usually what you want. Clients should retry with exponential backoff plus jitter; synchronised retries cause the thundering herd that turns a blip into an outage.",
           "resources": [
             { "title": "IETF — RateLimit header fields for HTTP", "url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "api-practice",
+      "name": "Designing APIs People Can Use",
+      "description": "Resource naming, filtering, PATCH semantics, long-running operations, webhooks, contracts and deprecation.",
+      "cards": [
+        {
+          "id": "api-resource-naming",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["api.rest", "api.design"],
+          "prompt": "What are the conventions for REST resource URLs?",
+          "answer": "Plural nouns for collections (`/orders`), an ID for an item (`/orders/42`), nesting only for true containment (`/orders/42/items`), HTTP methods as the verbs, lowercase with hyphens, and query parameters for filtering, sorting and paging (`/orders?status=paid&sort=-created_at`).",
+          "explanation": "Avoid verbs in paths (`/getOrders`, `/createOrder`); for genuine actions that are not CRUD, a sub-resource (`POST /orders/42/cancellation`) or an action endpoint used consistently is fine. Consistency across the whole API matters more than any individual rule.",
+          "resources": [
+            { "title": "Microsoft — RESTful web API design", "url": "https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design", "kind": "article" }
+          ]
+        },
+        {
+          "id": "api-patch-semantics",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["api.http", "api.rest"],
+          "prompt": "`PUT` vs `PATCH` (JSON Merge Patch vs JSON Patch)",
+          "answer": "PUT replaces the whole resource with the representation sent; PATCH applies a partial change. JSON Merge Patch (RFC 7386) sends a partial document, with `null` meaning delete; JSON Patch (RFC 6902) sends a list of operations (`add`, `remove`, `replace`, `test`).",
+          "columns": {
+            "left": { "title": "PUT", "points": ["Full replacement of the resource", "Idempotent", "Omitted fields are cleared", "Client must send everything"] },
+            "right": { "title": "PATCH", "points": ["Partial update", "Not necessarily idempotent", "Merge Patch: partial JSON, null deletes", "JSON Patch: ordered ops, supports `test`"] }
+          },
+          "explanation": "Merge Patch is simpler and covers most cases, but cannot set a field to null or edit single array elements. JSON Patch is precise and can include `test` for optimistic concurrency. Whichever you choose, document it — \"PATCH with a partial body\" is ambiguous otherwise.",
+          "prerequisites": ["api-idempotent-methods"],
+          "resources": [
+            { "title": "RFC 7386 — JSON Merge Patch", "url": "https://www.rfc-editor.org/rfc/rfc7386", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "api-long-running",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["api.async", "api.design"],
+          "prompt": "Generating a report takes three minutes. How should the API expose it?",
+          "answer": "Return `202 Accepted` with a `Location` of a status resource (`/reports/jobs/123`). Clients poll it (honouring a `Retry-After`) or receive a webhook; when done it links to the result. Support cancellation with `DELETE` on the job.",
+          "explanation": "Holding an HTTP request open for minutes fails against load balancer and client timeouts and ties up server resources. Modelling the job as a resource also gives you retries, progress reporting and an audit trail for free.",
+          "prerequisites": ["sd-queue-decoupling"],
+          "resources": [
+            { "title": "Microsoft — Asynchronous Request-Reply pattern", "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/async-request-reply", "kind": "article" }
+          ]
+        },
+        {
+          "id": "api-webhooks",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["api.webhooks", "security.integrity"],
+          "prompt": "What makes a webhook implementation robust and secure?",
+          "answer": "Sign every payload (HMAC of the body plus a timestamp) and have receivers verify the signature in constant time and reject old timestamps to block replays. Retry with backoff on failure, include an event ID so receivers can deduplicate, and let receivers acknowledge quickly and process asynchronously.",
+          "explanation": "Delivery is at-least-once and unordered, so receivers must be idempotent and must not assume sequence. Provide a way to replay missed events and to rotate signing secrets without downtime.",
+          "prerequisites": ["crypto-signatures", "sd-idempotency-key"],
+          "resources": [
+            { "title": "Standard Webhooks specification", "url": "https://www.standardwebhooks.com/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-openapi",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["api.contracts", "api.tooling"],
+          "prompt": "What does an OpenAPI description give you?",
+          "answer": "A machine-readable contract for an HTTP API — paths, parameters, request and response schemas, auth — from which you can generate documentation, client SDKs, server stubs, mock servers and request validation, and diff versions to detect breaking changes in CI.",
+          "explanation": "Contract-first (write the spec, then implement) forces design review before code; code-first (generate the spec from annotations) keeps it in sync effortlessly. Either way, lint it and fail the build on unintended breaking changes.",
+          "prerequisites": ["api-versioning"],
+          "resources": [
+            { "title": "OpenAPI Specification", "url": "https://spec.openapis.org/oas/latest.html", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "api-deprecation",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["api.lifecycle", "api.versioning"],
+          "prompt": "You must retire `/v1/orders` used by hundreds of external clients. How?",
+          "answer": "Announce a timeline, mark responses with the `Deprecation` and `Sunset` headers plus a link to the migration guide, measure who still calls it (per API key), contact those clients directly, and shut down only after usage has actually dropped — optionally with scheduled brownouts first.",
+          "explanation": "Usage data beats announcements: most breakage comes from clients nobody knew about. A brownout (returning errors for a short, announced window) flushes out forgotten integrations while there is still time to fix them.",
+          "prerequisites": ["api-versioning"],
+          "resources": [
+            { "title": "RFC 8594 — The Sunset HTTP Header Field", "url": "https://www.rfc-editor.org/rfc/rfc8594", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "api-graphql-n-plus-one",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["api.graphql", "sql.n-plus-one"],
+          "prompt": "This resolver makes the query `{ posts(first: 50) { author { name } } }` issue 51 database queries. Why, and what fixes it?",
+          "code": "const resolvers = {\n  Post: {\n    author: (post) => db.users.findById(post.authorId),\n  },\n};",
+          "lang": "javascript",
+          "answer": "Each post's `author` field resolves independently, so 50 posts trigger 50 author lookups — the N+1 problem inside GraphQL. Batch them with a DataLoader: collect every author ID requested in one tick, fetch them in a single `WHERE id IN (...)` query, and cache per request.",
+          "explanation": "DataLoader instances must be per-request, never global, or one user's data can be served to another. Pair batching with query depth and cost limits, because clients control query shape.",
+          "prerequisites": ["api-rest-graphql-grpc", "sql-n-plus-one"],
+          "resources": [
+            { "title": "GraphQL — DataLoader", "url": "https://github.com/graphql/dataloader", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "api-protobuf-evolution",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["api.grpc", "api.versioning"],
+          "prompt": "How do you evolve a Protocol Buffers message without breaking existing clients?",
+          "answer": "Never change or reuse a field's number or type — the number is the wire identity. Add new fields with new numbers (old readers skip unknown fields), and when removing a field, mark its number and name `reserved` so nobody reuses them.",
+          "explanation": "Field names can change freely because they do not appear on the wire, but numbers are forever. In proto3 every field is optional with a zero default, so clients must treat \"missing\" and \"zero\" carefully (or use `optional` for presence tracking).",
+          "prerequisites": ["api-rest-graphql-grpc"],
+          "resources": [
+            { "title": "Protocol Buffers — Proto best practices", "url": "https://protobuf.dev/best-practices/dos-donts/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-keys-vs-oauth",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["api.auth", "security.authn"],
+          "prompt": "API keys vs OAuth access tokens",
+          "answer": "An API key is a long-lived static secret that identifies a calling application; an OAuth access token is short-lived, scoped, issued on behalf of a user or client, and refreshable.",
+          "columns": {
+            "left": { "title": "API key", "points": ["Identifies an application", "Long-lived; rotate manually", "Simple: one header", "Leaks in client code or repos"] },
+            "right": { "title": "OAuth token", "points": ["Identifies user + client + scopes", "Short-lived, refreshable, revocable", "More moving parts", "Standard for delegated access"] }
+          },
+          "explanation": "API keys suit server-to-server calls where you control both ends — store them hashed, allow several per account for rotation, scope them, and never embed them in front-end code. Use OAuth when acting on behalf of users or when third parties integrate.",
+          "prerequisites": ["api-oauth-flow"],
+          "resources": [
+            { "title": "OWASP — REST Security Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html", "kind": "docs" }
           ]
         }
       ]

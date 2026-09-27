@@ -145,6 +145,144 @@
           ]
         }
       ]
+    },
+    {
+      "id": "obs-practice",
+      "name": "Instrumentation & Operations",
+      "description": "Metric types, RED and USE, log levels, OpenTelemetry and sampling, dashboards, health checks, on-call, synthetics and RUM, profiling.",
+      "cards": [
+        {
+          "id": "obs-metric-types",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["obs.metrics"],
+          "prompt": "Counter vs gauge vs histogram",
+          "answer": "A counter only increases (requests served, errors) and is read as a rate; a gauge goes up and down (queue depth, memory in use, temperature); a histogram counts observations into buckets (request durations), from which percentiles are computed.",
+          "columns": {
+            "left": { "title": "Counter / gauge", "points": ["Counter: monotonically increasing", "Counter: query as `rate()` per second", "Gauge: a current value that moves", "Gauge: queue depth, connections, memory"] },
+            "right": { "title": "Histogram", "points": ["Counts observations into buckets", "Aggregatable across instances", "Percentiles computed at query time", "Choose buckets around your SLO threshold"] }
+          },
+          "explanation": "Never store a pre-computed average or percentile per instance — they cannot be aggregated across instances. Record histograms and compute percentiles at query time. Counter resets on restart are handled by rate functions, so do not \"fix\" them.",
+          "prerequisites": ["obs-percentiles"],
+          "resources": [
+            { "title": "Prometheus docs — Metric types", "url": "https://prometheus.io/docs/concepts/metric_types/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-red-use",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["obs.methods"],
+          "prompt": "The RED method vs the USE method",
+          "answer": "RED is for request-driven services: Rate, Errors and Duration of requests. USE is for resources: Utilisation, Saturation and Errors of each CPU, disk, network link, pool or queue.",
+          "columns": {
+            "left": { "title": "RED (services)", "points": ["Rate: requests per second", "Errors: failed requests", "Duration: latency distribution", "User-facing health per endpoint"] },
+            "right": { "title": "USE (resources)", "points": ["Utilisation: % of time busy", "Saturation: queued or waiting work", "Errors: device or resource errors", "Finds the bottleneck resource"] }
+          },
+          "explanation": "RED tells you whether users are hurting; USE tells you which resource is responsible. Build service dashboards around RED and dig into USE during an investigation. Both are close relatives of the four golden signals.",
+          "prerequisites": ["obs-four-golden-signals"],
+          "resources": [
+            { "title": "Brendan Gregg — The USE Method", "url": "https://www.brendangregg.com/usemethod.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "obs-log-levels",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["obs.logging"],
+          "prompt": "How should log levels be used?",
+          "answer": "ERROR: something failed and needs attention. WARN: something unexpected that was handled but may signal a problem. INFO: significant business or lifecycle events (started, order placed). DEBUG: detail for developers, normally off in production. Make levels adjustable at runtime without redeploying.",
+          "explanation": "If ERROR fires for expected conditions (a user typing a wrong password), people stop reading errors. Every ERROR should be actionable; if nobody would act, it is WARN or INFO. Log volume is a real cost — sample or aggregate chatty events.",
+          "prerequisites": ["obs-structured-logging"],
+          "resources": [
+            { "title": "OpenTelemetry — Logs data model: severity", "url": "https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-opentelemetry",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["obs.opentelemetry", "obs.tracing"],
+          "prompt": "What is OpenTelemetry, and why adopt it?",
+          "answer": "A vendor-neutral standard, with APIs, SDKs and the Collector, for producing traces, metrics and logs with shared context and consistent semantic conventions, exported over OTLP to any compatible backend.",
+          "explanation": "Instrument once and switch or combine backends without touching application code. Auto-instrumentation covers common frameworks and clients; the Collector handles batching, sampling, enrichment and routing centrally. Correlating logs with trace IDs is where the combined value shows.",
+          "prerequisites": ["obs-tracing"],
+          "resources": [
+            { "title": "OpenTelemetry — What is OpenTelemetry?", "url": "https://opentelemetry.io/docs/what-is-opentelemetry/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-dashboards",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["obs.dashboards"],
+          "prompt": "Your team has 40 dashboards and nobody can tell during an incident whether things are fine. What makes a good dashboard?",
+          "answer": "Start from questions: one top-level service dashboard per service showing SLO status and RED metrics, with the same layout for every service, then drill-down dashboards for dependencies and resources. Show rates and percentiles against thresholds, and link to traces and logs.",
+          "explanation": "Dashboards nobody looks at rot; delete them. During incidents people need \"is it us, and where?\" in seconds, which argues for fewer, consistent, SLO-anchored views over a wall of CPU graphs.",
+          "prerequisites": ["obs-sli-slo-sla", "obs-red-use"],
+          "resources": [
+            { "title": "Google SRE Book — Monitoring distributed systems", "url": "https://sre.google/sre-book/monitoring-distributed-systems/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-health-checks",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["obs.health", "k8s.probes"],
+          "prompt": "What is wrong with using this health endpoint for liveness?",
+          "code": "@app.get('/healthz')\ndef healthz():\n    db.execute('SELECT 1')      # 2s timeout\n    redis.ping()\n    payments_api.get('/status')\n    return {'ok': True}",
+          "lang": "python",
+          "answer": "It checks the database, so a database outage makes every instance fail its liveness check and get restarted — turning a dependency problem into a restart storm that makes recovery harder. Liveness should only check that the process itself can make progress; put dependency checks in readiness (or a separate diagnostics endpoint).",
+          "explanation": "Keep health checks cheap and fast, with timeouts shorter than the probe interval. A deep health endpoint is useful for dashboards and synthetic monitoring — just do not wire it to restarts.",
+          "prerequisites": ["k8s-probes"],
+          "resources": [
+            { "title": "Kubernetes docs — Configure liveness, readiness and startup probes", "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-on-call",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["obs.on-call", "ops.incidents"],
+          "prompt": "What makes an on-call rotation sustainable?",
+          "answer": "Pages only for urgent, actionable, user-impacting problems; a runbook linked from every alert; enough people for reasonable rotation frequency; handover notes; clear escalation; time to fix the causes of pages; and tracking page volume as a health metric with a target.",
+          "explanation": "An engineer woken nightly by noise stops trusting alerts and eventually leaves. Google's SRE practice caps operational load and treats excessive toil as a bug to engineer away. Incident roles (incident commander, communications, operations) keep response calm.",
+          "prerequisites": ["obs-alert-quality"],
+          "resources": [
+            { "title": "Google SRE Book — Being on-call", "url": "https://sre.google/sre-book/being-on-call/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "obs-synthetics-rum",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["obs.monitoring", "web.performance"],
+          "prompt": "Synthetic monitoring vs real user monitoring (RUM)",
+          "answer": "Synthetic checks run scripted requests or browser journeys from fixed locations on a schedule; RUM collects timing and errors from real users' browsers and devices.",
+          "columns": {
+            "left": { "title": "Synthetic", "points": ["Scripted, scheduled probes", "Works with zero traffic", "Consistent, comparable baseline", "Misses real device and network variety"] },
+            "right": { "title": "RUM", "points": ["Measured in real users' sessions", "Real devices, networks, regions", "Reveals long-tail experience", "Needs traffic; privacy and sampling care"] }
+          },
+          "explanation": "Synthetics catch outages even at 3 a.m. with no traffic, and give a stable baseline for comparison; RUM shows what users actually experience across devices, networks and regions — including Core Web Vitals. Use both: synthetics for availability alerts, RUM for experience.",
+          "prerequisites": ["web-core-web-vitals"],
+          "resources": [
+            { "title": "web.dev — User-centric performance metrics", "url": "https://web.dev/articles/user-centric-performance-metrics", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "obs-profiling",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["obs.profiling", "perf.profiling"],
+          "prompt": "What does continuous profiling add to metrics, logs and traces?",
+          "answer": "Always-on, low-overhead sampling of where CPU time and memory allocations go in production, down to the function and line — the \"why is this span slow?\" that traces cannot answer. Flame graphs summarise stacks visually; eBPF-based profilers need no code changes.",
+          "explanation": "Comparing profiles before and after a deploy pinpoints regressions, and fleet-wide profiles often reveal hot paths worth significant infrastructure cost savings. OpenTelemetry has added profiling as a signal alongside traces, metrics and logs.",
+          "prerequisites": ["obs-three-pillars"],
+          "resources": [
+            { "title": "Brendan Gregg — Flame graphs", "url": "https://www.brendangregg.com/flamegraphs.html", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

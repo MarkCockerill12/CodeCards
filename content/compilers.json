@@ -106,6 +106,204 @@
           ]
         }
       ]
+    },
+    {
+      "id": "comp-frontend",
+      "name": "Lexing, Parsing & Types",
+      "description": "Tokens and grammars, parsing strategies, precedence, scopes and type inference.",
+      "cards": [
+        {
+          "id": "comp-lexer",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["compilers.lexing"],
+          "prompt": "What does a lexer produce, and why is it a separate stage from parsing?",
+          "answer": "A stream of tokens — each with a kind (identifier, number, `+`, keyword), its text and its source position — while discarding whitespace and comments. Tokens are defined by regular expressions, which a simple, fast state machine can match.",
+          "explanation": "Separating the stages keeps the parser working on a small alphabet of meaningful symbols. Source positions attached to tokens are what make good error messages possible (\"line 12, column 8\") — lose them and every later stage reports errors vaguely.",
+          "prerequisites": ["comp-stages"],
+          "resources": [
+            { "title": "Crafting Interpreters — Scanning", "url": "https://craftinginterpreters.com/scanning.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "comp-grammars",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.parsing", "cs.theory"],
+          "prompt": "Why can a regular expression tokenize a language but not parse it?",
+          "answer": "Regular languages cannot count or nest — they cannot match arbitrarily deep parentheses. Programming languages have nested structure, which needs a context-free grammar and a parser with a stack (recursive descent, LL or LR).",
+          "explanation": "This is the Chomsky hierarchy in practice: regular (finite automata) ⊂ context-free (pushdown automata) ⊂ context-sensitive. It is exactly why \"parse HTML with regex\" fails, and why a lexer plus a parser is the standard split.",
+          "prerequisites": ["re-when-not"],
+          "resources": [
+            { "title": "Wikipedia — Chomsky hierarchy", "url": "https://en.wikipedia.org/wiki/Chomsky_hierarchy", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-recursive-descent",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.parsing"],
+          "prompt": "What is a recursive-descent parser, and how does it handle operator precedence?",
+          "answer": "A hand-written parser with one function per grammar rule, each calling the others — `expression()` calls `term()`, which calls `factor()`. Precedence comes from the layering: lower-precedence rules call higher-precedence ones, so `*` binds tighter than `+`.",
+          "explanation": "Most production compilers (GCC, Clang, Go, TypeScript, Rust) use hand-written recursive descent because it gives the best error messages and recovery. Pratt parsing (precedence climbing) handles many operator levels compactly. Parser generators (yacc, ANTLR) suit DSLs.",
+          "prerequisites": ["comp-ast"],
+          "resources": [
+            { "title": "Crafting Interpreters — Parsing expressions", "url": "https://craftinginterpreters.com/parsing-expressions.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "comp-precedence",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["compilers.parsing", "js.operators"],
+          "prompt": "What does this print?",
+          "code": "console.log(2 + 3 * 4);\nconsole.log(2 ** 3 ** 2);\nconsole.log((-2) ** 3);\nconsole.log(1 + 2 < 4);",
+          "lang": "javascript",
+          "answer": "14\n512\n-8\ntrue",
+          "explanation": "`*` binds tighter than `+`; `**` is right-associative, so `2 ** 3 ** 2` is `2 ** 9`; unary minus on a base needs parentheses in JavaScript (`-2 ** 3` is a SyntaxError); and comparison operators bind looser than arithmetic. Encoding precedence and associativity is a core job of the parser.",
+          "resources": [
+            { "title": "MDN — Operator precedence", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence", "kind": "docs" }
+          ],
+          "verify": { "runtime": "node", "expectedOutput": "14\n512\n-8\ntrue" }
+        },
+        {
+          "id": "comp-scope-resolution",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.semantic-analysis", "compilers.scope"],
+          "prompt": "What does semantic analysis do after parsing?",
+          "answer": "It builds symbol tables and resolves every name to its declaration (respecting scopes and shadowing), checks types, and enforces rules the grammar cannot express — definite assignment, return types, access modifiers, and that `break` appears inside a loop.",
+          "explanation": "Lexical (static) scoping means a name resolves by where code is written, not where it runs — which is what makes closures work and lets the compiler resolve variables to fixed slots ahead of time instead of by name at runtime.",
+          "prerequisites": ["comp-stages"],
+          "resources": [
+            { "title": "Crafting Interpreters — Resolving and binding", "url": "https://craftinginterpreters.com/resolving-and-binding.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "comp-type-inference",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["compilers.types", "types.inference"],
+          "prompt": "What is the difference between local type inference and Hindley–Milner inference?",
+          "answer": "Local inference fills in types from nearby information — `var x = new List<int>()`, `let x = 5`, `auto` — flowing mostly forward from initialisers. Hindley–Milner (ML, Haskell, largely Rust within a function) infers types for whole functions by generating constraints and unifying them, often needing no annotations at all.",
+          "explanation": "Full inference is powerful but can produce confusing errors far from the real mistake, which is why languages that support it still encourage annotations on public signatures. TypeScript uses bidirectional local inference plus contextual typing.",
+          "prerequisites": ["comp-static-dynamic-typing"],
+          "resources": [
+            { "title": "Wikipedia — Hindley–Milner type system", "url": "https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "comp-backend",
+      "name": "IR, Optimisation & Runtimes",
+      "description": "SSA, classic optimisations, register allocation, calling conventions, bytecode VMs and WebAssembly.",
+      "cards": [
+        {
+          "id": "comp-ssa",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["compilers.ir", "compilers.optimisation"],
+          "prompt": "What is SSA form, and why do optimisers use it?",
+          "answer": "Static single assignment: every variable is assigned exactly once, so each version gets a new name (`x1`, `x2`), and φ (phi) functions merge values where control-flow paths join. Each use then points to exactly one definition.",
+          "explanation": "That one-definition property makes data-flow analyses — constant propagation, dead-code elimination, value numbering — simple and fast. LLVM IR, GCC's GIMPLE, V8's TurboFan and the Go compiler all use SSA-based IRs.",
+          "prerequisites": ["comp-stages"],
+          "resources": [
+            { "title": "Wikipedia — Static single-assignment form", "url": "https://en.wikipedia.org/wiki/Static_single-assignment_form", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-optimisations",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.optimisation"],
+          "prompt": "Name the classic compiler optimisations and what each does.",
+          "answer": "Constant folding and propagation (compute known values at compile time), dead-code elimination, common subexpression elimination, inlining (replace a call with the body), loop-invariant code motion, strength reduction (`x * 2` → `x << 1`), and vectorisation (use SIMD instructions for loops).",
+          "explanation": "Inlining is the enabling optimisation: it exposes the callee to every other optimisation in the caller's context. It is also why virtual calls, function pointers and cross-module calls (without LTO) are slower — the optimiser cannot see through them.",
+          "prerequisites": ["comp-ssa"],
+          "resources": [
+            { "title": "LLVM — Analysis and Transform Passes", "url": "https://llvm.org/docs/Passes.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "comp-register-allocation",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["compilers.codegen"],
+          "prompt": "What is register allocation, and what happens when it runs out of registers?",
+          "answer": "Mapping an unlimited set of IR values onto the CPU's small set of registers (16 general-purpose on x86-64). Values live at the same time interfere and need different registers; when there are not enough, some are spilled to the stack and reloaded when needed.",
+          "explanation": "Classic approaches colour an interference graph (NP-hard in general, so heuristics are used) or use linear scan, which is faster and common in JITs. Spills cost memory traffic, which is one reason tight loops with too many live variables slow down.",
+          "resources": [
+            { "title": "Wikipedia — Register allocation", "url": "https://en.wikipedia.org/wiki/Register_allocation", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-calling-convention",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["compilers.abi", "os.abi"],
+          "prompt": "What is a calling convention, and what is an ABI?",
+          "answer": "A calling convention fixes how functions pass arguments (which registers, what stack order), return values, and which registers the caller versus callee must preserve. An ABI is the wider binary contract: calling conventions plus data layout, name mangling, exception handling and system calls.",
+          "explanation": "Code compiled by different compilers or languages interoperates only if it shares the ABI — which is why FFI goes through the C ABI (`extern \"C\"`), why C++ ABI breaks force rebuilds, and why Windows x64 and System V (Linux/macOS) pass arguments differently.",
+          "prerequisites": ["comp-linking"],
+          "resources": [
+            { "title": "Wikipedia — Application binary interface", "url": "https://en.wikipedia.org/wiki/Application_binary_interface", "kind": "article" }
+          ]
+        },
+        {
+          "id": "comp-bytecode-vm",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["compilers.interpreters"],
+          "prompt": "Tree-walking interpreter vs bytecode virtual machine",
+          "answer": "A tree-walker evaluates the AST directly by recursing over nodes; a bytecode VM first compiles to a compact linear instruction stream, then runs it in a tight dispatch loop.",
+          "columns": {
+            "left": { "title": "Tree-walking", "points": ["Evaluates AST nodes recursively", "Simplest to write", "Pointer-chasing and slow dispatch", "Fine for config languages and prototypes"] },
+            "right": { "title": "Bytecode VM", "points": ["Compile once to flat instructions", "Tight loop: fetch, decode, execute", "Several times faster", "The foundation JITs build on"] }
+          },
+          "explanation": "Bytecode is much faster (better cache locality, no pointer chasing, cheap dispatch) and is the design behind CPython, the JVM, Lua and Ruby's YARV. Stack-based VMs (JVM, CPython) have simpler compilers; register-based VMs (Lua, Dalvik) execute fewer instructions.",
+          "prerequisites": ["comp-interpreter-vs-compiler"],
+          "resources": [
+            { "title": "Crafting Interpreters — Chunks of bytecode", "url": "https://craftinginterpreters.com/chunks-of-bytecode.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "comp-wasm",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["compilers.wasm", "web.platform"],
+          "prompt": "What is WebAssembly, and what is it good for?",
+          "answer": "A portable, sandboxed binary instruction format that browsers and standalone runtimes compile to native code. C, C++, Rust, Go and others compile to it, running at near-native speed alongside JavaScript.",
+          "explanation": "It suits CPU-heavy work in the browser (codecs, image processing, games, CAD) and, via WASI, portable sandboxed plugins and edge functions on the server. It does not replace JavaScript for DOM work — calls across the boundary have a cost, and it has no direct DOM access.",
+          "resources": [
+            { "title": "MDN — WebAssembly", "url": "https://developer.mozilla.org/en-US/docs/WebAssembly", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "comp-transpilers-sourcemaps",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["compilers.transpilers", "web.tooling"],
+          "prompt": "What is a transpiler, and what problem do source maps solve?",
+          "answer": "A source-to-source compiler: TypeScript to JavaScript, modern JavaScript to older JavaScript (Babel), Sass to CSS. A source map is a JSON file mapping positions in generated code back to the original source, so debuggers and stack traces show the code you wrote.",
+          "explanation": "Publishing source maps to production exposes your original source; many teams upload them privately to their error tracker instead. Without them, a minified stack trace pointing at \"line 1, column 48210\" is nearly useless.",
+          "resources": [
+            { "title": "MDN — Source map", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Source_map", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "comp-bootstrapping",
+          "type": "cloze",
+          "difficulty": 3,
+          "tags": ["compilers.history"],
+          "prompt": "Writing a language's compiler in the language itself — compiled first by an earlier compiler — is called ___.",
+          "answer": "bootstrapping (self-hosting)",
+          "explanation": "Go, Rust, C#, TypeScript and GCC are self-hosting. It proves the language is capable and lets its authors use it daily, but raises the \"trusting trust\" question Ken Thompson posed: a compromised compiler binary can reinsert a backdoor into every future compiler built with it. Reproducible and diverse double-compilation builds defend against that.",
+          "resources": [
+            { "title": "Ken Thompson — Reflections on Trusting Trust", "url": "https://www.cs.cmu.edu/~rdriley/487/papers/Thompson_1984_ReflectionsonTrustingTrust.pdf", "kind": "article" }
+          ]
+        }
+      ]
     }
   ]
 }

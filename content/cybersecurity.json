@@ -44,7 +44,7 @@
           "answer": "Least privilege, defence in depth, fail securely, complete mediation, separation of duties, minimise the attack surface, no security through obscurity, and secure defaults.",
           "explanation": "Least privilege and secure defaults do most of the work in practice. 'Fail securely' is the one people get backwards: an auth service timing out must deny, not allow — that error path is where real breaches happen.",
           "resources": [
-            { "title": "OWASP — Security by design principles", "url": "https://owasp.org/www-project-developer-guide/draft/foundations/security_principles/", "kind": "article" }
+            { "title": "OWASP — Security by design principles", "url": "https://owasp.org/www-project-developer-guide/release/foundations/security_principles/", "kind": "article" }
           ]
         },
         {
@@ -158,6 +158,209 @@
           "explanation": "The instinct to 'clean up and move on' destroys the evidence needed to know what was taken. Snapshot before you wipe. The blameless post-mortem is where the actual value is: the same class of failure recurs until the system changes.",
           "resources": [
             { "title": "NIST SP 800-61 — Computer Security Incident Handling Guide", "url": "https://csrc.nist.gov/pubs/sp/800/61/r2/final", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec-identity",
+      "name": "Identity, Sessions & Access",
+      "description": "MFA and passkeys, session management, brute-force defences, account enumeration and access-control models.",
+      "cards": [
+        {
+          "id": "sec-mfa-passkeys",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["security.authn", "security.mfa"],
+          "prompt": "SMS/TOTP codes vs passkeys (WebAuthn/FIDO2)",
+          "answer": "One-time codes add a second factor but can be phished — a fake site relays them in real time — and SMS is vulnerable to SIM swapping. Passkeys use public-key cryptography bound to the site's origin, so they cannot be phished or replayed and there is no shared secret to leak.",
+          "columns": {
+            "left": { "title": "SMS / TOTP codes", "points": ["Shared secret or code sent to the user", "Phishable: codes can be relayed live", "SMS: SIM-swap risk", "Widely supported, cheap"] },
+            "right": { "title": "Passkeys / FIDO2", "points": ["Per-site key pair; private key stays on device", "Origin-bound: phishing-resistant", "Nothing reusable to steal from the server", "Synced passkeys or hardware keys"] }
+          },
+          "explanation": "Any MFA beats none: it stops credential stuffing cold. For high-value accounts prefer phishing-resistant factors — passkeys or hardware security keys. Plan account recovery carefully; weak recovery flows are where attackers go once MFA is strong.",
+          "prerequisites": ["sec-authn-authz"],
+          "resources": [
+            { "title": "passkeys.dev — Passkeys developer resources", "url": "https://passkeys.dev/docs/intro/what-are-passkeys/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-session-management",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.sessions", "web.cookies"],
+          "prompt": "What are the rules for secure session management?",
+          "answer": "Generate long random session IDs with a CSPRNG; store them in `HttpOnly; Secure; SameSite` cookies; rotate the ID at login and privilege change (prevents session fixation); expire on idle and absolute timeouts; invalidate server-side on logout and password change.",
+          "explanation": "Never put session IDs in URLs — they leak through logs, history and the Referer header. Offer \"log out everywhere\", and for sensitive actions re-authenticate rather than trusting an old session.",
+          "prerequisites": ["web-cookie-flags", "crypto-random"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Session Management", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-brute-force",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["security.authn", "security.abuse"],
+          "prompt": "Your login endpoint is hit by credential stuffing from thousands of IPs. What defences work?",
+          "answer": "MFA (the strongest single control), rate limits per account and per IP with growing delays, checking passwords against breached-password lists (e.g. Have I Been Pwned's k-anonymity API), bot detection or CAPTCHAs after failures, and alerting on anomalous login volume.",
+          "explanation": "Hard account lockout lets an attacker lock out every user on purpose, so prefer throttling and step-up challenges. Per-IP limits alone fail against botnets with residential proxies, which is why per-account signals matter.",
+          "prerequisites": ["api-rate-limit"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Credential Stuffing Prevention", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-account-enumeration",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["security.authn", "security.info-disclosure"],
+          "prompt": "What does this login response leak?",
+          "code": "if user is None:\n    return error('No account with that email')\nif not verify(password, user.hash):\n    return error('Wrong password')",
+          "lang": "python",
+          "answer": "Distinct messages tell an attacker which emails have accounts, letting them build a target list for phishing and credential stuffing. Return the same generic message (\"invalid email or password\") and similar response times for both cases — and apply the same to sign-up and password reset.",
+          "explanation": "Timing leaks too: skipping the password hash for unknown users makes their responses measurably faster. Hash against a dummy value so both paths cost the same.",
+          "prerequisites": ["crypto-timing-attack"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Authentication — Authentication and error messages", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-access-models",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.authz"],
+          "prompt": "What are RBAC, ABAC and ReBAC?",
+          "answer": "Role-based: permissions attach to roles (admin, editor) assigned to users. Attribute-based: policies evaluate attributes of user, resource and context (\"managers may approve expenses in their department under £5,000 during business hours\"). Relationship-based: access follows relationships in a graph (\"viewers of a folder can view its documents\"), as in Google Zanzibar.",
+          "explanation": "RBAC is simplest and suits most apps until role explosion sets in. Document-sharing products tend towards ReBAC; regulated environments towards ABAC. Whatever the model, centralise the decision in one policy layer and check it on every object access.",
+          "prerequisites": ["sec-authn-authz"],
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Authorization", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec-operations",
+      "name": "Threats, Vulnerabilities & Resilience",
+      "description": "Attack frameworks, vulnerability management, testing approaches, phishing, ransomware and backups, DDoS, segmentation and risk.",
+      "cards": [
+        {
+          "id": "sec-attack-lifecycle",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.threats"],
+          "prompt": "What is MITRE ATT&CK, and how does it relate to the cyber kill chain?",
+          "answer": "The kill chain describes an intrusion as stages — reconnaissance, weaponisation, delivery, exploitation, installation, command and control, actions on objectives. MITRE ATT&CK is a detailed, evidence-based catalogue of real attacker tactics and techniques (initial access, persistence, privilege escalation, lateral movement, exfiltration…).",
+          "explanation": "Defenders use ATT&CK to map which techniques they can detect and where the gaps are. The key insight from both: attackers must succeed at every stage, so detection and disruption anywhere along the chain can stop them.",
+          "prerequisites": ["sec-threat-model"],
+          "resources": [
+            { "title": "MITRE ATT&CK", "url": "https://attack.mitre.org/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-vuln-management",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.vulnerabilities"],
+          "prompt": "What are CVE, CVSS, and why is CVSS score alone a poor way to prioritise patching?",
+          "answer": "A CVE is a unique identifier for a publicly known vulnerability; CVSS scores its technical severity from 0 to 10. But severity is not risk: exploitability in the wild (CISA's Known Exploited Vulnerabilities list, EPSS probability), your exposure, and the asset's value matter more.",
+          "explanation": "A 9.8 in an unreachable internal library may matter less than a 6.5 on your internet-facing login page being actively exploited. Keep an inventory (SBOMs help), patch known-exploited issues first, and track time-to-remediate as a metric.",
+          "prerequisites": ["as-sast-dast"],
+          "resources": [
+            { "title": "CISA — Known Exploited Vulnerabilities Catalog", "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-testing-types",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["security.testing"],
+          "prompt": "Penetration test vs red team exercise vs bug bounty",
+          "answer": "A pentest is a time-boxed assessment of a defined scope to find as many vulnerabilities as possible. A red team emulates a real adversary pursuing an objective, testing detection and response as much as prevention. A bug bounty invites continuous outside research, paying per valid finding.",
+          "columns": {
+            "left": { "title": "Pentest", "points": ["Defined scope and dates", "Breadth: find many vulnerabilities", "Report with findings and fixes", "Often required for compliance"] },
+            "right": { "title": "Red team / bug bounty", "points": ["Red team: objective-driven, stealthy", "Red team: tests detection and response", "Bounty: continuous, crowd-sourced", "Bounty: pay per valid, in-scope finding"] }
+          },
+          "explanation": "Order matters: fix the basics and run pentests before paying bounties, or you pay repeatedly for easy bugs. Red teaming only makes sense once you have detection and response capability worth testing.",
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Vulnerability Disclosure", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerability_Disclosure_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-phishing",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["security.social-engineering"],
+          "prompt": "An employee receives an urgent email from the \"CEO\" asking for a wire transfer. What controls stop business email compromise?",
+          "answer": "Process controls: out-of-band verification (call a known number) for payment or bank-detail changes, and dual approval above a threshold. Technical controls: SPF, DKIM and DMARC at `p=reject` against domain spoofing, external-sender banners, and lookalike-domain monitoring. Plus training that makes reporting easy and blame-free.",
+          "explanation": "Social engineering targets people and processes, so purely technical defences are not enough. Urgency, authority and secrecy are the signature tactics. The strongest control is a rule that bank details never change on the strength of an email alone.",
+          "resources": [
+            { "title": "CISA — Avoiding social engineering and phishing attacks", "url": "https://www.cisa.gov/news-events/news/avoiding-social-engineering-and-phishing-attacks", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-ransomware-backups",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["security.resilience", "ops.backup"],
+          "prompt": "What backup strategy survives ransomware?",
+          "answer": "The 3-2-1 rule — three copies, on two kinds of media, one off-site — extended with one immutable or offline copy (object lock, WORM storage, credentials separate from production) and regular restore tests. Ransomware operators deliberately find and delete reachable backups first.",
+          "explanation": "If the same admin account can delete production and backups, one compromised credential ends both. Measure recovery time with drills, and keep backups long enough to predate a slow, quiet intrusion.",
+          "prerequisites": ["dbi-backup-pitr"],
+          "resources": [
+            { "title": "CISA — StopRansomware guide", "url": "https://www.cisa.gov/stopransomware/ransomware-guide", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sec-ddos",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.availability", "networking.ddos"],
+          "prompt": "What kinds of DDoS attacks are there, and how are they mitigated?",
+          "answer": "Volumetric floods (saturate bandwidth, often via amplification — DNS, NTP, memcached reflection), protocol attacks (SYN floods exhausting connection state), and application-layer attacks (expensive HTTP requests that look legitimate). Mitigation: upstream scrubbing and anycast CDNs, SYN cookies, rate limiting, caching, and autoscaling with cost limits.",
+          "explanation": "Application-layer floods are the hardest because each request looks normal — make expensive endpoints cheap or authenticated, and cache aggressively. You cannot out-bandwidth a large botnet from one data centre; that is what DDoS-protection providers exist for.",
+          "prerequisites": ["net-anycast"],
+          "resources": [
+            { "title": "Cloudflare Learning — What is a DDoS attack?", "url": "https://www.cloudflare.com/learning/ddos/what-is-a-ddos-attack/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sec-segmentation",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.network", "security.principles"],
+          "prompt": "Why segment a network, and what does lateral movement mean?",
+          "answer": "Lateral movement is an attacker pivoting from the first compromised machine to others. Segmentation splits the network into zones with controlled paths between them — production away from corporate laptops, databases reachable only from their applications — so one foothold does not reach everything.",
+          "explanation": "Flat networks turn a phished laptop into a domain-wide breach. Micro-segmentation extends the idea per workload with identity-based policies, which is where it meets zero trust. Watch east–west traffic, not only the perimeter.",
+          "prerequisites": ["sec-zero-trust", "sec-defence-depth"],
+          "resources": [
+            { "title": "NIST SP 800-207 — Zero Trust Architecture", "url": "https://csrc.nist.gov/pubs/sp/800/207/final", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "sec-risk",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["security.risk", "security.governance"],
+          "prompt": "How is security risk assessed, and what are the ways to treat a risk?",
+          "answer": "Risk ≈ likelihood × impact, judged for each threat against each asset. Treatments: mitigate (add controls), transfer (insurance, contracts), avoid (stop doing the risky thing), or accept (explicitly, by someone with the authority to).",
+          "explanation": "Security cannot remove all risk, so the job is prioritisation: spend effort where likelihood and impact are highest. A risk register with named owners turns vague worry into decisions that can be revisited.",
+          "resources": [
+            { "title": "NIST Cybersecurity Framework 2.0", "url": "https://www.nist.gov/cyberframework", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "sec-privacy",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["security.privacy", "compliance.gdpr"],
+          "prompt": "What are the core data-protection principles engineers should design for (as in GDPR)?",
+          "answer": "Lawful basis and purpose limitation (collect for a stated purpose, use only for that), data minimisation, accuracy, storage limitation (delete when no longer needed), integrity and confidentiality, and accountability. Users have rights to access, correct, export and erase their data.",
+          "explanation": "Privacy by design turns these into engineering: collect fewer fields, set retention and deletion jobs from day one, pseudonymise analytics, keep personal data out of logs, and know where every copy lives — backups, caches and third-party processors included — so erasure is possible.",
+          "prerequisites": ["as-logging"],
+          "resources": [
+            { "title": "ICO — Guide to the UK GDPR data protection principles", "url": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/", "kind": "docs" }
           ]
         }
       ]

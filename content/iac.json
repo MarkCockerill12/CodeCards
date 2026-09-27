@@ -137,6 +137,163 @@
           ]
         }
       ]
+    },
+    {
+      "id": "iac-terraform",
+      "name": "Terraform Mechanics",
+      "description": "The core workflow, providers and lifecycles, variables and outputs, data sources, count versus for_each, and importing.",
+      "cards": [
+        {
+          "id": "iac-tf-workflow",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["iac.terraform"],
+          "prompt": "What do `terraform init`, `plan` and `apply` each do?",
+          "answer": "`init` downloads providers and modules and configures the state backend; `plan` compares configuration, state and real infrastructure and shows the proposed changes; `apply` executes a plan (ideally a saved plan file from `plan -out`).",
+          "explanation": "Applying a saved plan guarantees you get exactly what was reviewed, not a fresh plan computed minutes later against changed infrastructure. `terraform fmt` and `validate` belong in CI alongside a plan whose output is posted to the pull request.",
+          "prerequisites": ["iac-declarative-imperative"],
+          "resources": [
+            { "title": "Terraform docs — Core Terraform workflow", "url": "https://developer.hashicorp.com/terraform/intro/core-workflow", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-lifecycle",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["iac.terraform", "iac.safety"],
+          "prompt": "What do the `lifecycle` settings `prevent_destroy`, `create_before_destroy` and `ignore_changes` do?",
+          "answer": "`prevent_destroy` makes any plan that would destroy the resource an error — for databases and buckets. `create_before_destroy` builds the replacement before removing the old one, avoiding downtime on forced replacement. `ignore_changes` stops Terraform reverting attributes managed elsewhere (for example an autoscaler's desired count).",
+          "explanation": "These encode operational intent that the provider cannot know. Overusing `ignore_changes` hides real drift, so scope it to specific attributes and comment why.",
+          "prerequisites": ["iac-plan-review"],
+          "resources": [
+            { "title": "Terraform docs — The lifecycle meta-argument", "url": "https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-variables-outputs",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["iac.terraform"],
+          "prompt": "What are input variables, locals and outputs in Terraform?",
+          "answer": "Input variables are a module's parameters (with types, defaults, descriptions and validation rules). Locals are named intermediate expressions inside a module. Outputs expose values — IDs, endpoints — to the calling module or to other configurations.",
+          "explanation": "Type and validate variables so mistakes fail at plan time. Mark secrets `sensitive = true` to keep them out of plan output (they still land in state). Treat outputs as a module's public API: renaming one breaks every consumer.",
+          "prerequisites": ["iac-modules"],
+          "resources": [
+            { "title": "Terraform docs — Variables and outputs", "url": "https://developer.hashicorp.com/terraform/language/values", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-data-sources",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["iac.terraform"],
+          "prompt": "What is a data source, and how does it differ from a resource?",
+          "answer": "A data source reads information about something that exists — an AMI ID, an existing VPC, the current account — without managing it. A resource is created, updated and destroyed by this configuration and tracked in its state.",
+          "explanation": "Data sources connect configurations without sharing state: one stack creates the network, another looks it up by tag. They are read at plan time, so an unstable lookup (such as \"latest image\") can make plans change without any code change — pin where reproducibility matters.",
+          "resources": [
+            { "title": "Terraform docs — Data sources", "url": "https://developer.hashicorp.com/terraform/language/data-sources", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-count-vs-foreach",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["iac.terraform", "iac.safety"],
+          "prompt": "Removing `\"staging\"` from the middle of this list causes Terraform to destroy and recreate `prod`. Why, and what fixes it?",
+          "code": "variable \"envs\" {\n  default = [\"dev\", \"staging\", \"prod\"]\n}\n\nresource \"aws_s3_bucket\" \"bucket\" {\n  count  = length(var.envs)\n  bucket = \"acme-${var.envs[count.index]}\"\n}",
+          "lang": "hcl",
+          "answer": "`count` addresses instances by index, so removing an element shifts every later index: `bucket[1]` becomes what was `bucket[2]`, and Terraform sees changes it must apply by replacement. `for_each` over a set or map keys each instance by a stable key (`bucket[\"prod\"]`), so removing one leaves the rest untouched.",
+          "explanation": "Use `count` only for identical copies or as an on/off switch (`count = var.enabled ? 1 : 0`). When refactoring from `count` to `for_each`, add `moved` blocks so existing resources are re-addressed instead of recreated.",
+          "prerequisites": ["iac-plan-review"],
+          "resources": [
+            { "title": "Terraform docs — The for_each meta-argument", "url": "https://developer.hashicorp.com/terraform/language/meta-arguments/for_each", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-import-moved",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["iac.terraform", "iac.refactoring"],
+          "prompt": "How do you bring existing resources under Terraform, and refactor addresses without destroying anything?",
+          "answer": "Use `import` blocks (or `terraform import`) to adopt a resource into state, then write the matching configuration until the plan shows no changes. Use `moved` blocks to rename resources or move them into modules, so Terraform updates addresses instead of destroying and recreating.",
+          "explanation": "Both are declarative and reviewable in a pull request, unlike manual `terraform state` commands. `terraform plan -generate-config-out` can draft configuration for imported resources as a starting point.",
+          "prerequisites": ["iac-state"],
+          "resources": [
+            { "title": "Terraform docs — Refactoring with moved blocks", "url": "https://developer.hashicorp.com/terraform/language/modules/develop/refactoring", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iac-ecosystem",
+      "name": "Beyond Terraform",
+      "description": "Configuration management, general-purpose-language IaC, testing infrastructure code and structuring environments.",
+      "cards": [
+        {
+          "id": "iac-config-management",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["iac.config-management"],
+          "prompt": "Provisioning tools (Terraform) vs configuration management (Ansible)",
+          "answer": "Provisioning tools create and manage infrastructure resources through cloud APIs — networks, VMs, databases. Configuration management configures what runs inside machines — packages, files, users, services — usually over SSH or an agent.",
+          "columns": {
+            "left": { "title": "Provisioning (Terraform, Pulumi)", "points": ["Creates cloud resources via APIs", "State file tracks what exists", "Plan and diff before change", "Lifecycle: create, update, destroy"] },
+            "right": { "title": "Config management (Ansible, Chef)", "points": ["Configures inside machines", "Usually stateless: checks and converges", "Tasks must be idempotent", "Packages, files, services, users"] }
+          },
+          "explanation": "With immutable images and containers, much configuration moves into image builds (Packer, Dockerfiles) and configuration management shrinks. Ansible tasks must be written idempotently — declare state (`state: present`) instead of running raw commands — so a second run changes nothing.",
+          "prerequisites": ["iac-immutable"],
+          "resources": [
+            { "title": "Ansible documentation — Getting started", "url": "https://docs.ansible.com/ansible/latest/getting_started/index.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-cdk-pulumi",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["iac.languages"],
+          "prompt": "HCL (Terraform, OpenTofu) vs general-purpose-language IaC (Pulumi, AWS CDK)",
+          "answer": "HCL is a constrained, declarative configuration language; Pulumi and CDK let you define infrastructure in TypeScript, Python, Go or C# with loops, functions, classes and package managers, while still producing a declarative plan.",
+          "columns": {
+            "left": { "title": "HCL", "points": ["Purpose-built, declarative", "Readable by non-programmers", "Limited abstraction power", "Huge provider ecosystem"] },
+            "right": { "title": "Pulumi / CDK", "points": ["Real languages, IDE support, types", "Rich abstractions and testing", "Easy to over-engineer", "CDK synthesises CloudFormation"] }
+          },
+          "explanation": "Real languages help build reusable abstractions and test them with normal test frameworks, but invite cleverness that makes infrastructure hard to review. HCL's limits keep configurations readable by operators. Either works — consistency and review quality matter more than the choice.",
+          "prerequisites": ["iac-declarative-imperative"],
+          "resources": [
+            { "title": "Pulumi — What is Pulumi?", "url": "https://www.pulumi.com/docs/iac/concepts/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-testing",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["iac.testing", "testing.strategy"],
+          "prompt": "How do you test infrastructure code?",
+          "answer": "Layers: formatting and validation (`fmt`, `validate`, tflint), static policy and security scanning of the plan (Checkov, OPA), unit-style tests of module logic (`terraform test` with mocked providers), and integration tests that apply to a sandbox account and assert on real resources before tearing them down (terraform test, Terratest).",
+          "explanation": "Most value comes cheaply from linting, policy checks and reviewing plans in pull requests. Full apply-and-destroy tests are slow and cost money, so reserve them for shared modules many teams depend on.",
+          "prerequisites": ["iac-policy-as-code"],
+          "resources": [
+            { "title": "Terraform docs — Tests", "url": "https://developer.hashicorp.com/terraform/language/tests", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-workspaces-vs-dirs",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["iac.structure"],
+          "prompt": "Terraform workspaces vs a separate directory (root module) per environment",
+          "answer": "Workspaces reuse one configuration with multiple state files, selected by name; per-environment directories give each environment its own small root module, backend and variables, all calling shared modules.",
+          "columns": {
+            "left": { "title": "Workspaces", "points": ["One config, many states", "Switch with `terraform workspace select`", "Easy to target the wrong one", "Good for ephemeral identical stacks"] },
+            "right": { "title": "Directory per environment", "points": ["A root module per env calling shared modules", "Separate backends and credentials", "Differences are explicit", "The common choice for dev/staging/prod"] }
+          },
+          "explanation": "Workspaces make it easy to apply to the wrong environment and hard to vary structure between environments. Separate roots are more explicit and allow different backends, credentials and review rules for production. Workspaces fit short-lived copies of the same stack, such as per-branch test environments.",
+          "prerequisites": ["iac-modules", "iac-state"],
+          "resources": [
+            { "title": "Terraform docs — Workspaces", "url": "https://developer.hashicorp.com/terraform/language/state/workspaces", "kind": "docs" }
+          ]
+        }
+      ]
     }
   ]
 }

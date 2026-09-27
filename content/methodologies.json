@@ -79,11 +79,11 @@
           "type": "flip",
           "difficulty": 4,
           "tags": ["process.metrics", "devops"],
-          "prompt": "What are the four DORA metrics?",
-          "answer": "Deployment frequency, lead time for changes, change failure rate, and time to restore service. The first two measure throughput; the last two measure stability.",
-          "explanation": "The key research finding is that these do not trade off — elite teams deploy more often *and* break things less, because small frequent changes are easier to verify and revert. Measure the team's system, never individuals; any metric used to rank people becomes a target and stops measuring.",
+          "prompt": "What are the DORA software-delivery metrics?",
+          "answer": "Throughput: deployment frequency, change lead time, and failed-deployment recovery time. Instability: change failure rate and deployment rework rate (unplanned deployments made to fix user-facing problems). The original \"four keys\" gained rework rate as a fifth metric in 2024.",
+          "explanation": "The key research finding is that throughput and stability do not trade off — top performers deploy more often *and* break things less, because small frequent changes are easier to verify and revert. Measure the team's system, never individuals; any metric used to rank people becomes a target and stops measuring.",
           "resources": [
-            { "title": "DORA — DevOps research and assessment", "url": "https://dora.dev/", "kind": "article" }
+            { "title": "DORA — Software delivery performance metrics", "url": "https://dora.dev/guides/dora-metrics/", "kind": "docs" }
           ]
         },
         {
@@ -132,6 +132,107 @@
           "explanation": "Keep docs close to the code so they are updated in the same pull request, and prefer generated documentation (OpenAPI, type-derived docs) where possible. A wrong document is worse than a missing one, so delete aggressively.",
           "resources": [
             { "title": "Diátaxis — A systematic framework for technical documentation", "url": "https://diataxis.fr/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "meth-delivery",
+      "name": "Planning & Delivering Work",
+      "description": "User stories and acceptance criteria, definition of done, prioritisation, slicing, flow and XP practices.",
+      "cards": [
+        {
+          "id": "meth-user-stories",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["process.requirements"],
+          "prompt": "What makes a good user story, and what are acceptance criteria for?",
+          "answer": "A short statement of a need from a user's perspective — \"As a returning customer, I want to reorder a past purchase so that I save time\" — that is Independent, Negotiable, Valuable, Estimable, Small and Testable (INVEST). Acceptance criteria list the concrete conditions that must hold for it to be done, often as Given–When–Then examples.",
+          "explanation": "A story is a placeholder for a conversation, not a specification. Criteria make \"done\" checkable and give testers and developers a shared target; if you cannot write them, the story is not understood yet.",
+          "prerequisites": ["test-bdd"],
+          "resources": [
+            { "title": "Agile Alliance — User stories", "url": "https://www.agilealliance.org/glossary/user-stories/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-definition-of-done",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["process.quality"],
+          "prompt": "What is a definition of done, and how does it differ from acceptance criteria?",
+          "answer": "A team-wide checklist every item must meet before it counts as done — code reviewed, tests written and passing, deployed to production (or releasable), documentation and monitoring updated. Acceptance criteria are specific to one story.",
+          "explanation": "Without a shared definition, \"done\" means \"works on my machine\" and unfinished work accumulates as hidden debt. Keep it short, visible and genuinely enforced; strengthen it as the team's practices mature.",
+          "prerequisites": ["meth-ceremonies"],
+          "resources": [
+            { "title": "Scrum Guide — Increment and Definition of Done", "url": "https://scrumguides.org/scrum-guide.html#increment", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "meth-prioritisation",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["process.prioritisation"],
+          "prompt": "MoSCoW vs value-based scoring (RICE, WSJF) for prioritising a backlog",
+          "answer": "MoSCoW sorts items into Must, Should, Could and Won't (this time) — fast and good for scoping a release. RICE (Reach × Impact × Confidence ÷ Effort) and WSJF (cost of delay ÷ job size) score items numerically so they can be ranked.",
+          "columns": {
+            "left": { "title": "MoSCoW", "points": ["Must / Should / Could / Won't", "Quick, collaborative bucketing", "Good for fixed-date scoping", "Everything drifts into \"Must\""] },
+            "right": { "title": "RICE / WSJF", "points": ["Numerical score per item", "Makes assumptions explicit", "WSJF favours small, urgent, valuable work", "False precision if inputs are guesses"] }
+          },
+          "explanation": "Numbers create an illusion of precision, but they force explicit assumptions that can be challenged. MoSCoW fails when everything becomes a Must. Whatever the method, revisit priorities as you learn — and \"Won't\" is the most valuable category.",
+          "resources": [
+            { "title": "Intercom — RICE: simple prioritization for product managers", "url": "https://www.intercom.com/blog/rice-simple-prioritization-for-product-managers/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-vertical-slicing",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["process.planning", "delivery.incremental"],
+          "prompt": "A feature is split into \"build the database schema\", \"build the API\" and \"build the UI\" tickets, and nothing is usable for six weeks. How should it be split?",
+          "answer": "Into vertical slices: thin end-to-end increments that each deliver working, usable behaviour through every layer — \"a user can see their last three orders\" before \"a user can filter orders by date\". Each slice can be shipped, demonstrated and learned from.",
+          "explanation": "Horizontal layers defer integration risk and feedback to the end. Vertical slices surface problems early, allow reprioritising mid-feature, and pair naturally with feature flags so partial features can ship dark.",
+          "prerequisites": ["meth-user-stories", "cicd-feature-flags"],
+          "resources": [
+            { "title": "Humanizing Work — The Humanizing Work guide to splitting user stories", "url": "https://www.humanizingwork.com/the-humanizing-work-guide-to-splitting-user-stories/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-flow-efficiency",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["process.flow", "lean"],
+          "prompt": "What is flow efficiency, and why is it usually shockingly low?",
+          "answer": "Active work time divided by total elapsed time for an item. For typical software teams it is often well under 20%: most of a ticket's life is spent waiting — for review, for another team, for a deploy window, for a decision.",
+          "explanation": "Speeding up the work itself barely helps when waiting dominates. Reduce queues instead: limit work in progress, review promptly, remove hand-offs and approval steps, and automate deployment. This is the Lean insight behind Kanban.",
+          "prerequisites": ["meth-scrum-kanban"],
+          "resources": [
+            { "title": "Kanban University — Flow efficiency", "url": "https://kanban.university/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-xp",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["process.xp"],
+          "prompt": "What are the core practices of Extreme Programming (XP)?",
+          "answer": "Test-driven development, pair programming, continuous integration, small frequent releases, simple design, refactoring, collective code ownership, a sustainable pace, and an on-site (or constantly available) customer.",
+          "explanation": "Scrum describes how to organise work; XP describes how to engineer it — which is why many \"agile\" teams struggle when they adopt the ceremonies but not the technical practices. The DORA research later confirmed many XP practices as drivers of delivery performance.",
+          "prerequisites": ["test-tdd", "cicd-ci-cd-cd"],
+          "resources": [
+            { "title": "Agile Alliance — Extreme Programming (XP)", "url": "https://www.agilealliance.org/glossary/xp/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "meth-remote-async",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["process.communication"],
+          "prompt": "A distributed team across five time zones is drowning in meetings. How should it communicate?",
+          "answer": "Default to asynchronous, written communication: decisions and proposals in documents with comment periods, status in the tracker instead of meetings, recorded demos, and clear ownership. Reserve synchronous time for discussion that genuinely benefits from it — conflict, brainstorming, relationship-building.",
+          "explanation": "Writing things down creates a searchable record and includes people who could not attend. Explicit response-time expectations prevent constant interruption, and overlapping hours should be protected for the conversations that need them.",
+          "prerequisites": ["meth-documentation"],
+          "resources": [
+            { "title": "Basecamp — How we communicate", "url": "https://basecamp.com/guides/how-we-communicate", "kind": "docs" }
           ]
         }
       ]

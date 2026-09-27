@@ -149,6 +149,225 @@
           "resources": [
             { "title": "MDN — CSS container queries", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries", "kind": "docs" }
           ]
+        },
+        {
+          "id": "css-selectors",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["css.selectors"],
+          "prompt": "What do these selectors match: `.card p`, `.card > p`, `h2 + p`, `a:hover`, `li:nth-child(2n)`, `p::first-line` and `input[type=\"email\"]`?",
+          "answer": "Descendant (`.card p`: any p inside .card), child (`.card > p`: direct children only), adjacent sibling (`h2 + p`: the p immediately after an h2), pseudo-class (`a:hover`: a state), structural pseudo-class (`li:nth-child(2n)`: even items), pseudo-element (`p::first-line`: part of an element), and attribute selector (`input[type=\"email\"]`).",
+          "explanation": "Pseudo-classes select elements in a state; pseudo-elements style a part of an element or generated content (`::before`). Modern additions — `:is()`, `:where()` (zero specificity), `:has()` and `:focus-visible` — replace much of what used to require extra classes or JavaScript.",
+          "prerequisites": ["html-semantics"],
+          "resources": [
+            { "title": "MDN — CSS selectors", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hc-layout-units",
+      "name": "Layout, Units & Responsive Design",
+      "description": "The box model in flow, display and positioning, units, centring, responsive techniques and motion.",
+      "cards": [
+        {
+          "id": "css-display-types",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["css.layout"],
+          "prompt": "Block vs inline vs inline-block",
+          "answer": "Block elements start on a new line and take the full available width, honouring width, height and vertical margins. Inline elements flow within text, ignore width and height, and vertical margins do not push lines apart. Inline-block flows inline but is sized like a block.",
+          "columns": {
+            "left": { "title": "block", "points": ["New line; fills container width", "width, height, all margins apply", "`div`, `p`, `section`, `h1`", "Stacks vertically"] },
+            "right": { "title": "inline / inline-block", "points": ["inline: flows in text, ignores width/height", "inline: vertical margins do not affect layout", "inline-block: in the text flow but sizable", "`span`, `a`, `strong` are inline by default"] }
+          },
+          "explanation": "Knowing an element's display type explains most \"why won't this margin/width apply\" questions — a `<span>` or `<a>` ignores `width` until it becomes inline-block, block, or a flex item. Flex and grid containers change how their children are laid out entirely.",
+          "resources": [
+            { "title": "MDN — display", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/display", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-positioning",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["css.positioning"],
+          "prompt": "What do `relative`, `absolute`, `fixed` and `sticky` positioning do?",
+          "answer": "`relative` offsets an element from its normal spot and makes it the containing block for absolute children. `absolute` removes it from flow, positioned against the nearest positioned ancestor. `fixed` positions against the viewport. `sticky` scrolls normally until a threshold, then sticks within its container.",
+          "explanation": "The classic surprise: an `absolute` child positions against the page because no ancestor is positioned — add `position: relative` to the intended parent. `sticky` silently fails when an ancestor has `overflow: hidden`. A `transform` on an ancestor turns `fixed` into positioning relative to that ancestor.",
+          "prerequisites": ["css-stacking-context"],
+          "resources": [
+            { "title": "MDN — position", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/position", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-units",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["css.units", "a11y.text"],
+          "prompt": "When should you use `rem`, `em`, `%`, `px`, `vw`/`vh` and `ch`?",
+          "answer": "`rem` (relative to the root font size) for font sizes and spacing so everything scales with the user's font setting; `em` for things that should scale with the local font size; `%` relative to the parent; `px` for hairlines and borders; `vw`/`vh`/`dvh` for viewport-relative sizing; `ch` for readable line lengths (`max-width: 65ch`).",
+          "explanation": "Font sizes in `px` ignore the user's browser font preference — an accessibility failure. `100vh` on mobile includes space behind browser UI; use `100dvh`. `clamp(1rem, 2.5vw, 1.5rem)` combines them into fluid, bounded type.",
+          "prerequisites": ["css-cascade-modern"],
+          "resources": [
+            { "title": "MDN — CSS values and units", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Values_and_units", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-margin-collapse",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["css.box-model", "css.gotchas"],
+          "prompt": "The gap between the two paragraphs is 24px, not 40px. Why?",
+          "code": "p.first  { margin-bottom: 16px; }\np.second { margin-top: 24px; }",
+          "lang": "css",
+          "answer": "Vertical margins between adjacent blocks collapse: the larger of the two wins instead of adding up. It also happens between a parent and its first or last child when nothing (border, padding, or a new formatting context) separates them.",
+          "explanation": "Margin collapsing never happens in flex or grid layouts, which is one reason layouts built with `gap` are more predictable. Consistently using margin in one direction only (for example, only `margin-block-start`) sidesteps most surprises.",
+          "prerequisites": ["css-box-sizing"],
+          "resources": [
+            { "title": "MDN — Mastering margin collapsing", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Mastering_margin_collapsing", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-centering",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["css.layout", "css.flexbox"],
+          "prompt": "What is the simplest way to centre an element horizontally and vertically?",
+          "answer": "Make the parent a grid or flex container: `display: grid; place-items: center;` or `display: flex; justify-content: center; align-items: center;`. For horizontal centring of a block with a width, `margin-inline: auto` also works.",
+          "explanation": "Older tricks — absolute positioning with `translate(-50%, -50%)`, table cells, line-height hacks — are rarely needed now. Remember the container needs a height for vertical centring to be visible.",
+          "prerequisites": ["css-flex-vs-grid"],
+          "resources": [
+            { "title": "MDN — Center an element", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/How_to/Layout_cookbook/Center_an_element", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-responsive",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["css.responsive"],
+          "prompt": "What are the essentials of responsive design?",
+          "answer": "The viewport meta tag (`<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">`), fluid layouts with flex and grid, mobile-first media queries (`min-width` breakpoints chosen where the content breaks, not by device), responsive images, and fluid type with `clamp()`.",
+          "explanation": "Without the viewport tag, mobile browsers render a desktop-width page and zoom out. Container queries let components adapt to their own space, and `prefers-color-scheme`/`prefers-reduced-motion` adapt to user settings as well as screen size.",
+          "prerequisites": ["css-units"],
+          "resources": [
+            { "title": "MDN — Responsive design", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/CSS_layout/Responsive_Design", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-reduced-motion",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["css.animation", "a11y.motion"],
+          "prompt": "Your site has parallax scrolling and large animated transitions. What must you add for accessibility?",
+          "answer": "Respect `@media (prefers-reduced-motion: reduce)`: remove or tone down large motion, parallax and auto-playing animation for users who have asked their OS for less motion. Also provide pause controls for anything that moves for more than five seconds.",
+          "explanation": "Large motion can trigger vestibular disorders — dizziness and nausea — so this is a WCAG requirement, not a nicety. Subtle opacity fades are usually fine; zooms, spins and parallax are not.",
+          "prerequisites": ["a11y-wcag-contrast"],
+          "resources": [
+            { "title": "MDN — prefers-reduced-motion", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "css-architecture",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["css.architecture"],
+          "prompt": "Utility-first CSS (Tailwind) vs component-scoped CSS (CSS Modules, BEM)",
+          "answer": "Utility-first composes small single-purpose classes in the markup; scoped approaches write semantic class names per component with styles kept in separate files or modules.",
+          "columns": {
+            "left": { "title": "Utility-first", "points": ["`class=\"flex gap-4 p-2\"`", "No naming, no dead CSS, tiny output", "Styles visible where they apply", "Long class lists; needs components to avoid repetition"] },
+            "right": { "title": "Scoped / BEM", "points": ["`.card__title--active` or a module class", "Semantic names, separate stylesheet", "Scoping prevents leaks (Modules) or convention does (BEM)", "Naming effort; unused CSS can linger"] }
+          },
+          "explanation": "Both solve the same underlying problem: global CSS where any rule can affect anything. Pick one approach per codebase, back it with design tokens (custom properties for colour, spacing, type), and let the build remove unused CSS.",
+          "resources": [
+            { "title": "MDN — Organizing your CSS", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Organizing", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hc-accessibility",
+      "name": "Accessibility & HTML in Depth",
+      "description": "Headings and landmarks, keyboard focus, live regions, dialogs, forms and images.",
+      "cards": [
+        {
+          "id": "a11y-headings-landmarks",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["a11y.structure", "html.semantics"],
+          "prompt": "Why do heading levels and landmarks matter to screen-reader users?",
+          "answer": "Screen-reader users navigate by headings and landmarks the way sighted users skim: jumping heading to heading, or straight to `<main>`, `<nav>` or `<footer>`. One `<h1>` per page and heading levels without skips turn the page into a navigable outline.",
+          "explanation": "Choose heading levels for structure, never for font size — restyle with CSS instead. A \"skip to main content\" link as the first focusable element lets keyboard users bypass repeated navigation.",
+          "prerequisites": ["html-semantics"],
+          "resources": [
+            { "title": "W3C WAI — Page structure tutorial", "url": "https://www.w3.org/WAI/tutorials/page-structure/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "a11y-keyboard-focus",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["a11y.keyboard", "css.focus"],
+          "prompt": "What accessibility bugs are in this code?",
+          "code": "<style>\n  *:focus { outline: none; }\n</style>\n\n<button tabindex=\"3\">Save</button>\n<button tabindex=\"1\">Cancel</button>",
+          "lang": "html",
+          "answer": "`outline: none` removes the visible focus indicator, so keyboard users cannot see where they are, and a positive `tabindex` hijacks the natural tab order. Style focus with `:focus-visible` instead of removing it, and use only `tabindex=\"0\"` (focusable in order) or `-1` (focusable by script).",
+          "explanation": "Every interactive element must be reachable and operable by keyboard alone, in a logical order that matches the visual one. When content opens or closes — modals, menus, route changes in SPAs — move focus deliberately and return it afterwards.",
+          "prerequisites": ["a11y-wcag-contrast"],
+          "resources": [
+            { "title": "W3C WAI — Keyboard compatibility", "url": "https://www.w3.org/WAI/perspective-videos/keyboard/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "a11y-live-regions",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["a11y.aria", "a11y.dynamic"],
+          "prompt": "How do you announce dynamic updates, such as \"Item added to cart\", to screen-reader users?",
+          "answer": "Put the message in an ARIA live region: an element present from page load with `aria-live=\"polite\"` (announced when the user is idle) or `role=\"status\"`; use `role=\"alert\"` (assertive) only for urgent errors. Changing its text triggers the announcement.",
+          "explanation": "Content that appears silently elsewhere on the page is invisible to someone who cannot see it. Inserting the live region at the same moment as the message often fails — create it early and update its contents.",
+          "prerequisites": ["html-aria-first-rule"],
+          "resources": [
+            { "title": "MDN — ARIA live regions", "url": "https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-dialog",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["html.elements", "a11y.dialogs"],
+          "prompt": "Why use the native `<dialog>` element for modals?",
+          "answer": "`dialog.showModal()` renders it in the top layer (above everything, no z-index fights), makes the rest of the page inert, traps focus inside, closes on Escape, and restores focus to the opener when closed. Styling the backdrop uses `::backdrop`.",
+          "explanation": "Hand-built modal divs routinely miss focus trapping, Escape handling, inert background and focus restoration — each an accessibility failure. `<dialog>` gets them right by default, as does the `popover` attribute for non-modal overlays.",
+          "prerequisites": ["css-stacking-context"],
+          "resources": [
+            { "title": "MDN — <dialog>", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-forms-validation",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["html.forms", "a11y.forms"],
+          "prompt": "What does native HTML give you for forms, and what must you still do?",
+          "answer": "Input types (`email`, `tel`, `number`, `date`, `url`) with suitable mobile keyboards, constraint attributes (`required`, `min`, `max`, `pattern`, `maxlength`), `autocomplete` tokens for autofill and password managers, and `<fieldset>`/`<legend>` for grouping.",
+          "explanation": "You must still validate on the server — client validation is only UX. Connect error messages to fields with `aria-describedby`, describe errors in text rather than colour alone, and never block pasting into password fields.",
+          "prerequisites": ["html-form-labels", "as-input-validation"],
+          "resources": [
+            { "title": "MDN — Client-side form validation", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Form_validation", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-alt-text",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["a11y.images", "html.images"],
+          "prompt": "How do you write `alt` text for a product photo, a decorative divider, and an icon-only \"delete\" button?",
+          "answer": "Product photo: describe what matters in context (\"Red leather satchel with brass buckle\"). Decorative divider: `alt=\"\"` so it is skipped. Icon-only button: give the *button* an accessible name (`aria-label=\"Delete\"` or visually hidden text) and hide the icon itself from assistive technology.",
+          "explanation": "Alt text conveys the image's purpose, not its pixels, and should not start with \"image of\". Omitting `alt` entirely is worse than empty, because screen readers then read the filename.",
+          "prerequisites": ["a11y-wcag-contrast"],
+          "resources": [
+            { "title": "W3C WAI — Images tutorial", "url": "https://www.w3.org/WAI/tutorials/images/", "kind": "docs" }
+          ]
         }
       ]
     }
