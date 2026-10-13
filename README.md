@@ -1,6 +1,6 @@
 # CodeCards 🃏
 
-A gamified, spaced-repetition study platform for software engineering. 1,203 cards across 54
+A gamified, spaced-repetition study platform for software engineering. 1,326 cards across 58
 topics — languages, computer science, databases, web, systems, networking, security, cloud,
 architecture, AI, game development and process — scheduled by FSRS-5 so you revise each card
 just before you would have forgotten it.
@@ -43,7 +43,7 @@ content/*.json ──▶ zod schema validation
 ```
 
 The part worth stealing: **`npm run verify` executes every self-verifying card** — in Node,
-Python, Go, Rust, Java, C#, PHP or Kotlin — and asserts the documented output still matches.
+Python, Go, Rust, Java, C#, PHP, Kotlin or C — and asserts the documented output still matches.
 A card whose answer drifts fails CI. It has caught wrong answers in this repo more than once.
 
 ## Getting started
@@ -87,7 +87,7 @@ you precisely what is wrong. A card needs at minimum:
 
 Add `"verify": { "runtime": "python", "expectedOutput": "…" }` to any card with runnable code
 and CI will keep it honest. Runtimes: `node`, `python`, `go`, `rust`, `java`, `csharp`, `php`,
-`kotlin`. Locally, missing toolchains are skipped; in CI a missing one fails the run.
+`kotlin`, `c` (gcc). Locally, missing toolchains are skipped; in CI a missing one fails the run.
 
 ## Stack
 

@@ -91,7 +91,7 @@
           "prompt": "What is wrong with this password storage?",
           "code": "hashed = hashlib.sha256(password.encode()).hexdigest()\ndb.save(user, hashed)",
           "lang": "python",
-          "answer": "SHA-256 is a fast general-purpose hash with no salt — perfect for GPU cracking at billions of guesses per second. Use a memory-hard password hash: Argon2id, scrypt or bcrypt, each of which salts automatically.",
+          "answer": "SHA-256 is a fast general-purpose hash with no salt — perfect for GPU cracking at billions of guesses per second. Use a deliberately slow password hash — Argon2id or scrypt (both memory-hard), or bcrypt — each of which salts automatically.",
           "explanation": "Password hashing must be *deliberately slow and memory-hungry* so an attacker with the dump cannot brute-force it. Argon2id is the current recommendation; tune the parameters so verification takes tens of milliseconds on your hardware.",
           "resources": [
             { "title": "OWASP — Password storage cheat sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html", "kind": "docs" }

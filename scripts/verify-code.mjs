@@ -4,7 +4,7 @@
  * This is the reason CodeCards content cannot silently rot: a `predict-output` card
  * whose snippet no longer produces the documented output fails the build.
  *
- * Runtimes: node, python, go, rust, java, csharp (.NET 10+ file-based apps), php and kotlin.
+ * Runtimes: node, python, go, rust, java, csharp (.NET 10+ file-based apps), php, kotlin and c (gcc).
  * Locally, runtimes that are not installed are reported as skipped; with CI set, a skip
  * fails the run so a language can never quietly drop out of verification.
  */
@@ -49,6 +49,12 @@ const RUNTIMES = {
     build: (f) => ['kotlinc', [f, '-include-runtime', '-d', jar(f)]],
     run: (f) => ['java', ['-jar', jar(f)]],
     timeout: 60_000,
+  },
+  c: {
+    candidates: [['gcc', ['--version']]],
+    ext: 'c',
+    build: (f) => ['gcc', ['-std=c17', '-o', exe(f), f]],
+    run: (f) => [exe(f), []],
   },
 };
 
@@ -132,7 +138,9 @@ async function main() {
       }
     }
     const [cmd, args] = spec.run(file, bin);
-    const res = run(cmd, args, { timeout: spec.timeout ?? 10_000, cwd: TMP });
+    // A freshly installed .NET SDK prints a first-run banner into the output being compared.
+    const env = { ...process.env, DOTNET_NOLOGO: '1' };
+    const res = run(cmd, args, { timeout: spec.timeout ?? 10_000, cwd: TMP, env });
 
     const actual = normalise(`${res.stdout ?? ''}${res.stderr ?? ''}`);
     const expected = normalise(card.verify.expectedOutput);

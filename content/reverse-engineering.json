@@ -1,0 +1,456 @@
+{
+  "id": "reverse-engineering",
+  "name": "Reverse Engineering",
+  "icon": "🔬",
+  "category": "Security",
+  "color": "#0D9488",
+  "description": "Understanding software without its source: executable formats, reading x86-64 assembly, disassemblers, decompilers and debuggers, and the tricks binaries use to resist analysis.",
+  "modules": [
+    {
+      "id": "re-foundations",
+      "name": "Binaries & First Steps",
+      "description": "What is inside an executable file and how to triage an unknown one before opening a disassembler.",
+      "cards": [
+        {
+          "id": "re-static-vs-dynamic",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["re.method"],
+          "prompt": "Static analysis vs dynamic analysis of a binary",
+          "answer": "Static analysis examines the file without running it (strings, headers, disassembly, decompilation). Dynamic analysis runs it and observes what it actually does (debugger, tracing, monitoring).",
+          "columns": {
+            "left": { "title": "Static", "points": ["Nothing executes, so it is safe", "Sees every code path, including rare ones", "Defeated by packing and obfuscation", "Tools: strings, Ghidra, IDA, objdump"] },
+            "right": { "title": "Dynamic", "points": ["Shows real behaviour and decrypted data", "Sees only the paths that run", "Needs an isolated environment", "Tools: gdb, x64dbg, strace, Frida"] }
+          },
+          "explanation": "The two are used together: static analysis tells you where interesting code is, and a breakpoint there lets you read values that would take hours to work out by hand. When code is packed, running it until it unpacks itself is usually the quickest way in.",
+          "resources": [
+            { "title": "Ghidra — software reverse engineering framework", "url": "https://github.com/NationalSecurityAgency/ghidra", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-triage",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["re.method", "re.tools"],
+          "prompt": "You are handed an unknown executable. What do you check before opening a disassembler?",
+          "answer": "Identify the file type and architecture (`file`), hash it, pull the printable strings, and list its imports and sections (`readelf`, `objdump`, or a PE viewer). Those four steps usually reveal what it is and what it can do.",
+          "explanation": "Strings expose URLs, file paths, error messages and library names. Imports show capabilities: networking, file, registry or process-injection APIs. Very few strings and imports, with high-entropy sections, suggests the file is packed. If the origin is untrusted, do all of this inside an isolated virtual machine.",
+          "prerequisites": ["re-static-vs-dynamic"],
+          "resources": [
+            { "title": "man7 — readelf(1)", "url": "https://man7.org/linux/man-pages/man1/readelf.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-strings",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["re.tools", "re.method"],
+          "prompt": "This mimics the `strings` tool. What does it print?",
+          "code": "import re\n\nblob = (b'\\x00\\x01MZ\\x90\\x00kernel32.dll\\x00\\x7f\\x03ab\\x00'\n        b'VirtualAlloc\\x00\\xff\\xfehttp://c2.example/gate\\x00')\nprint([m.decode() for m in re.findall(rb'[\\x20-\\x7e]{4,}', blob)])",
+          "lang": "python",
+          "answer": "['kernel32.dll', 'VirtualAlloc', 'http://c2.example/gate']",
+          "explanation": "`strings` prints every run of at least four printable characters. `MZ` and `ab` are too short and are dropped. Windows binaries also store text as UTF-16, where each character is followed by a zero byte, so run `strings -el` as well or you will miss half of them.",
+          "prerequisites": ["re-triage"],
+          "resources": [
+            { "title": "man7 — strings(1)", "url": "https://man7.org/linux/man-pages/man1/strings.1.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "['kernel32.dll', 'VirtualAlloc', 'http://c2.example/gate']" }
+        },
+        {
+          "id": "re-endian-unpack",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["re.method", "bits"],
+          "prompt": "A hex dump shows the bytes `78 56 34 12`. What does this print?",
+          "code": "import struct\n\nraw = bytes.fromhex('78563412')\nprint(hex(struct.unpack('<I', raw)[0]))\nprint(hex(struct.unpack('>I', raw)[0]))",
+          "lang": "python",
+          "answer": "0x12345678\n0x78563412",
+          "explanation": "x86 and most ARM systems are little-endian, so a 32-bit value appears in a hex dump with its bytes reversed. Reading addresses and constants out of a dump means mentally flipping them. `<` and `>` in `struct` select little- and big-endian.",
+          "prerequisites": ["num-endianness"],
+          "resources": [
+            { "title": "Python docs — struct: byte order, size and alignment", "url": "https://docs.python.org/3/library/struct.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "0x12345678\n0x78563412" }
+        },
+        {
+          "id": "re-pe-vs-elf",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["re.formats"],
+          "prompt": "PE vs ELF executable formats",
+          "answer": "PE (Portable Executable) is the Windows format for `.exe` and `.dll` files and starts with the bytes `MZ`. ELF is the format on Linux and most Unix-like systems and starts with `\\x7fELF`. Both describe how to map code and data into memory and which libraries to load.",
+          "columns": {
+            "left": { "title": "PE (Windows)", "points": ["Magic `MZ`, then a `PE\\0\\0` header", "Sections: .text, .rdata, .data, .rsrc", "Imports via the Import Address Table", "Tools: PE-bear, pestudio, dumpbin"] },
+            "right": { "title": "ELF (Linux)", "points": ["Magic `\\x7fELF`", "Sections: .text, .rodata, .data, .bss", "Imports via the PLT and GOT", "Tools: readelf, objdump, nm"] }
+          },
+          "explanation": "Both have a header giving the architecture and entry point, followed by tables describing each region and its permissions. macOS uses a third format, Mach-O. The PE header also carries a compile timestamp, which is useful but trivially forged.",
+          "prerequisites": ["comp-linking"],
+          "resources": [
+            { "title": "Microsoft Learn — PE format", "url": "https://learn.microsoft.com/en-us/windows/win32/debug/pe-format", "kind": "spec" },
+            { "title": "man7 — elf(5)", "url": "https://man7.org/linux/man-pages/man5/elf.5.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-sections",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["re.formats"],
+          "prompt": "What do the `.text`, `.rodata` (or `.rdata`), `.data` and `.bss` sections hold?",
+          "answer": "`.text` holds executable machine code. `.rodata`/`.rdata` holds read-only data such as string literals and constants. `.data` holds initialised writable globals. `.bss` holds zero-initialised globals and takes no space in the file.",
+          "explanation": "Permissions follow content: code is read and execute, constants read-only, data read and write. A section that is both writable and executable, or a `.text` with very high entropy, is a strong hint of packed or self-modifying code.",
+          "prerequisites": ["re-pe-vs-elf", "c-string-literal-modify"],
+          "resources": [
+            { "title": "man7 — elf(5)", "url": "https://man7.org/linux/man-pages/man5/elf.5.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-imports",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["re.formats", "re.method"],
+          "prompt": "What is the import table of a binary, and why do analysts read it first?",
+          "answer": "The list of functions the program needs from shared libraries, resolved by the loader at start-up (the Import Address Table in PE, the PLT and GOT in ELF). It summarises what the program can do: sockets, file access, process creation, cryptography.",
+          "explanation": "A call to an imported function shows up in disassembly as an indirect call through this table, and the tool labels it with the function name, which gives you named landmarks in otherwise anonymous code. Programs that hide their intent resolve APIs by hash at runtime (`GetProcAddress`, `dlsym`), leaving the table nearly empty.",
+          "prerequisites": ["re-pe-vs-elf"],
+          "resources": [
+            { "title": "Microsoft Learn — PE format: the .idata section", "url": "https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-idata-section", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "re-assembly",
+      "name": "Reading x86-64 Assembly",
+      "description": "Registers, the instructions that make up most code, calling conventions and recognising compiled C.",
+      "cards": [
+        {
+          "id": "re-registers",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "Which x86-64 registers have special roles, and how do `rax`, `eax`, `ax` and `al` relate?",
+          "answer": "`rip` is the instruction pointer, `rsp` the stack pointer, `rbp` often the frame pointer, and `rax` holds return values. `eax` is the low 32 bits of `rax`, `ax` the low 16 and `al` the low 8.",
+          "explanation": "There are 16 general-purpose registers (`rax`, `rbx`, `rcx`, `rdx`, `rsi`, `rdi`, `rbp`, `rsp`, `r8`–`r15`) plus the flags register. Writing a 32-bit register such as `eax` zeroes the upper half of `rax`; writing `ax` or `al` leaves the rest untouched.",
+          "prerequisites": ["arch-isa"],
+          "resources": [
+            { "title": "x86-64 System V ABI (psABI)", "url": "https://gitlab.com/x86-psABIs/x86-64-ABI", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "re-intel-att",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "Intel syntax vs AT&T syntax for x86 assembly",
+          "answer": "Intel syntax writes the destination first (`mov eax, 1`); AT&T writes the source first and decorates operands (`movl $1, %eax`).",
+          "columns": {
+            "left": { "title": "Intel", "points": ["`mov dst, src`", "Memory: `[rbx+rcx*4+8]`", "No prefixes on registers", "Default in IDA, Ghidra, x64dbg"] },
+            "right": { "title": "AT&T", "points": ["`mov src, dst`", "Memory: `8(%rbx,%rcx,4)`", "`%` on registers, `$` on constants", "Default in gdb and objdump"] }
+          },
+          "explanation": "Misreading the operand order turns every instruction backwards, so check which syntax you are looking at. Switch tools to Intel with `objdump -M intel` or `set disassembly-flavor intel` in gdb.",
+          "prerequisites": ["re-registers"],
+          "resources": [
+            { "title": "GDB manual — Source and machine code (disassembly-flavor)", "url": "https://sourceware.org/gdb/current/onlinedocs/gdb.html/Machine-Code.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-mov-lea",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "`mov rax, [rbx+8]` vs `lea rax, [rbx+8]`",
+          "answer": "`mov` reads memory: it loads the 8 bytes stored at address `rbx+8`. `lea` (load effective address) only computes the address `rbx+8` and puts that number in `rax` without touching memory.",
+          "columns": {
+            "left": { "title": "mov rax, [rbx+8]", "points": ["Dereferences the address", "Like `x = *(p + 1)` or `x = p->field`", "Can fault on a bad pointer", "Brackets mean a memory access"] },
+            "right": { "title": "lea rax, [rbx+8]", "points": ["Computes the address only", "Like `x = &p->field`", "Never accesses memory", "Also used for arithmetic: `lea eax, [rdi+rdi*2]`"] }
+          },
+          "explanation": "`lea` is the one instruction where brackets do not mean a memory access. Compilers use it as a fast adder and multiplier because it can combine a base, a scaled index and a constant in one step without changing the flags.",
+          "prerequisites": ["re-registers", "c-pointer-arithmetic"],
+          "resources": [
+            { "title": "x86 reference — LEA", "url": "https://www.felixcloutier.com/x86/lea", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-xor-zero",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "The common idiom `xor eax, eax` sets `eax` to ___.",
+          "answer": "zero",
+          "explanation": "Any value XORed with itself is 0. Compilers prefer it to `mov eax, 0` because the encoding is shorter and the CPU recognises it as a dependency-breaking zeroing idiom. It usually marks a counter being initialised or a `return 0`.",
+          "prerequisites": ["re-registers"],
+          "resources": [
+            { "title": "x86 reference — XOR", "url": "https://www.felixcloutier.com/x86/xor", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-cmp-jcc",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "How does an `if` statement appear in x86 assembly?",
+          "answer": "As a compare followed by a conditional jump. `cmp a, b` subtracts and sets the flags without storing the result, then `je`/`jne`, `jl`/`jg` (signed) or `jb`/`ja` (unsigned) jumps based on those flags. `test eax, eax` followed by `jz` checks for zero.",
+          "explanation": "The jump usually skips the `if` body, so the condition in the assembly is often the inverse of the one in the source. Whether the compiler chose the signed (`jl`, `jg`) or unsigned (`jb`, `ja`) jumps tells you the type of the variables being compared.",
+          "prerequisites": ["re-registers", "c-signed-unsigned-compare"],
+          "resources": [
+            { "title": "x86 reference — Jcc (jump if condition is met)", "url": "https://www.felixcloutier.com/x86/jcc", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-calling-conventions",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["re.assembly", "x86", "abi"],
+          "prompt": "System V AMD64 vs Microsoft x64 calling conventions",
+          "answer": "Both pass the first integer arguments in registers and return in `rax`, but with different registers. System V (Linux, macOS): `rdi, rsi, rdx, rcx, r8, r9`. Microsoft x64 (Windows): `rcx, rdx, r8, r9`, with the caller also reserving 32 bytes of shadow space on the stack.",
+          "columns": {
+            "left": { "title": "System V (Linux, macOS)", "points": ["Args: rdi, rsi, rdx, rcx, r8, r9", "Further args on the stack", "Return value in rax", "Callee-saved: rbx, rbp, r12–r15"] },
+            "right": { "title": "Microsoft x64 (Windows)", "points": ["Args: rcx, rdx, r8, r9", "32-byte shadow space reserved by caller", "Return value in rax", "Callee-saved also include rsi, rdi"] }
+          },
+          "explanation": "Knowing the convention lets you read arguments straight off a call site: on Linux, whatever was loaded into `rdi` and `rsi` just before `call` are the first two arguments. It is the single most useful fact for making sense of disassembly.",
+          "prerequisites": ["comp-calling-convention", "re-registers"],
+          "resources": [
+            { "title": "Microsoft Learn — x64 calling convention", "url": "https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention", "kind": "docs" },
+            { "title": "x86-64 System V ABI (psABI)", "url": "https://gitlab.com/x86-psABIs/x86-64-ABI", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "re-prologue-epilogue",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "What is this code doing at the start and end of a function?",
+          "code": "push rbp\nmov  rbp, rsp\nsub  rsp, 0x20\n; ... function body ...\nleave\nret",
+          "lang": "asm",
+          "answer": "It is the function prologue and epilogue. The prologue saves the caller's frame pointer, makes `rbp` the base of the new stack frame and reserves 0x20 bytes for locals. `leave` undoes that, and `ret` pops the return address and jumps to it.",
+          "explanation": "With a frame pointer, locals appear as negative offsets from `rbp` (`[rbp-0x8]`) and the saved return address sits at `[rbp+0x8]`. Optimised code often omits the frame pointer and addresses everything from `rsp`. The prologue is how tools find where functions begin.",
+          "prerequisites": ["mem-stack-frame", "re-registers"],
+          "resources": [
+            { "title": "x86 reference — LEAVE", "url": "https://www.felixcloutier.com/x86/leave", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-read-function",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "On Linux (System V), what does this function return in terms of its two `int` arguments `a` and `b`?",
+          "code": "f:\n    mov  eax, edi\n    imul eax, edi\n    add  eax, esi\n    ret",
+          "lang": "asm",
+          "answer": "`a * a + b`",
+          "explanation": "The first argument arrives in `edi` and the second in `esi`. The code copies `a` into `eax`, multiplies it by `a`, adds `b`, and returns with the result in `eax`. Reading a function is mostly tracking which register holds which value from the arguments to the return.",
+          "prerequisites": ["re-calling-conventions"],
+          "resources": [
+            { "title": "Compiler Explorer — see the assembly for your own C", "url": "https://godbolt.org/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-read-loop",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["re.assembly", "x86"],
+          "prompt": "On Linux (System V), `rdi` is a pointer and `esi` an `int`. What does this function compute?",
+          "code": "f:\n    xor  eax, eax\n    xor  ecx, ecx\n.loop:\n    cmp  ecx, esi\n    jge  .done\n    add  eax, [rdi+rcx*4]\n    inc  ecx\n    jmp  .loop\n.done:\n    ret",
+          "lang": "asm",
+          "answer": "The sum of the first `esi` elements of an `int` array: `for (i = 0; i < n; i++) sum += arr[i]; return sum;`",
+          "explanation": "`eax` is the running total and `ecx` the index, both zeroed first. `cmp`/`jge` is the loop test `i < n`, and `[rdi+rcx*4]` is array indexing: base pointer plus index times 4, the size of an `int`. The scale factor in an address reveals the element size.",
+          "prerequisites": ["re-read-function", "re-cmp-jcc", "re-xor-zero"],
+          "resources": [
+            { "title": "Compiler Explorer — see the assembly for your own C", "url": "https://godbolt.org/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-signed-hex",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["re.assembly", "bits"],
+          "prompt": "A disassembler shows the 32-bit constants `0xFFFFFFFF`, `0xFFFFFFF6` and `0x7FFFFFFF`. What are they as signed integers?",
+          "code": "def s32(x):\n    return x - (1 << 32) if x & 0x80000000 else x\n\nprint(s32(0xFFFFFFFF), s32(0xFFFFFFF6), s32(0x7FFFFFFF))",
+          "lang": "python",
+          "answer": "-1 -10 2147483647",
+          "explanation": "In two's complement the top bit is the sign: if it is set, subtract 2^32 to get the value. Large hex constants starting with `FF` are almost always small negative numbers, such as a `-1` error return or a negative stack offset.",
+          "prerequisites": ["num-twos-complement"],
+          "resources": [
+            { "title": "Python docs — struct: format characters", "url": "https://docs.python.org/3/library/struct.html#format-characters", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "-1 -10 2147483647" }
+        }
+      ]
+    },
+    {
+      "id": "re-tools",
+      "name": "Tools & Workflow",
+      "description": "Disassemblers, decompilers, debuggers and tracers, and how to make progress in a binary with no symbols.",
+      "cards": [
+        {
+          "id": "re-disassembler-decompiler",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["re.tools"],
+          "prompt": "Disassembler vs decompiler",
+          "answer": "A disassembler translates machine code into assembly instructions, one for one. A decompiler goes further and reconstructs C-like pseudocode with variables, loops and conditions.",
+          "columns": {
+            "left": { "title": "Disassembler", "points": ["Machine code to assembly", "Exact: shows what really runs", "Slow to read in bulk", "objdump, and the listing view of IDA or Ghidra"] },
+            "right": { "title": "Decompiler", "points": ["Assembly to C-like pseudocode", "Fast to read, good for the big picture", "A best guess: types and names are inferred", "Ghidra, Hex-Rays (IDA), Binary Ninja"] }
+          },
+          "explanation": "Decompiler output is a reconstruction, not the original source: variable names, types and comments are gone, and it can be wrong, especially for obfuscated code. Read the pseudocode for speed and drop to the assembly whenever something looks odd.",
+          "prerequisites": ["re-static-vs-dynamic"],
+          "resources": [
+            { "title": "Ghidra — software reverse engineering framework", "url": "https://github.com/NationalSecurityAgency/ghidra", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-breakpoints",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["re.tools", "debugging"],
+          "prompt": "How do software and hardware breakpoints work?",
+          "answer": "A software breakpoint overwrites the first byte of an instruction with `int3` (0xCC); when the CPU executes it, a trap hands control to the debugger. A hardware breakpoint uses the CPU's debug registers to trap on execute, read or write of an address without changing any code.",
+          "explanation": "Software breakpoints are unlimited but modify memory, so code that checksums itself can detect them. Hardware breakpoints are limited to four on x86 but can watch data, which answers \"who writes this variable?\" directly.",
+          "prerequisites": ["re-static-vs-dynamic", "os-interrupts"],
+          "resources": [
+            { "title": "GDB manual — Breakpoints, watchpoints and catchpoints", "url": "https://sourceware.org/gdb/current/onlinedocs/gdb.html/Breakpoints.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-stripped-binary",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["re.method", "re.tools"],
+          "prompt": "A binary has been stripped of symbols, so every function is called `FUN_00401230`. How do you find your way around?",
+          "answer": "Start from landmarks that survive stripping: the entry point, imported function names and strings. Follow cross-references from an interesting string or import to the code that uses it, then rename functions and variables as you understand them.",
+          "explanation": "On Linux the entry point passes the address of `main` as the first argument to `__libc_start_main`. Stripping removes names, not behaviour: an error message such as \"invalid licence key\" leads straight to the check that prints it. Renaming as you go is what turns a wall of addresses into something readable.",
+          "prerequisites": ["re-imports", "re-disassembler-decompiler"],
+          "resources": [
+            { "title": "man7 — strip(1)", "url": "https://man7.org/linux/man-pages/man1/strip.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-xrefs",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["re.tools", "re.method"],
+          "prompt": "What is a cross-reference (xref) in a disassembler?",
+          "answer": "A link from a function, string or data address to every place in the binary that calls, reads or writes it. Asking \"what references this?\" is the main way to navigate a binary.",
+          "explanation": "Xrefs let you work backwards from an effect to its cause: from a string to the function that prints it, from `connect` to the networking code, from a global flag to whatever sets it. They only cover references the tool can resolve statically, so indirect calls through pointers are missed.",
+          "prerequisites": ["re-disassembler-decompiler"],
+          "resources": [
+            { "title": "The Official Radare2 Book", "url": "https://book.rada.re/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "re-tracing",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["re.tools", "re.method"],
+          "prompt": "You want to know which files and network addresses a program touches without reading its code. What do you use?",
+          "answer": "Trace it at the boundary with the operating system: `strace` for system calls and `ltrace` for library calls on Linux, Process Monitor on Windows. For finer control, hook individual functions with Frida and log or change their arguments.",
+          "explanation": "Everything a program does to the outside world passes through system calls, so a trace shows the opened files, spawned processes and connections regardless of obfuscation. Hooking decryption or network functions hands you the plaintext directly.",
+          "prerequisites": ["os-syscall-examples", "re-static-vs-dynamic"],
+          "resources": [
+            { "title": "man7 — strace(1)", "url": "https://man7.org/linux/man-pages/man1/strace.1.html", "kind": "docs" },
+            { "title": "Frida — dynamic instrumentation toolkit", "url": "https://frida.re/docs/home/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-patching",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["re.method", "x86"],
+          "prompt": "What does it mean to patch a binary, and what are the two classic one-byte patches on x86?",
+          "answer": "Patching edits the machine code directly to change behaviour. Changing `74` (`jz`) to `75` (`jnz`) inverts a conditional jump, and overwriting instructions with `90` (`nop`) removes them.",
+          "explanation": "Patches must not change the length of the code, or every later offset shifts, which is why single-byte swaps and NOP padding are the standard moves. In analysis it is used to skip anti-debugging checks or long sleeps. Signed binaries will fail their signature check once modified.",
+          "prerequisites": ["re-cmp-jcc"],
+          "resources": [
+            { "title": "x86 reference — NOP", "url": "https://www.felixcloutier.com/x86/nop", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-managed-code",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["re.tools", "re.formats"],
+          "prompt": "Why are .NET, Java and Android apps much easier to reverse than native C or C++ programs?",
+          "answer": "They compile to bytecode (CIL, JVM or Dalvik) that keeps class, method and field names and type information. Decompilers such as ILSpy and dnSpy (.NET) or jadx (Java and Android) recover code close to the original source.",
+          "explanation": "Native compilation throws away names and types; bytecode needs them at runtime. Obfuscators therefore rename everything to meaningless identifiers and encrypt strings, but the program structure remains. Python `.pyc` files and Electron apps are similarly recoverable.",
+          "prerequisites": ["re-disassembler-decompiler", "comp-bytecode-vm"],
+          "resources": [
+            { "title": "jadx — Dex to Java decompiler", "url": "https://github.com/skylot/jadx", "kind": "tool" },
+            { "title": "ILSpy — .NET decompiler", "url": "https://github.com/icsharpcode/ILSpy", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "re-advanced",
+      "name": "Compiler Output & Anti-Analysis",
+      "description": "Recognising what compilers do to code, recovering data structures, and the techniques used to resist reverse engineering.",
+      "cards": [
+        {
+          "id": "re-compiler-idioms",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["re.assembly", "compilers"],
+          "prompt": "Which compiler optimisations most often make assembly look nothing like the source?",
+          "answer": "Inlining (called functions vanish into their callers), division by a constant replaced with multiplication by a \"magic number\" and a shift, `switch` statements compiled to jump tables, and loops unrolled or vectorised with SIMD instructions.",
+          "explanation": "An `imul` by a strange constant such as `0xCCCCCCCD` followed by a shift is a division (here by 10), and decompilers normally fold it back. Compiling small test programs yourself and comparing the output is the fastest way to learn these patterns.",
+          "prerequisites": ["comp-optimisations", "re-read-loop"],
+          "resources": [
+            { "title": "Compiler Explorer — see the assembly for your own C", "url": "https://godbolt.org/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-struct-recovery",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["re.method", "re.assembly"],
+          "prompt": "A function repeatedly reads `[rdi]`, `[rdi+0x8]` and `[rdi+0x10]`. What does that tell you, and what do you do about it?",
+          "answer": "`rdi` is a pointer to a struct (or object), and each offset is a field. Define a struct type in your tool with fields at those offsets and apply it to the variable, so the listing shows names instead of raw offsets.",
+          "explanation": "Field sizes come from the access width (`byte`, `dword`, `qword`) and gaps reveal padding. In C++ the pointer at offset 0 is usually the vtable, and a call such as `call [rax+0x18]` after loading it is a virtual method call. Recovering structures is what makes a large program readable.",
+          "prerequisites": ["c-struct-padding", "re-mov-lea", "cpp-vtable"],
+          "resources": [
+            { "title": "Ghidra — software reverse engineering framework", "url": "https://github.com/NationalSecurityAgency/ghidra", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "re-obfuscation",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["re.anti-analysis"],
+          "prompt": "What are the main techniques used to make a binary hard to reverse?",
+          "answer": "Packing (the real code is compressed or encrypted and unpacked at runtime), string and API-name encryption, control-flow flattening (logic rewritten as one big dispatcher loop), opaque predicates and junk code, and virtualisation (code translated to a custom bytecode run by an embedded interpreter).",
+          "explanation": "All of these raise the cost of static analysis without changing what the program does, so the usual answer is dynamic: let the program decrypt itself and inspect memory afterwards. The same techniques protect commercial software and hide malware, so obfuscation alone is not proof of malice.",
+          "prerequisites": ["re-static-vs-dynamic"],
+          "resources": [
+            { "title": "MITRE ATT&CK — T1027 Obfuscated files or information", "url": "https://attack.mitre.org/techniques/T1027/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-anti-debugging",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["re.anti-analysis", "debugging"],
+          "prompt": "How does a program detect that it is being debugged, and how do analysts get past the checks?",
+          "answer": "By asking the operating system (`IsDebuggerPresent` on Windows, `ptrace(PTRACE_TRACEME)` failing on Linux), by timing code to spot single-stepping, and by scanning its own code for breakpoint bytes. Analysts patch out the check, change its result in the debugger, or use plugins that hide the debugger.",
+          "explanation": "Each check is a branch, so it can be found and neutralised like any other code: break on the API, see who called it and flip the result. Hardware breakpoints sidestep code-checksum checks because they do not modify memory.",
+          "prerequisites": ["re-breakpoints", "re-patching"],
+          "resources": [
+            { "title": "MITRE ATT&CK — T1622 Debugger evasion", "url": "https://attack.mitre.org/techniques/T1622/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "re-legal-ethics",
+          "type": "scenario",
+          "difficulty": 2,
+          "tags": ["re.method", "ethics"],
+          "prompt": "Before reverse engineering a piece of software, what should you check?",
+          "answer": "That you are allowed to: you own or are authorised to analyse it, and the licence, your contract and local law (copyright and anti-circumvention rules) permit the purpose. Then work in an isolated environment and keep your findings within the agreed scope.",
+          "explanation": "Analysing malware, auditing your own systems, interoperability and research are common legitimate purposes, but the rules differ by country and by licence. If you find a vulnerability in someone else's product, follow coordinated disclosure rather than publishing or using it.",
+          "resources": [
+            { "title": "EFF — Coders' Rights Project: reverse engineering FAQ", "url": "https://www.eff.org/issues/coders/reverse-engineering-faq", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -136,7 +136,7 @@
           "resources": [
             { "title": "man7 — setvbuf(3)", "url": "https://man7.org/linux/man-pages/man3/setvbuf.3.html", "kind": "docs" }
           ],
-          "code": "$ ./app > app.log      # crashes after printing 10,000 lines\n$ wc -l app.log\n0 app.log\n\n$ ./app                # same binary, straight to the terminal\nstarting up...\nprocessing batch 1",
+          "code": "$ ./app > app.log      # crashes after printing a few dozen lines\n$ wc -l app.log\n0 app.log\n\n$ ./app                # same binary, straight to the terminal\nstarting up...\nprocessing batch 1",
           "lang": "bash"
         },
         {

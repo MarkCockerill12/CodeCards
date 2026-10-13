@@ -1,0 +1,623 @@
+{
+  "id": "c",
+  "name": "C",
+  "icon": "🔩",
+  "category": "Languages",
+  "color": "#5C6BC0",
+  "description": "The language underneath everything else: integer rules, pointers and arrays, strings, manual memory, undefined behaviour, the preprocessor and the tools that catch mistakes.",
+  "modules": [
+    {
+      "id": "c-core",
+      "name": "Types, Operators & Control Flow",
+      "description": "How C programs are built, what the integer types really guarantee, and the arithmetic rules that surprise people.",
+      "cards": [
+        {
+          "id": "c-compile-model",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.build", "compilers"],
+          "prompt": "What are the four stages that turn a `.c` file into a running program?",
+          "answer": "Preprocessing (expand `#include` and macros), compilation (C to assembly), assembly (to an object file of machine code) and linking (combine object files and libraries into an executable).",
+          "explanation": "`gcc -E` stops after preprocessing, `-S` after compilation and `-c` after assembly, which is how you inspect each stage. Each `.c` file is compiled on its own; names defined in other files stay as unresolved symbols until the linker matches them up, so a missing function is a link error, not a compile error.",
+          "resources": [
+            { "title": "GCC manual — Options controlling the kind of output", "url": "https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-integer-types",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["c.types", "c.integers"],
+          "prompt": "What does the C standard guarantee about the sizes of `char`, `short`, `int`, `long` and `long long`, and what should you use when the size matters?",
+          "answer": "Only minimums: `char` at least 8 bits, `short` and `int` at least 16, `long` at least 32, `long long` at least 64, each no smaller than the one before. When the size matters use `<stdint.h>`: `uint8_t`, `int32_t`, `uint64_t`, and `size_t` for sizes and indexes.",
+          "explanation": "`long` is 64 bits on 64-bit Linux and macOS but 32 bits on 64-bit Windows, a classic portability bug. Whether plain `char` is signed is also implementation-defined, so use `unsigned char` or `uint8_t` for raw bytes.",
+          "resources": [
+            { "title": "cppreference — Fixed width integer types", "url": "https://en.cppreference.com/w/c/types/integer", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-integer-division",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.operators", "c.integers"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    printf(\"%d %d %d %d\\n\", 7 / 2, -7 / 2, -7 % 2, 7 % -2);\n    printf(\"%.2f\\n\", 7 / 2.0);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "3 -3 -1 1\n3.50",
+          "explanation": "Integer division truncates toward zero (since C99), and `%` takes the sign of the left operand so that `(a / b) * b + a % b == a`. Python floors instead, giving `-7 // 2 == -4`. Making either operand a floating-point value switches to real division.",
+          "prerequisites": ["py-floor-division"],
+          "resources": [
+            { "title": "cppreference — Arithmetic operators", "url": "https://en.cppreference.com/w/c/language/operator_arithmetic", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "3 -3 -1 1\n3.50" }
+        },
+        {
+          "id": "c-integer-promotion",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.integers", "c.conversions"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    unsigned char a = 200, b = 100;\n    unsigned char c = a + b;\n    printf(\"%d %d\\n\", a + b, c);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "300 44",
+          "explanation": "Operands narrower than `int` are promoted to `int` before arithmetic, so `a + b` is the `int` 300 with no wrap. Storing it back into an 8-bit `unsigned char` keeps only the low 8 bits: 300 mod 256 = 44.",
+          "prerequisites": ["c-integer-types"],
+          "resources": [
+            { "title": "cppreference — Implicit conversions", "url": "https://en.cppreference.com/w/c/language/conversion", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "300 44" }
+        },
+        {
+          "id": "c-signed-unsigned-compare",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.integers", "c.conversions", "security.memory-safety"],
+          "prompt": "With a 32-bit `int`, what does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    int a = -1;\n    unsigned int b = 1;\n    printf(\"%s\\n\", a < b ? \"less\" : \"greater\");\n    printf(\"%u\\n\", (unsigned int)a);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "greater\n4294967295",
+          "explanation": "When a signed and an unsigned `int` meet, the signed one is converted to unsigned: -1 becomes 4294967295, which is not less than 1. This is how a negative length slips past a `len < sizeof buf` check. Compile with `-Wall -Wextra` to get the sign-compare warning.",
+          "prerequisites": ["c-integer-promotion", "num-twos-complement"],
+          "resources": [
+            { "title": "cppreference — Implicit conversions", "url": "https://en.cppreference.com/w/c/language/conversion", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "greater\n4294967295" }
+        },
+        {
+          "id": "c-char-arith",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.types", "c.strings"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    char c = 'A';\n    printf(\"%c %d %c\\n\", c + 1, c, 'a' - 32);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "B 65 A",
+          "explanation": "A `char` is just a small integer holding a character code, so arithmetic on it is ordinary integer arithmetic: 'A' is 65 in ASCII, and lower and upper case letters are 32 apart. The format specifier decides whether the value is shown as a number or a character.",
+          "resources": [
+            { "title": "cppreference — ASCII chart", "url": "https://en.cppreference.com/w/c/language/ascii", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "B 65 A" }
+        },
+        {
+          "id": "c-switch-fallthrough",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.control-flow"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    for (int i = 1; i <= 3; i++) {\n        switch (i) {\n            case 1: printf(\"one \");\n            case 2: printf(\"two \"); break;\n            default: printf(\"other \");\n        }\n    }\n    printf(\"\\n\");\n    return 0;\n}",
+          "lang": "c",
+          "answer": "one two two other",
+          "explanation": "A `case` label is only a jump target. Without `break`, execution falls through into the next case, so `i == 1` prints both \"one\" and \"two\". A missing `break` is a common bug; `-Wimplicit-fallthrough` flags it.",
+          "resources": [
+            { "title": "cppreference — switch statement", "url": "https://en.cppreference.com/w/c/language/switch", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "one two two other" }
+        },
+        {
+          "id": "c-bitwise",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.operators", "bits"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    unsigned int x = 0xF0;\n    printf(\"%u %u %u %x\\n\", x >> 4, x & 0x3C, 1u << 5, ~x & 0xFF);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "15 48 32 f",
+          "explanation": "`>>` shifts right, `&` masks bits (0xF0 & 0x3C = 0x30 = 48), `1u << n` builds a single-bit mask, and `~` inverts every bit, so it is masked back to one byte. Do bit work on unsigned types: shifting into the sign bit, or by the type's width or more, is undefined.",
+          "prerequisites": ["num-bitwise"],
+          "resources": [
+            { "title": "cppreference — Arithmetic operators (bitwise and shift)", "url": "https://en.cppreference.com/w/c/language/operator_arithmetic", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "15 48 32 f" }
+        },
+        {
+          "id": "c-static-local",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.storage"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint next_id(void) {\n    static int n = 0;\n    n++;\n    return n;\n}\n\nint main(void) {\n    next_id();\n    next_id();\n    printf(\"%d\\n\", next_id());\n    return 0;\n}",
+          "lang": "c",
+          "answer": "3",
+          "explanation": "A `static` local has static storage duration: it is initialised once, before the program starts, and keeps its value between calls. Without `static`, `n` would be a fresh automatic variable on every call. The price is hidden state, so such functions are not thread-safe or re-entrant.",
+          "resources": [
+            { "title": "cppreference — Storage duration and linkage", "url": "https://en.cppreference.com/w/c/language/storage_duration", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "3" }
+        },
+        {
+          "id": "c-enum-typedef",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["c.types"],
+          "prompt": "What do `enum`, `typedef` and `struct` each give you in C?",
+          "answer": "`struct` groups named fields into one object. `enum` names a set of integer constants (0, 1, 2… unless assigned). `typedef` creates an alias for an existing type, commonly `typedef struct { … } Point;` so you can write `Point` instead of `struct Point`.",
+          "explanation": "Enum constants are plain `int`s with no type safety: any integer can be assigned to an enum variable. Access fields with `.` on a struct and `->` through a pointer (`p->x` is `(*p).x`). Structs are copied by value when assigned or passed.",
+          "resources": [
+            { "title": "cppreference — Struct declaration", "url": "https://en.cppreference.com/w/c/language/struct", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c-pointers",
+      "name": "Pointers, Arrays & Strings",
+      "description": "Addresses, pointer arithmetic, array decay and the NUL-terminated strings behind most C bugs.",
+      "cards": [
+        {
+          "id": "c-pointer-basics",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.pointers"],
+          "prompt": "What is a pointer, and what do `&x`, `*p` and `NULL` mean?",
+          "answer": "A pointer is a variable holding the memory address of another object. `&x` takes the address of `x`; `*p` dereferences `p`, reading or writing the object it points to; `NULL` is a pointer value that points at nothing.",
+          "explanation": "The pointer's type (`int *`, `char *`) tells the compiler how many bytes to read and how far `p + 1` moves. Dereferencing `NULL`, an uninitialised pointer or a pointer to freed memory is undefined behaviour, in practice usually a segmentation fault.",
+          "prerequisites": ["cpp-pointer-vs-reference"],
+          "resources": [
+            { "title": "cppreference — Pointer declaration", "url": "https://en.cppreference.com/w/c/language/pointer", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-pass-by-value",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.pointers", "c.functions"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nvoid swap_copy(int a, int b) { int t = a; a = b; b = t; }\nvoid swap_ptr(int *a, int *b) { int t = *a; *a = *b; *b = t; }\n\nint main(void) {\n    int x = 1, y = 2;\n    swap_copy(x, y);\n    printf(\"%d %d\\n\", x, y);\n    swap_ptr(&x, &y);\n    printf(\"%d %d\\n\", x, y);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "1 2\n2 1",
+          "explanation": "C passes every argument by value: `swap_copy` swaps its own copies and the caller sees nothing. To let a function modify the caller's variable you pass its address and write through the pointer. The pointer itself is still passed by value.",
+          "prerequisites": ["c-pointer-basics"],
+          "resources": [
+            { "title": "cppreference — Function declarations", "url": "https://en.cppreference.com/w/c/language/function_declaration", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "1 2\n2 1" }
+        },
+        {
+          "id": "c-pointer-arithmetic",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.pointers", "c.arrays"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    int a[] = {10, 20, 30, 40};\n    int *p = a;\n    printf(\"%d %d %d\\n\", *(p + 2), p[1], 2[a]);\n    printf(\"%td\\n\", &a[3] - &a[0]);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "30 20 30\n3",
+          "explanation": "Pointer arithmetic counts in elements, not bytes: `p + 2` is two `int`s further on. `a[i]` is defined as `*(a + i)`, which is why the odd-looking `2[a]` is legal. Subtracting two pointers into the same array gives the number of elements between them.",
+          "prerequisites": ["c-pointer-basics"],
+          "resources": [
+            { "title": "cppreference — Arithmetic operators (pointer arithmetic)", "url": "https://en.cppreference.com/w/c/language/operator_arithmetic", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "30 20 30\n3" }
+        },
+        {
+          "id": "c-array-decay",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.arrays", "c.pointers"],
+          "prompt": "On a 64-bit platform with a 4-byte `int`, what does this print?",
+          "code": "#include <stdio.h>\n\nvoid f(int a[10]) {\n    printf(\"%zu\\n\", sizeof(a) / sizeof(a[0]));\n}\n\nint main(void) {\n    int a[10];\n    printf(\"%zu\\n\", sizeof(a) / sizeof(a[0]));\n    f(a);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "10\n2",
+          "explanation": "An array passed to a function decays to a pointer to its first element; the `[10]` in the parameter is ignored. Inside `f`, `sizeof(a)` is the size of a pointer (8), so the element-count idiom silently gives 2. Always pass the length as a separate argument.",
+          "prerequisites": ["c-pointer-arithmetic"],
+          "resources": [
+            { "title": "cppreference — Array declaration (array to pointer conversion)", "url": "https://en.cppreference.com/w/c/language/array", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "10\n2" }
+        },
+        {
+          "id": "c-strings",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["c.strings"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n#include <string.h>\n\nint main(void) {\n    char s[] = \"hello\";\n    printf(\"%zu %zu\\n\", sizeof(s), strlen(s));\n    return 0;\n}",
+          "lang": "c",
+          "answer": "6 5",
+          "explanation": "A C string is an array of `char` ending in a NUL byte (`'\\0'`). The literal \"hello\" needs 6 bytes; `strlen` counts up to but not including the terminator, by walking the string. Forgetting the extra byte when allocating is the classic off-by-one.",
+          "resources": [
+            { "title": "cppreference — strlen", "url": "https://en.cppreference.com/w/c/string/byte/strlen", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "6 5" }
+        },
+        {
+          "id": "c-string-literal-modify",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["c.strings", "c.undefined-behaviour"],
+          "prompt": "Why does this usually crash, and what is the fix?",
+          "code": "char *s = \"hello\";\ns[0] = 'H';",
+          "lang": "c",
+          "answer": "`s` points at a string literal, which lives in read-only memory; writing to it is undefined behaviour and typically a segfault. Use an array, `char s[] = \"hello\";`, which copies the literal into writable storage.",
+          "explanation": "Declare pointers to literals as `const char *` so the compiler rejects the write. The array form and the pointer form look alike but differ: one owns six writable bytes, the other is an address into the program's read-only data section.",
+          "prerequisites": ["c-strings"],
+          "resources": [
+            { "title": "cppreference — String literals", "url": "https://en.cppreference.com/w/c/language/string_literal", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-buffer-overflow",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["c.strings", "security.memory-safety"],
+          "prompt": "What is wrong with this code?",
+          "code": "char name[5];\nstrcpy(name, \"hello\");",
+          "lang": "c",
+          "answer": "\"hello\" needs 6 bytes including the NUL terminator, but `name` holds 5, so `strcpy` writes one byte past the end: a buffer overflow. Size the buffer for length + 1, or use a bounded copy such as `snprintf(name, sizeof name, \"%s\", src)`.",
+          "explanation": "`strcpy` copies until it finds a NUL and knows nothing about the destination size. Overflowing a stack buffer overwrites neighbouring variables and, with enough bytes, the saved return address, which is the basis of the classic stack-smashing exploit.",
+          "prerequisites": ["c-strings", "mem-use-after-free"],
+          "resources": [
+            { "title": "CWE-120 — Buffer copy without checking size of input", "url": "https://cwe.mitre.org/data/definitions/120.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-gets-fgets",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["c.io", "security.memory-safety"],
+          "prompt": "Both input lines are unsafe. Why, and what replaces them?",
+          "code": "char line[64];\ngets(line);\nscanf(\"%s\", line);",
+          "lang": "c",
+          "answer": "Neither limits how much it writes, so longer input overflows `line`. Use `fgets(line, sizeof line, stdin)`, which stops at the buffer size, or give `scanf` a width: `scanf(\"%63s\", line)`.",
+          "explanation": "`gets` was so dangerous it was removed from the language in C11. `fgets` keeps the trailing newline, which you usually strip, and returns `NULL` at end of input, which you must check.",
+          "prerequisites": ["c-buffer-overflow"],
+          "resources": [
+            { "title": "cppreference — fgets", "url": "https://en.cppreference.com/w/c/io/fgets", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-strncpy-trap",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["c.strings"],
+          "prompt": "Why is `strncpy(dst, src, n)` not a safe drop-in for `strcpy`?",
+          "answer": "If `src` is `n` characters or longer, `strncpy` copies `n` bytes and writes no NUL terminator, leaving `dst` unterminated. Terminate it yourself (`dst[n - 1] = '\\0'`) or use `snprintf`, which always terminates.",
+          "explanation": "`strncpy` was designed for fixed-width fields, which is also why it pads the rest of the buffer with zeros when the source is short. Reading an unterminated buffer with `strlen` or `printf(\"%s\")` runs off the end into neighbouring memory.",
+          "prerequisites": ["c-buffer-overflow"],
+          "resources": [
+            { "title": "cppreference — strncpy", "url": "https://en.cppreference.com/w/c/string/byte/strncpy", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-const-pointer",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["c.pointers", "c.const"],
+          "prompt": "`const char *p` vs `char *const p`",
+          "answer": "Read right to left. `const char *p` is a pointer to const char: you cannot modify the characters, but you can repoint `p`. `char *const p` is a const pointer to char: you can modify the characters, but `p` cannot be repointed.",
+          "columns": {
+            "left": { "title": "const char *p", "points": ["Pointee is read-only through p", "p can point elsewhere", "Right type for input string parameters", "Same as `char const *p`"] },
+            "right": { "title": "char *const p", "points": ["Pointee can be modified", "p itself is fixed", "Must be initialised when declared", "`const char *const p` fixes both"] }
+          },
+          "explanation": "`const` on a parameter documents and enforces that a function will not modify the caller's data, and lets it accept string literals safely. It is a compile-time promise only: casting it away and writing to a truly const object is undefined behaviour.",
+          "prerequisites": ["c-pointer-basics", "cpp-const-correctness"],
+          "resources": [
+            { "title": "cppreference — const type qualifier", "url": "https://en.cppreference.com/w/c/language/const", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-function-pointers",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["c.pointers", "c.functions"],
+          "prompt": "What is a function pointer, and where does the standard library use one?",
+          "answer": "A variable holding the address of a function, declared like `int (*cmp)(const void *, const void *)`, and called like a function. `qsort` takes one as its comparison callback.",
+          "explanation": "Function pointers are how C does callbacks, plugin tables and hand-rolled polymorphism (a struct of function pointers is a vtable). They are also an attacker's favourite target: overwriting one through a memory bug redirects execution.",
+          "prerequisites": ["c-pointer-basics"],
+          "resources": [
+            { "title": "cppreference — qsort", "url": "https://en.cppreference.com/w/c/algorithm/qsort", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-void-pointer",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["c.pointers", "c.types"],
+          "prompt": "What is `void *`, and what can you not do with it?",
+          "answer": "A generic pointer that can hold the address of any object and converts to and from other object pointer types without a cast. You cannot dereference it or do arithmetic on it until you convert it to a concrete pointer type.",
+          "explanation": "It is how `malloc`, `memcpy` and `qsort` work with any type. The compiler no longer knows what the pointer refers to, so all type checking is lost: converting to the wrong type compiles and then misreads memory.",
+          "prerequisites": ["c-pointer-basics"],
+          "resources": [
+            { "title": "cppreference — Pointer declaration (pointers to void)", "url": "https://en.cppreference.com/w/c/language/pointer", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c-memory",
+      "name": "Memory & Undefined Behaviour",
+      "description": "Manual allocation, the bugs it invites, how data is laid out in memory, and what undefined behaviour really means.",
+      "cards": [
+        {
+          "id": "c-malloc-free",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["c.memory"],
+          "prompt": "What are the rules for `malloc` and `free`?",
+          "answer": "`malloc(n)` returns `n` uninitialised bytes on the heap, or `NULL` on failure, so check the result. Every successful allocation must be passed to `free` exactly once, and never used afterwards.",
+          "explanation": "Write `p = malloc(count * sizeof *p)` so the size follows the pointer's type. `calloc(count, size)` zeroes the memory and checks the multiplication for overflow. `free(NULL)` is safe; setting a pointer to `NULL` after freeing turns a use-after-free into an obvious crash.",
+          "prerequisites": ["mem-stack-heap", "c-pointer-basics"],
+          "resources": [
+            { "title": "cppreference — malloc", "url": "https://en.cppreference.com/w/c/memory/malloc", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-memory-bugs",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["c.memory", "security.memory-safety"],
+          "prompt": "Name the three memory bugs in this function.",
+          "code": "void process(void) {\n    char *a = malloc(32);\n    char *b = malloc(32);\n    strcpy(a, \"data\");\n    free(a);\n    printf(\"%s\\n\", a);\n    free(a);\n}",
+          "lang": "c",
+          "answer": "Use-after-free (`a` is read after `free(a)`), double free (`a` is freed twice), and a memory leak (`b` is never freed). The `malloc` results are also never checked for `NULL`.",
+          "explanation": "All three are undefined behaviour or resource loss that often appears to work in testing. Use-after-free and double free corrupt the allocator's bookkeeping and are routinely exploitable. AddressSanitizer reports each of them with a stack trace.",
+          "prerequisites": ["c-malloc-free", "mem-use-after-free"],
+          "resources": [
+            { "title": "CWE-416 — Use after free", "url": "https://cwe.mitre.org/data/definitions/416.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-return-local",
+          "type": "spot-bug",
+          "difficulty": 3,
+          "tags": ["c.memory", "c.undefined-behaviour"],
+          "prompt": "Why is the returned pointer invalid?",
+          "code": "char *make_greeting(void) {\n    char buf[32];\n    snprintf(buf, sizeof buf, \"hello\");\n    return buf;\n}",
+          "lang": "c",
+          "answer": "`buf` is a local array on the stack; its lifetime ends when the function returns, so the caller receives a dangling pointer. Allocate with `malloc` and let the caller free it, or have the caller pass in a buffer and its size.",
+          "explanation": "The memory is reused by the next function call, so the string may look intact for a moment and then change. Compilers warn about the obvious cases (`-Wreturn-local-addr`), but not when the pointer escapes indirectly.",
+          "prerequisites": ["mem-stack-frame", "c-malloc-free"],
+          "resources": [
+            { "title": "cppreference — Lifetime", "url": "https://en.cppreference.com/w/c/language/lifetime", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-realloc-leak",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["c.memory"],
+          "prompt": "What goes wrong here when memory runs out?",
+          "code": "buf = realloc(buf, new_size);\nif (buf == NULL) {\n    return -1;\n}",
+          "lang": "c",
+          "answer": "On failure `realloc` returns `NULL` and leaves the original block allocated. Assigning straight to `buf` overwrites the only pointer to it, leaking the block. Assign to a temporary, check it, then update `buf`.",
+          "explanation": "The safe form is `void *tmp = realloc(buf, new_size); if (!tmp) { free(buf); return -1; } buf = tmp;`. On success the block may have moved, so every other pointer into the old block is now dangling.",
+          "prerequisites": ["c-malloc-free"],
+          "resources": [
+            { "title": "cppreference — realloc", "url": "https://en.cppreference.com/w/c/memory/realloc", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-uninitialised",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["c.memory", "c.undefined-behaviour"],
+          "prompt": "Which variables does C initialise for you, and which does it not?",
+          "answer": "Objects with static storage duration (globals and `static` variables) are zero-initialised. Automatic (local) variables and `malloc`ed memory are not: they hold indeterminate values until you assign them.",
+          "explanation": "Reading an uninitialised local gives whatever was left on the stack, which can leak old data such as keys or pointers, and makes bugs that vanish in a debug build. Initialise at declaration and build with `-Wall`; MemorySanitizer and Valgrind catch the rest.",
+          "prerequisites": ["c-static-local"],
+          "resources": [
+            { "title": "cppreference — Initialization", "url": "https://en.cppreference.com/w/c/language/initialization", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-undefined-behaviour",
+          "type": "compare",
+          "difficulty": 4,
+          "tags": ["c.undefined-behaviour", "compilers"],
+          "prompt": "Undefined behaviour vs implementation-defined behaviour",
+          "answer": "Undefined behaviour means the standard places no requirements at all on the program: it may crash, appear to work, or be optimised into something else. Implementation-defined behaviour has a result each compiler must choose and document.",
+          "columns": {
+            "left": { "title": "Undefined", "points": ["No requirements on the program", "Signed integer overflow", "Out-of-bounds access, use-after-free", "Compiler may assume it never happens"] },
+            "right": { "title": "Implementation-defined", "points": ["Documented choice per compiler", "Size of `int` and `long`", "Whether plain `char` is signed", "Right shift of a negative value"] }
+          },
+          "explanation": "Optimisers reason from the assumption that undefined behaviour cannot occur, so a check that only matters after an overflow or a null dereference can be deleted. This is why UB bugs change with optimisation level. UndefinedBehaviorSanitizer (`-fsanitize=undefined`) reports many at runtime.",
+          "prerequisites": ["cpp-ub-list", "comp-undefined-optimisation"],
+          "resources": [
+            { "title": "cppreference — Undefined behavior", "url": "https://en.cppreference.com/w/c/language/behavior", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-format-string",
+          "type": "spot-bug",
+          "difficulty": 4,
+          "tags": ["c.io", "security.memory-safety"],
+          "prompt": "Why is this line a security vulnerability?",
+          "code": "void log_message(const char *user_input) {\n    printf(user_input);\n}",
+          "lang": "c",
+          "answer": "User input is used as the format string. Specifiers such as `%x` and `%s` make `printf` read values off the stack, leaking memory, and `%n` writes to memory. Always pass a constant format: `printf(\"%s\", user_input)`.",
+          "explanation": "`printf` trusts the format string to describe its arguments and cannot tell that none were passed. Format string bugs give an attacker both a read and a write primitive. `-Wformat-security` warns when the format is not a string literal.",
+          "prerequisites": ["as-injection-general"],
+          "resources": [
+            { "title": "CWE-134 — Use of externally-controlled format string", "url": "https://cwe.mitre.org/data/definitions/134.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-struct-padding",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.memory", "c.types"],
+          "prompt": "On a typical platform with a 4-byte `int`, what does this print?",
+          "code": "#include <stdio.h>\n\nstruct A { char a; int b; char c; };\nstruct B { int b; char a; char c; };\n\nint main(void) {\n    printf(\"%zu %zu\\n\", sizeof(struct A), sizeof(struct B));\n    return 0;\n}",
+          "lang": "c",
+          "answer": "12 8",
+          "explanation": "Each member is aligned to its own size, so `struct A` has 3 padding bytes after `a` and 3 at the end to keep arrays of it aligned. Ordering members from largest to smallest removes most padding. Padding bytes are uninitialised, so sending a raw struct over the network can leak memory.",
+          "prerequisites": ["mem-alignment"],
+          "resources": [
+            { "title": "cppreference — Objects and alignment", "url": "https://en.cppreference.com/w/c/language/object", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "12 8" }
+        },
+        {
+          "id": "c-union-float-bits",
+          "type": "predict-output",
+          "difficulty": 4,
+          "tags": ["c.types", "c.memory"],
+          "prompt": "With a 32-bit `unsigned int` and IEEE-754 `float`, what does this print?",
+          "code": "#include <stdio.h>\n\nunion Bits {\n    float f;\n    unsigned int u;\n};\n\nint main(void) {\n    union Bits v;\n    v.f = 1.0f;\n    printf(\"%08x\\n\", v.u);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "3f800000",
+          "explanation": "A union's members share the same bytes, so writing one and reading another reinterprets the bit pattern. 1.0 as a single-precision float is sign 0, exponent 127 (0x7F), mantissa 0, which packs to 0x3F800000. This kind of type punning through a union is allowed in C; `memcpy` is the portable alternative.",
+          "prerequisites": ["num-ieee754"],
+          "resources": [
+            { "title": "cppreference — Union declaration", "url": "https://en.cppreference.com/w/c/language/union", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "3f800000" }
+        },
+        {
+          "id": "c-endianness",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.memory", "bits"],
+          "prompt": "On x86-64 (little-endian), what does this print?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    unsigned int x = 0x11223344;\n    unsigned char *p = (unsigned char *)&x;\n    printf(\"%02x %02x\\n\", p[0], p[3]);\n    return 0;\n}",
+          "lang": "c",
+          "answer": "44 11",
+          "explanation": "Little-endian machines store the least significant byte at the lowest address, so memory holds 44 33 22 11. Inspecting any object through an `unsigned char *` is always allowed. Network protocols use big-endian, hence `htonl` and `ntohl`.",
+          "prerequisites": ["num-endianness", "c-pointer-arithmetic"],
+          "resources": [
+            { "title": "man7 — byteorder(3): htonl, htons, ntohl, ntohs", "url": "https://man7.org/linux/man-pages/man3/byteorder.3.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "44 11" }
+        }
+      ]
+    },
+    {
+      "id": "c-practice",
+      "name": "Preprocessor, Build & Tooling",
+      "description": "Macros, headers and linkage, error handling, and the compiler flags and tools that find bugs for you.",
+      "cards": [
+        {
+          "id": "c-macro-pitfalls",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["c.preprocessor"],
+          "prompt": "What does this print?",
+          "code": "#include <stdio.h>\n\n#define SQUARE_BAD(x) x * x\n#define SQUARE(x) ((x) * (x))\n\nint main(void) {\n    printf(\"%d %d\\n\", SQUARE_BAD(1 + 2), SQUARE(1 + 2));\n    return 0;\n}",
+          "lang": "c",
+          "answer": "5 9",
+          "explanation": "Macros are textual substitution: `SQUARE_BAD(1 + 2)` becomes `1 + 2 * 1 + 2`, which is 5. Parenthesise every parameter and the whole body. Even then `SQUARE(i++)` evaluates `i++` twice, so prefer a `static inline` function when you can.",
+          "prerequisites": ["c-compile-model"],
+          "resources": [
+            { "title": "cppreference — Replacing text macros", "url": "https://en.cppreference.com/w/c/preprocessor/replace", "kind": "docs" }
+          ],
+          "verify": { "runtime": "c", "expectedOutput": "5 9" }
+        },
+        {
+          "id": "c-headers",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["c.build", "c.preprocessor"],
+          "prompt": "What belongs in a header file, and what is an include guard for?",
+          "answer": "Headers hold declarations shared between files: function prototypes, type definitions, macros and `extern` variable declarations. Definitions (function bodies, variables) go in one `.c` file. An include guard (`#ifndef X_H` / `#define X_H` / `#endif`) stops a header's contents being included twice in one file.",
+          "explanation": "`#include` literally pastes the header's text. Without a guard, a header reached by two paths redefines its types and fails to compile. Putting a non-`static` function body or a variable definition in a header gives a \"multiple definition\" link error once two files include it.",
+          "prerequisites": ["c-compile-model", "cpp-compilation-model"],
+          "resources": [
+            { "title": "cppreference — Source file inclusion", "url": "https://en.cppreference.com/w/c/preprocessor/include", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-static-extern",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["c.build", "c.storage"],
+          "prompt": "`static` vs `extern` at file scope",
+          "answer": "`static` gives a function or global internal linkage: it is visible only inside its own `.c` file. `extern` declares that a name is defined in another file, giving it external linkage.",
+          "columns": {
+            "left": { "title": "static", "points": ["Private to the translation unit", "Avoids name clashes between files", "Default choice for helper functions", "Inside a function: keeps its value between calls"] },
+            "right": { "title": "extern", "points": ["Declares; does not define", "Used in headers for shared globals", "Exactly one file provides the definition", "Functions are extern by default"] }
+          },
+          "explanation": "`static` means two different things depending on where it appears: linkage at file scope, lifetime inside a function. Marking helpers `static` is C's only form of encapsulation, and lets the compiler inline or drop them.",
+          "prerequisites": ["c-headers", "c-static-local"],
+          "resources": [
+            { "title": "cppreference — Storage duration and linkage", "url": "https://en.cppreference.com/w/c/language/storage_duration", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-main-args",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["c.functions", "c.io"],
+          "prompt": "What are `argc` and `argv` in `int main(int argc, char *argv[])`, and what does `main`'s return value mean?",
+          "answer": "`argc` is the number of command-line arguments and `argv` is an array of that many C strings, with `argv[0]` the program name and `argv[argc]` equal to `NULL`. The return value is the process exit status: 0 for success, non-zero for failure.",
+          "explanation": "Arguments arrive as strings, so numbers must be parsed, ideally with `strtol`, which reports errors, rather than `atoi`, which cannot. Always check `argc` before reading `argv[1]`. The shell sees the exit status as `$?`.",
+          "prerequisites": ["bash-exit-codes"],
+          "resources": [
+            { "title": "cppreference — Main function", "url": "https://en.cppreference.com/w/c/language/main_function", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-errno",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["c.errors", "c.io"],
+          "prompt": "C has no exceptions. How do functions report errors, and what is `errno`?",
+          "answer": "Through return values: `NULL`, `-1` or another sentinel signals failure, and the caller must check every call. Many library and system calls also set the global `errno` to a code saying why; `perror` or `strerror(errno)` turns it into a message.",
+          "explanation": "`errno` is only meaningful straight after a call that reported failure, and later calls can overwrite it, so read it immediately. Ignored return values (an unchecked `malloc`, `fopen` or `write`) are among the most common C bugs.",
+          "resources": [
+            { "title": "cppreference — errno", "url": "https://en.cppreference.com/w/c/error/errno", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-file-io",
+          "type": "spot-bug",
+          "difficulty": 2,
+          "tags": ["c.io", "c.errors"],
+          "prompt": "What two things are missing from this function?",
+          "code": "void save(const char *path, const char *text) {\n    FILE *f = fopen(path, \"w\");\n    fputs(text, f);\n}",
+          "lang": "c",
+          "answer": "It never checks whether `fopen` returned `NULL` (the path may be invalid or unwritable), and it never calls `fclose`, so the buffered data may not be written and the file handle leaks.",
+          "explanation": "Stream output is buffered in the process; `fclose` flushes it and can itself fail when the disk is full, so its result matters for files you care about. Every open has to be paired with a close on every path out of the function, including error paths.",
+          "prerequisites": ["c-errno", "os-buffering"],
+          "resources": [
+            { "title": "cppreference — fopen", "url": "https://en.cppreference.com/w/c/io/fopen", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-sanitizers",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["c.tooling", "debugging"],
+          "prompt": "A C program crashes occasionally with corrupted data. Which compiler flags and tools do you reach for first?",
+          "answer": "Rebuild with warnings and sanitizers: `-Wall -Wextra -g -fsanitize=address,undefined`. AddressSanitizer pinpoints overflows, use-after-free and leaks; UBSan reports undefined behaviour. Then use Valgrind when you cannot rebuild, and `gdb` to inspect a crash.",
+          "explanation": "A sanitizer stops at the first bad access and prints where the memory was allocated and freed, turning a random crash into a precise report. Run the test suite under sanitizers in CI. They cost roughly 2x in speed, so they are for testing, not production builds.",
+          "prerequisites": ["mem-leak-tools", "c-memory-bugs"],
+          "resources": [
+            { "title": "GCC manual — Program instrumentation options (sanitizers)", "url": "https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-hardening",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["c.tooling", "security.memory-safety"],
+          "prompt": "Which standard mitigations make memory-corruption bugs in C harder to exploit?",
+          "answer": "Stack canaries (detect an overwritten return address), ASLR with position-independent executables (randomise where code and data load), non-executable stack and heap (NX/DEP), and RELRO (make linker tables read-only).",
+          "explanation": "Typical flags are `-fstack-protector-strong`, `-fPIE -pie`, `-D_FORTIFY_SOURCE=2` and `-Wl,-z,relro,-z,now`. Mitigations raise the cost of an exploit but do not fix the bug: information leaks defeat ASLR and return-oriented programming defeats NX.",
+          "prerequisites": ["c-buffer-overflow"],
+          "resources": [
+            { "title": "GCC manual — Program instrumentation options (stack protector)", "url": "https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -217,7 +217,7 @@
           "explanation": "Since PHP 8, many former warnings throw instead. Catch specific types where you can handle them, register one top-level handler that logs `Throwable`, and chain causes with the `$previous` argument when wrapping exceptions.",
           "prerequisites": ["craft-error-handling"],
           "resources": [
-            { "title": "PHP Manual — Errors in PHP 7+", "url": "https://www.php.net/manual/en/language.errors.php7.php", "kind": "docs" }
+            { "title": "PHP Manual — The Throwable interface", "url": "https://www.php.net/manual/en/class.throwable.php", "kind": "docs" }
           ]
         }
       ]

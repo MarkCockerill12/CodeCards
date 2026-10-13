@@ -1,0 +1,410 @@
+{
+  "id": "forensics",
+  "name": "Digital Forensics",
+  "icon": "🔎",
+  "category": "Security",
+  "color": "#0369A1",
+  "description": "Collecting and examining digital evidence: preserving it properly, recovering data from disks, reading operating-system artefacts, and analysing memory, network captures and logs.",
+  "modules": [
+    {
+      "id": "for-process",
+      "name": "Process & Evidence Handling",
+      "description": "What forensics is for, in what order to collect evidence, and how to keep it trustworthy.",
+      "cards": [
+        {
+          "id": "for-dfir",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["forensics.process", "security.incident-response"],
+          "prompt": "What is digital forensics, and how does it relate to incident response?",
+          "answer": "Digital forensics is the collection, preservation and analysis of digital evidence to establish what happened on a system. Incident response is the work of containing and recovering from an attack. Together (DFIR) they answer: how did they get in, what did they do, and what did they take?",
+          "explanation": "The two pull in different directions: responders want systems cleaned and back online quickly, while forensics needs evidence preserved first. Collecting key evidence before rebuilding is what lets you close the hole the attacker actually used rather than guessing.",
+          "prerequisites": ["sec-incident-response"],
+          "resources": [
+            { "title": "NIST SP 800-86 — Guide to integrating forensic techniques into incident response", "url": "https://csrc.nist.gov/pubs/sp/800/86/final", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-order-of-volatility",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["forensics.process", "forensics.acquisition"],
+          "prompt": "What is the order of volatility, and what is the order?",
+          "answer": "Collect the evidence that disappears fastest first. Roughly: CPU registers and cache, then memory and live state (running processes, network connections), then temporary files, then disk, then remote logs, and finally backups and archives.",
+          "explanation": "Memory and network state are gone at power-off and change every second, while a disk image will still be there tomorrow. Every action you take on a live system also alters it, so capture volatile data with as few steps as possible and record each one.",
+          "prerequisites": ["for-dfir"],
+          "resources": [
+            { "title": "RFC 3227 — Guidelines for evidence collection and archiving", "url": "https://www.rfc-editor.org/rfc/rfc3227", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "for-chain-of-custody",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["forensics.process"],
+          "prompt": "What is chain of custody, and why does it matter?",
+          "answer": "A documented, unbroken record of who collected each item of evidence, when, where it has been stored and everyone who has handled it since. It shows the evidence presented is the evidence collected, unaltered.",
+          "explanation": "Without it, evidence can be challenged or excluded in court or a disciplinary process, however clear it looks technically. In practice it means labelled items, a log of every transfer, secure storage and cryptographic hashes recorded at collection.",
+          "prerequisites": ["for-dfir"],
+          "resources": [
+            { "title": "NIST SP 800-86 — Guide to integrating forensic techniques into incident response", "url": "https://csrc.nist.gov/pubs/sp/800/86/final", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-hash-integrity",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["forensics.process", "security.crypto"],
+          "prompt": "What does this print?",
+          "code": "import hashlib\n\na = hashlib.sha256(b'evidence').hexdigest()\nb = hashlib.sha256(b'evidence.').hexdigest()\nprint(len(a) * 4)\nprint(a == b)\nprint(hashlib.md5(b'').hexdigest())",
+          "lang": "python",
+          "answer": "256\nFalse\nd41d8cd98f00b204e9800998ecf8427e",
+          "explanation": "A SHA-256 digest is 64 hex characters, 256 bits, and changing a single byte of input gives a completely different digest. Hashing an image at acquisition and again later proves it has not changed. The MD5 of empty input is a value worth recognising: seeing it means a tool hashed nothing.",
+          "prerequisites": ["crypto-hash-properties", "for-chain-of-custody"],
+          "resources": [
+            { "title": "Python docs — hashlib", "url": "https://docs.python.org/3/library/hashlib.html", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "256\nFalse\nd41d8cd98f00b204e9800998ecf8427e" }
+        },
+        {
+          "id": "for-imaging",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["forensics.acquisition", "forensics.disk"],
+          "prompt": "You need to examine a suspect's hard drive. How do you acquire it properly?",
+          "answer": "Connect it through a write blocker, take a bit-for-bit image of the whole device (not just the files), hash the image and record the hash, then store the original and do all analysis on a copy of the image.",
+          "explanation": "A write blocker stops the examining machine altering the disk; simply mounting a drive changes timestamps and journals. A full image includes deleted files, slack space and unallocated space that a file copy would miss. Common tools are `dd`/`dc3dd`, FTK Imager and Guymager, with raw or E01 output.",
+          "prerequisites": ["for-hash-integrity", "for-order-of-volatility"],
+          "resources": [
+            { "title": "man7 — dd(1)", "url": "https://man7.org/linux/man-pages/man1/dd.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-live-vs-dead",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["forensics.acquisition"],
+          "prompt": "Live response vs dead-box (post-mortem) forensics",
+          "answer": "Live response collects evidence from a running system, capturing memory and current state. Dead-box forensics examines storage from a powered-off system, from an image.",
+          "columns": {
+            "left": { "title": "Live", "points": ["Captures memory, processes, connections", "Reaches data on encrypted disks while unlocked", "Every action alters the system", "Tools on the host may be subverted"] },
+            "right": { "title": "Dead-box", "points": ["Works from a disk image", "Repeatable: nothing changes", "No volatile data", "Useless if the disk is encrypted and the key is gone"] }
+          },
+          "explanation": "Modern practice does both: capture memory and volatile state first, then image the disk. With full-disk encryption and malware that lives only in memory, relying on dead-box analysis alone can leave you with nothing.",
+          "prerequisites": ["for-order-of-volatility"],
+          "resources": [
+            { "title": "RFC 3227 — Guidelines for evidence collection and archiving", "url": "https://www.rfc-editor.org/rfc/rfc3227", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "for-pull-the-plug",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["forensics.acquisition", "security.incident-response"],
+          "prompt": "A server is found running an attacker's process. A colleague wants to power it off immediately. What do you do instead, and why?",
+          "answer": "Isolate it from the network (pull the cable or move it to a quarantine VLAN) but leave it running, capture memory and volatile state, and only then shut down and image the disk. Powering off destroys the memory evidence.",
+          "explanation": "RAM holds the running malware, its decrypted configuration, network connections, command history and possibly encryption keys, none of which may exist on disk. Isolation stops the damage without losing them. The exception is active destruction, such as ransomware encrypting files, where stopping the harm comes first.",
+          "prerequisites": ["for-live-vs-dead"],
+          "resources": [
+            { "title": "NIST SP 800-61 Rev. 3 — Incident response recommendations", "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "for-disk",
+      "name": "Disk & Filesystem Analysis",
+      "description": "Deleted data, file signatures, timestamps and building a timeline of activity.",
+      "cards": [
+        {
+          "id": "for-deleted-files",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["forensics.disk", "filesystems"],
+          "prompt": "Why can deleted files often be recovered, and when can they not?",
+          "answer": "Deleting a file normally only removes the filesystem's reference to it and marks its blocks as free; the data stays on disk until something overwrites it. Recovery fails once the blocks are reused, or on SSDs where TRIM tells the drive to erase them soon after deletion.",
+          "explanation": "On a hard disk, deleted data can survive for months in unallocated space. On an SSD with TRIM enabled it is usually gone within minutes. Emptying the recycle bin or a quick format does not wipe data either; only overwriting or cryptographic erasure does.",
+          "prerequisites": ["os-inodes"],
+          "resources": [
+            { "title": "man7 — fstrim(8)", "url": "https://man7.org/linux/man-pages/man8/fstrim.8.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-slack-unallocated",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["forensics.disk", "filesystems"],
+          "prompt": "Unallocated space vs slack space",
+          "answer": "Unallocated space is the set of blocks not assigned to any file, which may still hold deleted files' contents. Slack space is the unused tail of the last block of an allocated file, which may still hold fragments of whatever was stored there before.",
+          "columns": {
+            "left": { "title": "Unallocated space", "points": ["Blocks belonging to no file", "Holds remains of deleted files", "Can be large: whole files recoverable", "Searched by file carving"] },
+            "right": { "title": "Slack space", "points": ["Leftover bytes inside a file's last block", "Holds fragments of older data", "Small: at most one block per file", "Invisible to normal file tools"] }
+          },
+          "explanation": "A 1 KB file on a filesystem with 4 KB blocks leaves 3 KB of slack. Neither area is copied by a normal file copy, which is one reason forensic acquisition images the whole device.",
+          "prerequisites": ["for-deleted-files"],
+          "resources": [
+            { "title": "The Sleuth Kit — open source digital forensics tools", "url": "https://www.sleuthkit.org/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "for-magic-bytes",
+          "type": "predict-output",
+          "difficulty": 2,
+          "tags": ["forensics.disk", "forensics.files"],
+          "prompt": "What does this print?",
+          "code": "MAGIC = {\n    b'MZ': 'PE executable',\n    b'\\x7fELF': 'ELF executable',\n    b'%PDF': 'PDF',\n    b'PK\\x03\\x04': 'ZIP container',\n    b'\\x89PNG': 'PNG image',\n}\n\ndef identify(header):\n    for magic, name in MAGIC.items():\n        if header.startswith(magic):\n            return name\n    return 'unknown'\n\nfor h in (b'MZ\\x90\\x00', b'\\x7fELF\\x02\\x01', b'PK\\x03\\x04\\x14\\x00', b'hello'):\n    print(identify(h))",
+          "lang": "python",
+          "answer": "PE executable\nELF executable\nZIP container\nunknown",
+          "explanation": "Most file formats begin with fixed signature bytes, so the true type can be identified from content regardless of the name or extension. An `invoice.pdf` that starts with `MZ` is a Windows executable. Office documents, APKs and JARs are all ZIP containers and share the `PK` signature.",
+          "prerequisites": ["re-pe-vs-elf"],
+          "resources": [
+            { "title": "Wikipedia — List of file signatures", "url": "https://en.wikipedia.org/wiki/List_of_file_signatures", "kind": "article" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "PE executable\nELF executable\nZIP container\nunknown" }
+        },
+        {
+          "id": "for-file-carving",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["forensics.disk", "forensics.files"],
+          "prompt": "What is file carving, and what is its main limitation?",
+          "answer": "Recovering files from raw disk data without filesystem metadata, by scanning for known file headers and footers (for example JPEG's `FF D8` … `FF D9`) and extracting what lies between. Its main limitation is fragmentation: a file stored in non-adjacent blocks is recovered corrupted or incomplete.",
+          "explanation": "Carving works when the filesystem is damaged, reformatted or the file's metadata is gone, and it is how data is pulled from unallocated space and memory dumps. Carved files lose their names, paths and timestamps. Tools include PhotoRec, Foremost, Scalpel and bulk_extractor.",
+          "prerequisites": ["for-magic-bytes", "for-slack-unallocated"],
+          "resources": [
+            { "title": "CGSecurity — PhotoRec", "url": "https://www.cgsecurity.org/wiki/PhotoRec", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "for-mac-times",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["forensics.disk", "forensics.timeline"],
+          "prompt": "What are MACB timestamps, and how can they be used to detect timestamp tampering on NTFS?",
+          "answer": "Modified (content changed), Accessed, Changed (metadata changed) and Born (created). NTFS stores two sets per file: `$STANDARD_INFORMATION`, which ordinary programs can alter, and `$FILE_NAME`, which only the kernel updates. A file whose two sets disagree implausibly has probably been timestomped.",
+          "explanation": "Attackers backdate malware so it blends in with system files. Typical giveaways are a `$STANDARD_INFORMATION` creation time earlier than the `$FILE_NAME` one, or timestamps with zeroed sub-second precision. Access times are often disabled or updated lazily, so treat them with caution.",
+          "prerequisites": ["os-inodes"],
+          "resources": [
+            { "title": "MITRE ATT&CK — T1070.006 Indicator removal: timestomp", "url": "https://attack.mitre.org/techniques/T1070/006/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-filetime",
+          "type": "predict-output",
+          "difficulty": 3,
+          "tags": ["forensics.timeline", "time"],
+          "prompt": "Windows stores many timestamps as FILETIME values. What does this print?",
+          "code": "from datetime import datetime, timedelta, timezone\n\ndef filetime_to_utc(ft):\n    epoch = datetime(1601, 1, 1, tzinfo=timezone.utc)\n    return epoch + timedelta(microseconds=ft // 10)\n\nprint(filetime_to_utc(116444736000000000).isoformat())\nprint(filetime_to_utc(133801632000000000).isoformat())",
+          "lang": "python",
+          "answer": "1970-01-01T00:00:00+00:00\n2025-01-01T00:00:00+00:00",
+          "explanation": "A FILETIME counts 100-nanosecond intervals since 1601-01-01 UTC, so dividing by 10 gives microseconds. 116444736000000000 is the offset to the Unix epoch, a constant worth recognising. Artefacts use many formats (Unix seconds, FILETIME, Chrome's microseconds since 1601), so always confirm the format and time zone.",
+          "prerequisites": ["num-unix-epoch", "time-utc-storage"],
+          "resources": [
+            { "title": "Microsoft Learn — FILETIME structure", "url": "https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime", "kind": "docs" }
+          ],
+          "verify": { "runtime": "python", "expectedOutput": "1970-01-01T00:00:00+00:00\n2025-01-01T00:00:00+00:00" }
+        },
+        {
+          "id": "for-timeline",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["forensics.timeline", "forensics.process"],
+          "prompt": "You have a disk image, event logs, browser history and firewall logs from an intrusion. How do you work out the sequence of events?",
+          "answer": "Build a timeline: extract every timestamped event from every source, convert them all to UTC, merge them into one chronological list, then start from a known event (an alert, a malicious file) and work outwards in both directions.",
+          "explanation": "A combined \"super timeline\" shows relationships no single source does: an email attachment opened, a process started, a file created and an outbound connection, seconds apart. Tools such as Plaso (log2timeline) automate the extraction. Clock drift and time-zone confusion are the usual sources of error.",
+          "prerequisites": ["for-mac-times", "for-filetime"],
+          "resources": [
+            { "title": "Plaso (log2timeline) documentation", "url": "https://plaso.readthedocs.io/en/latest/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-metadata",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["forensics.files", "privacy"],
+          "prompt": "What can file metadata reveal that the visible content does not?",
+          "answer": "Who made it, when, with what and sometimes where: photos carry EXIF data (camera model, timestamps, GPS coordinates), and documents carry author and organisation names, software versions, edit times and sometimes tracked changes or earlier content.",
+          "explanation": "Metadata has identified the authors of leaked documents and located people from a single photo. Many platforms strip it on upload, but files shared directly keep it. `exiftool` reads and removes metadata for most formats; like any data it can also be forged.",
+          "resources": [
+            { "title": "ExifTool by Phil Harvey", "url": "https://exiftool.org/", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "for-artefacts",
+      "name": "Operating System Artefacts",
+      "description": "The traces Windows and Linux keep of logons, program execution and persistence.",
+      "cards": [
+        {
+          "id": "for-windows-artefacts",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["forensics.windows", "forensics.artefacts"],
+          "prompt": "Which Windows artefacts show that a program was executed?",
+          "answer": "Prefetch files (program name, run count and last run times), Amcache and Shimcache (paths and hashes of executables seen), UserAssist registry keys (programs launched through the GUI), and Security event 4688 (process creation, if auditing is enabled).",
+          "explanation": "Each has gaps, so they are used together: Prefetch can be disabled and is off by default on servers, Shimcache does not prove execution on newer versions, and 4688 needs audit policy turned on. They often survive after the executable itself has been deleted.",
+          "prerequisites": ["for-timeline"],
+          "resources": [
+            { "title": "Microsoft Learn — Event 4688: a new process has been created", "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4688", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-event-ids",
+          "type": "cloze",
+          "difficulty": 2,
+          "tags": ["forensics.windows", "forensics.logs"],
+          "prompt": "In the Windows Security log, event ID ___ records a successful logon and 4625 records a failed one.",
+          "answer": "4624",
+          "explanation": "The logon type field says how: 2 is interactive at the console, 3 is over the network, 10 is Remote Desktop. A burst of 4625 failures followed by a 4624 success suggests password guessing that worked. Other IDs worth knowing: 4688 process creation, 4720 account created, 7045 service installed, 1102 audit log cleared.",
+          "prerequisites": ["sec-brute-force"],
+          "resources": [
+            { "title": "Microsoft Learn — Event 4624: an account was successfully logged on", "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4624", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-registry",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["forensics.windows", "forensics.artefacts"],
+          "prompt": "What is the Windows registry, and why is it valuable to an investigator?",
+          "answer": "A hierarchical database of system and per-user configuration stored in hive files (SYSTEM, SOFTWARE, SAM, and each user's NTUSER.DAT). It records installed software, autostart entries, USB devices that were connected, recently opened files, typed paths and network history, and every key has a last-written timestamp.",
+          "explanation": "The per-user hives tie activity to an account, which matters when a machine is shared. Hives are files, so they can be parsed offline from an image, and deleted keys can sometimes be recovered from unallocated space inside the hive or from transaction logs.",
+          "prerequisites": ["for-windows-artefacts"],
+          "resources": [
+            { "title": "Microsoft Learn — Registry hives", "url": "https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-hives", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-linux-artefacts",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["forensics.linux", "forensics.artefacts"],
+          "prompt": "Where do you look on a Linux system for evidence of logins and user activity?",
+          "answer": "Authentication logs (`/var/log/auth.log` or `/var/log/secure`, and the systemd journal), login records (`wtmp` read with `last`, failed attempts in `btmp` read with `lastb`), shell history files (`~/.bash_history`), and `~/.ssh/authorized_keys` and `known_hosts`.",
+          "explanation": "Shell history is easy to disable or edit, so its absence or a gap is itself a finding. Also check `/tmp`, `/dev/shm` and other world-writable directories for dropped tools, and recently modified files under `/etc`. A full picture needs the logs shipped off-host, since root can alter anything local.",
+          "prerequisites": ["linux-fhs", "ssh-key-auth"],
+          "resources": [
+            { "title": "man7 — last(1) and lastb(1)", "url": "https://man7.org/linux/man-pages/man1/last.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-persistence",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["forensics.artefacts", "security.attacks"],
+          "prompt": "You suspect an attacker left a way to regain access after a reboot. Where do you look on Windows and on Linux?",
+          "answer": "Windows: registry Run keys, scheduled tasks, services, the Startup folder and WMI event subscriptions. Linux: cron jobs, systemd units and timers, shell profile scripts, added SSH `authorized_keys` and new or modified user accounts.",
+          "explanation": "Persistence is anything that runs code automatically at boot, logon or on a schedule. Sysinternals Autoruns lists the Windows locations in one view. Compare against a known-good baseline and sort by creation time: entries created during the intrusion window stand out.",
+          "prerequisites": ["for-registry", "for-linux-artefacts", "linux-cron-timers"],
+          "resources": [
+            { "title": "MITRE ATT&CK — TA0003 Persistence", "url": "https://attack.mitre.org/tactics/TA0003/", "kind": "docs" },
+            { "title": "Microsoft Learn — Sysinternals Autoruns", "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "for-memory-network",
+      "name": "Memory, Network & Logs",
+      "description": "What RAM and network traffic reveal, how attackers cover their tracks, and reporting what you found.",
+      "cards": [
+        {
+          "id": "for-memory-forensics",
+          "type": "flip",
+          "difficulty": 3,
+          "tags": ["forensics.memory"],
+          "prompt": "What can a memory dump reveal that a disk image cannot?",
+          "answer": "The system's live state at the moment of capture: running processes and their command lines, open network connections, loaded modules, code injected into processes, decrypted data, and secrets such as passwords and encryption keys.",
+          "explanation": "Malware that never writes itself to disk, or that is packed or encrypted on disk, exists unpacked in memory. Volatility is the standard analysis framework. Capture tools include WinPmem and LiME, or a hypervisor snapshot for virtual machines.",
+          "prerequisites": ["for-live-vs-dead", "mem-virtual-memory"],
+          "resources": [
+            { "title": "Volatility 3 documentation", "url": "https://volatility3.readthedocs.io/en/latest/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-hidden-process",
+          "type": "scenario",
+          "difficulty": 4,
+          "tags": ["forensics.memory", "malware"],
+          "prompt": "In a Windows memory dump, one Volatility plugin lists a process that another does not. `pslist` misses it but `psscan` finds it. What does that suggest?",
+          "answer": "The process is hidden or has exited. `pslist` walks the kernel's linked list of active processes, which a rootkit can unlink a process from; `psscan` scans raw memory for process structures regardless of the list. A running process found only by scanning is a strong sign of a rootkit.",
+          "explanation": "Comparing different views of the same thing is a core technique: a discrepancy means something is lying. Check the process's exit time first, since terminated processes also appear only in the scan. `malfind` then looks for injected code: memory that is executable and writable but not backed by a file on disk.",
+          "prerequisites": ["for-memory-forensics"],
+          "resources": [
+            { "title": "Volatility 3 documentation", "url": "https://volatility3.readthedocs.io/en/latest/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-network-evidence",
+          "type": "compare",
+          "difficulty": 3,
+          "tags": ["forensics.network"],
+          "prompt": "Full packet capture vs flow records (NetFlow) as network evidence",
+          "answer": "Full packet capture records every byte of traffic, so content can be reconstructed. Flow records keep only a summary of each connection: who talked to whom, when, on which ports, and how much.",
+          "columns": {
+            "left": { "title": "Packet capture (pcap)", "points": ["Complete contents of every packet", "Files and sessions can be rebuilt", "Huge: kept for hours or days", "Wireshark, tcpdump, Zeek"] },
+            "right": { "title": "Flow records", "points": ["Metadata only: addresses, ports, bytes, times", "Shows patterns: beaconing, large uploads", "Small: kept for months", "Works the same on encrypted traffic"] }
+          },
+          "explanation": "Most traffic is TLS-encrypted, so even a full capture often yields metadata only unless you hold the keys. Flow data plus DNS and proxy logs are usually what answers \"how much left the network, and where did it go?\" months later.",
+          "prerequisites": ["net-debug-tools"],
+          "resources": [
+            { "title": "Wireshark User's Guide", "url": "https://www.wireshark.org/docs/wsug_html_chunked/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-log-readiness",
+          "type": "scenario",
+          "difficulty": 3,
+          "tags": ["forensics.logs", "security.incident-response"],
+          "prompt": "After a breach, the investigators find the logs on the compromised server stop two days before the attack was noticed. What should have been in place?",
+          "answer": "Logs forwarded in near real time to a central system the attacker could not reach, with enough retention to cover the time between intrusion and discovery, synchronised clocks (NTP), and an alert when a host stops sending or its log is cleared.",
+          "explanation": "An attacker with administrator rights can delete or edit anything on the host, so local logs are only trustworthy up to the moment of compromise. Clearing the Windows Security log itself generates event 1102. Intruders often go unnoticed for weeks, so short retention loses the start of the story.",
+          "prerequisites": ["as-logging", "for-event-ids"],
+          "resources": [
+            { "title": "MITRE ATT&CK — T1070 Indicator removal", "url": "https://attack.mitre.org/techniques/T1070/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-anti-forensics",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["forensics.process", "security.attacks"],
+          "prompt": "What anti-forensic techniques do attackers use, and what traces do those techniques leave?",
+          "answer": "Clearing logs, timestomping files, securely deleting tools, encrypting or hiding data, and running only in memory or through built-in system tools. Each leaves its own trace: a log-cleared event or a gap in the logs, inconsistent timestamps, wiping tools in execution artefacts, and unusual use of administrative tools.",
+          "explanation": "Hiding activity is itself activity. An investigator looks for what is missing or inconsistent as much as for what is present, and relies on evidence the attacker could not reach: central logs, network records, backups and memory.",
+          "prerequisites": ["for-mac-times", "for-log-readiness"],
+          "resources": [
+            { "title": "MITRE ATT&CK — T1070 Indicator removal", "url": "https://attack.mitre.org/techniques/T1070/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-cloud",
+          "type": "flip",
+          "difficulty": 4,
+          "tags": ["forensics.cloud", "cloud"],
+          "prompt": "How does forensics change when the compromised system is in a public cloud?",
+          "answer": "There is no physical disk to seize: you snapshot volumes and capture instance memory through the provider's APIs. The key evidence becomes the control-plane audit log (such as AWS CloudTrail), which records every API call, plus network flow logs and service logs, and these must be enabled before the incident.",
+          "explanation": "Many cloud incidents involve stolen credentials used against the provider's API with no malware on any machine, so the audit log is the crime scene. Instances are short-lived and autoscaling destroys evidence, so automate snapshot-and-isolate, and keep logs in a separate, locked-down account.",
+          "prerequisites": ["for-log-readiness", "cloud-shared-responsibility"],
+          "resources": [
+            { "title": "AWS CloudTrail user guide", "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "for-reporting",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["forensics.process"],
+          "prompt": "What makes a forensic report credible?",
+          "answer": "It separates facts from interpretation, cites the evidence for every finding, describes the method in enough detail for another examiner to reproduce the result, gives times in a stated time zone, and states its limitations and what could not be determined.",
+          "explanation": "\"The file was created at 14:02 UTC by the account svc_backup\" is a fact; \"the attacker created the file\" is an inference and should be labelled as one. Readers are often non-technical decision-makers or lawyers, so lead with a plain summary and keep the detail in appendices.",
+          "prerequisites": ["for-chain-of-custody", "for-timeline"],
+          "resources": [
+            { "title": "NIST SP 800-86 — Guide to integrating forensic techniques into incident response", "url": "https://csrc.nist.gov/pubs/sp/800/86/final", "kind": "docs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

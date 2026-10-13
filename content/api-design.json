@@ -159,7 +159,7 @@
           "difficulty": 3,
           "tags": ["api.http", "api.rest"],
           "prompt": "`PUT` vs `PATCH` (JSON Merge Patch vs JSON Patch)",
-          "answer": "PUT replaces the whole resource with the representation sent; PATCH applies a partial change. JSON Merge Patch (RFC 7386) sends a partial document, with `null` meaning delete; JSON Patch (RFC 6902) sends a list of operations (`add`, `remove`, `replace`, `test`).",
+          "answer": "PUT replaces the whole resource with the representation sent; PATCH applies a partial change. JSON Merge Patch (RFC 7396) sends a partial document, with `null` meaning delete; JSON Patch (RFC 6902) sends a list of operations (`add`, `remove`, `replace`, `test`).",
           "columns": {
             "left": { "title": "PUT", "points": ["Full replacement of the resource", "Idempotent", "Omitted fields are cleared", "Client must send everything"] },
             "right": { "title": "PATCH", "points": ["Partial update", "Not necessarily idempotent", "Merge Patch: partial JSON, null deletes", "JSON Patch: ordered ops, supports `test`"] }
@@ -167,7 +167,7 @@
           "explanation": "Merge Patch is simpler and covers most cases, but cannot set a field to null or edit single array elements. JSON Patch is precise and can include `test` for optimistic concurrency. Whichever you choose, document it — \"PATCH with a partial body\" is ambiguous otherwise.",
           "prerequisites": ["api-idempotent-methods"],
           "resources": [
-            { "title": "RFC 7386 — JSON Merge Patch", "url": "https://www.rfc-editor.org/rfc/rfc7386", "kind": "spec" }
+            { "title": "RFC 7396 — JSON Merge Patch", "url": "https://www.rfc-editor.org/rfc/rfc7396", "kind": "spec" }
           ]
         },
         {
