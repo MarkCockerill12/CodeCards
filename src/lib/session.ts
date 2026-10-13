@@ -2,7 +2,7 @@ import type { Card, ReviewState, SessionMode, TagStat } from './types';
 import { isDue, maturity } from './scheduler';
 import { readiness } from './prereq';
 import { shuffle } from './utils';
-import { WEAK_THRESHOLD } from './weakness';
+import { weakTagNames } from './weakness';
 
 export interface QueueOptions {
   cards: Card[];
@@ -41,11 +41,7 @@ export function buildQueue(opts: QueueOptions): Card[] {
     });
 
   if (mode === 'weak') {
-    const weak = new Set(
-      Object.values(tagStats)
-        .filter((t) => t.score < WEAK_THRESHOLD)
-        .map((t) => t.tag),
-    );
+    const weak = new Set(weakTagNames(tagStats));
     const targeted = cards.filter((c) => c.tags.some((t) => weak.has(t)));
     const ordered = [
       ...targeted.filter((c) => isDue(reviews[c.id], now)),
@@ -60,11 +56,7 @@ export function buildQueue(opts: QueueOptions): Card[] {
   queue.push(...fresh.slice(0, Math.min(newLimit, room)));
 
   if (queue.length < limit) {
-    const weakest = Object.values(tagStats)
-      .filter((t) => t.score < WEAK_THRESHOLD)
-      .sort((a, b) => a.score - b.score)
-      .map((t) => t.tag);
-    const weakSet = new Set(weakest);
+    const weakSet = new Set(weakTagNames(tagStats));
     const inQueue = new Set(queue.map((c) => c.id));
     const topUp = cards
       .filter((c) => !inQueue.has(c.id) && reviews[c.id] && c.tags.some((t) => weakSet.has(t)))

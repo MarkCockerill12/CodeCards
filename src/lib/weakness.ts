@@ -22,6 +22,8 @@ export const SLOW_FACTOR = 2.5;
 const ALPHA = 0.2;
 export const WEAK_THRESHOLD = 0.6;
 export const MIN_REVIEWS_FOR_WEAK = 4;
+/** Below this a tag is not "strong", however few better ones there are. */
+export const STRONG_THRESHOLD = 0.8;
 
 export function gradeValue(g: Grade, ms: number, medianMs: number | undefined): number {
   if (g === 'good' && medianMs && ms > medianMs * SLOW_FACTOR) return SLOW_GOOD_VALUE;
@@ -56,18 +58,37 @@ export function weakTags(stats: Record<string, TagStat>, limit = 6): TagStat[] {
     .slice(0, limit);
 }
 
+/** The tags a "drill weak spots" session targets — the same set the dashboard lists. */
+export function weakTagNames(stats: Record<string, TagStat>): string[] {
+  return weakTags(stats, Infinity).map((s) => s.tag);
+}
+
 export function strongTags(stats: Record<string, TagStat>, limit = 6): TagStat[] {
   return Object.values(stats)
-    .filter((s) => s.reviews >= MIN_REVIEWS_FOR_WEAK)
+    .filter((s) => s.reviews >= MIN_REVIEWS_FOR_WEAK && s.score >= STRONG_THRESHOLD)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
+
+/**
+ * The card library spells a few namespaces two ways. They are one area to the learner,
+ * so they share an axis. Display-only: stored tag stats keep their original keys.
+ */
+const NAMESPACE_ALIAS: Record<string, string> = {
+  perf: 'performance',
+  num: 'numeric',
+  k8s: 'kubernetes',
+  obs: 'observability',
+  ops: 'operations',
+  sd: 'system',
+};
 
 /** Rolls tag scores up to their namespace (`python.generators` -> `python`). */
 export function rollUp(stats: Record<string, TagStat>): TagStat[] {
   const buckets = new Map<string, { total: number; reviews: number; correct: number }>();
   for (const stat of Object.values(stats)) {
-    const key = stat.tag.split('.')[0];
+    const prefix = stat.tag.split('.')[0];
+    const key = NAMESPACE_ALIAS[prefix] ?? prefix;
     const bucket = buckets.get(key) ?? { total: 0, reviews: 0, correct: 0 };
     bucket.total += stat.score * stat.reviews;
     bucket.reviews += stat.reviews;

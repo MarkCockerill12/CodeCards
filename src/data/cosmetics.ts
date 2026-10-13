@@ -342,44 +342,80 @@ const backgrounds: Cosmetic[] = [
 /* ------------------------------------------------------------------ */
 /* Cursors — inline SVG data URIs, no asset files needed               */
 /* ------------------------------------------------------------------ */
-const svgCursor = (svg: string) =>
-  `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") 4 4, auto`;
+const svgUrl = (svg: string) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+
+/** `x y` is the hotspot — the pixel of the image that actually clicks. */
+const svgCursor = (svg: string, x = 4, y = 4) => `${svgUrl(svg)} ${x} ${y}, auto`;
+
+/** Shop preview: the cursor artwork itself, centred in the swatch box. */
+const cursorSwatch = (svg: string) =>
+  `${svgUrl(svg)} center / 44px 44px no-repeat, rgba(255,255,255,0.04)`;
+
+/** Turns a bitmap (`#` outline, `o` fill) into 2px-per-cell SVG, inset by 1px. */
+const pixelArt = (rows: string[], size: number) => {
+  const cells = (ch: string) =>
+    rows
+      .flatMap((row, y) =>
+        [...row].map((c, x) => (c === ch ? `M${1 + x * 2} ${1 + y * 2}h2v2h-2z` : '')),
+      )
+      .join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path d="${cells('#')}" fill="#000000"/><path d="${cells('o')}" fill="#ffffff"/></svg>`;
+};
+
+const PIXEL_ARROW = [
+  '#',
+  '##',
+  '#o#',
+  '#oo#',
+  '#ooo#',
+  '#oooo#',
+  '#ooooo#',
+  '#oooo###',
+  '#o#oo#',
+  '## #oo#',
+  '    ###',
+];
+
+// Colours are written as plain `#rrggbb`: svgUrl() does the escaping. A pre-escaped
+// `%23` gets escaped twice and the browser silently paints the shape black.
+const CURSOR_ART = {
+  system:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M5 3v16l4.5-4 2.8 6.2 2.6-1.2-2.8-6.1H18z" fill="#ffffff" stroke="#000000" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+  crosshair:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 3v7M12 14v7M3 12h7M14 12h7" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  pixel: pixelArt(PIXEL_ARROW, 24),
+  terminal:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="22" viewBox="0 0 16 22"><rect x="2" y="2" width="10" height="18" fill="#22c55e" opacity="0.85"/></svg>',
+  duck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><text y="22" font-size="22">🦆</text></svg>',
+  sword:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><text y="22" font-size="22">🗡️</text></svg>',
+};
 
 const cursors: Cosmetic[] = [
   c('cursor-default', 'cursor', 'System', 'Your operating system knows best.', 'common', {
     price: 0,
+    swatch: cursorSwatch(CURSOR_ART.system),
     vars: { '--app-cursor': 'auto' },
   }),
   c('cursor-crosshair', 'cursor', 'Crosshair', 'Precision targeting.', 'common', {
+    swatch: cursorSwatch(CURSOR_ART.crosshair),
     vars: { '--app-cursor': 'crosshair' },
   }),
   c('cursor-pointer-pixel', 'cursor', 'Pixel Arrow', '16-bit nostalgia.', 'rare', {
-    vars: {
-      '--app-cursor': svgCursor(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" shape-rendering="crispEdges"><path d="M4 2h2v2H4zM4 4h2v2H4zM6 4h2v2H6zM4 6h2v2H4zM6 6h2v2H6zM8 6h2v2H8zM4 8h2v2H4zM6 8h2v2H6zM8 8h2v2H8zM10 8h2v2h-2zM4 10h2v2H4zM6 10h2v2H6zM8 10h2v2H8zM10 10h2v2h-2zM12 10h2v2h-2zM4 12h2v2H4zM6 12h2v2H6zM8 12h2v2H8zM4 14h2v2H4zM6 14h2v2H6z" fill="%23ffffff" stroke="%23000000" stroke-width="0.5"/></svg>',
-      ),
-    },
+    swatch: cursorSwatch(CURSOR_ART.pixel),
+    vars: { '--app-cursor': svgCursor(CURSOR_ART.pixel, 1, 1) },
   }),
   c('cursor-terminal', 'cursor', 'Block Caret', 'A fat terminal cursor that follows you.', 'rare', {
-    vars: {
-      '--app-cursor': svgCursor(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="22"><rect x="2" y="2" width="10" height="18" fill="%2322c55e" opacity="0.85"/></svg>',
-      ),
-    },
+    swatch: cursorSwatch(CURSOR_ART.terminal),
+    vars: { '--app-cursor': svgCursor(CURSOR_ART.terminal, 7, 11) },
   }),
   c('cursor-duck', 'cursor', 'Rubber Duck', 'It will listen to your bug.', 'epic', {
-    vars: {
-      '--app-cursor': svgCursor(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text y="22" font-size="22">🦆</text></svg>',
-      ),
-    },
+    swatch: cursorSwatch(CURSOR_ART.duck),
+    vars: { '--app-cursor': svgCursor(CURSOR_ART.duck) },
   }),
   c('cursor-sword', 'cursor', 'Merge Sword', 'For resolving conflicts decisively.', 'legendary', {
-    vars: {
-      '--app-cursor': svgCursor(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text y="22" font-size="22">🗡️</text></svg>',
-      ),
-    },
+    swatch: cursorSwatch(CURSOR_ART.sword),
+    vars: { '--app-cursor': svgCursor(CURSOR_ART.sword) },
   }),
 ];
 

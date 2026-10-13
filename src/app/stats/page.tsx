@@ -51,6 +51,18 @@ export default function StatsPage() {
     };
   }, [reviews, dayStats]);
 
+  // Only reviewed cards have a review record, so "new" has to be counted from the
+  // library: cards in the selected topics that have never been graded.
+  const unseen = useMemo(
+    () =>
+      topics
+        .flatMap((t) => t.modules.flatMap((m) => m.cards))
+        .filter((c) => maturity(reviews[c.id]) === 'new').length,
+    [topics, reviews],
+  );
+  const maturityCounts = { ...totals.counts, new: totals.counts.new + unseen };
+  const maturityTotal = Math.max(1, totals.tracked + unseen);
+
   const level = levelFromXp(xp);
   const weak = weakTags(tagStats, 8);
   const strong = strongTags(tagStats, 5);
@@ -123,8 +135,8 @@ export default function StatsPage() {
             <h2 className="mb-3 text-sm font-semibold">Card maturity</h2>
             <div className="space-y-2">
               {(['new', 'learning', 'young', 'mature'] as const).map((key) => {
-                const value = totals.counts[key];
-                const total = Math.max(1, totals.tracked);
+                const value = maturityCounts[key];
+                const total = maturityTotal;
                 const colors = {
                   new: '#64748b',
                   learning: '#f59e0b',
