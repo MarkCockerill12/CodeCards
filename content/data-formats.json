@@ -7,6 +7,83 @@
   "description": "JSON, YAML, TOML and CSV and their traps, binary formats such as Protocol Buffers and Avro, row versus columnar storage, and evolving schemas safely.",
   "modules": [
     {
+      "id": "data-formats-big-picture",
+      "name": "The Big Picture",
+      "description": "What Data Formats & Serialization is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "data-formats-intro-serialization",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["formats.basics"],
+          "prompt": "What is serialization?",
+          "answer": "Turning in-memory data (objects, lists, maps) into a format that can be stored in a file or sent over a network — and deserialization is turning it back. JSON, XML, YAML, CSV and Protocol Buffers are all serialization formats.",
+          "explanation": "Every API call, config file and saved document involves serialization. The format you choose decides how readable, compact, fast and strictly typed the data is.",
+          "resources": [
+            { "title": "Wikipedia — Serialization", "url": "https://en.wikipedia.org/wiki/Serialization", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-formats-intro-json",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["formats.basics"],
+          "prompt": "What is JSON?",
+          "code": "{\n  \"name\": \"Ada\",\n  \"languages\": [\"Python\", \"C\"],\n  \"active\": true\n}",
+          "lang": "json",
+          "answer": "JavaScript Object Notation: a lightweight text format built from objects (`{\"key\": value}`), arrays (`[1, 2]`), strings, numbers, booleans and `null`. It is the standard format for web APIs.",
+          "explanation": "JSON is human-readable and every language can parse it, but it has no comments, no date type and no distinction between integers and floats. Keys must be double-quoted strings.",
+          "resources": [
+            { "title": "JSON.org — Introducing JSON", "url": "https://www.json.org/json-en.html", "kind": "spec" },
+            { "title": "MDN — Working with JSON", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/JSON", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "data-formats-intro-csv",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["formats.basics"],
+          "prompt": "What is CSV, and what is its main weakness?",
+          "answer": "Comma-separated values: one record per line, fields separated by commas, often with a header row. It is the universal format for spreadsheets and data exports.",
+          "explanation": "CSV has no formal types and no single standard for quoting, escaping or encodings, so commas inside fields, line breaks and non-ASCII text cause endless bugs. Always use a proper CSV library rather than splitting on commas.",
+          "resources": [
+            { "title": "Wikipedia — Comma-separated values", "url": "https://en.wikipedia.org/wiki/Comma-separated_values", "kind": "article" },
+            { "title": "RFC 4180 — CSV format", "url": "https://www.rfc-editor.org/rfc/rfc4180", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "data-formats-intro-text-binary",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["formats.basics"],
+          "prompt": "Text formats vs binary formats",
+          "answer": "Text formats (JSON, XML, YAML, CSV) are human-readable; binary formats (Protocol Buffers, Avro, MessagePack) are compact and fast for machines.",
+          "columns": {
+            "left": { "title": "Text", "points": ["Readable and editable by humans", "Larger and slower to parse", "Self-describing", "APIs, configs, debugging"] },
+            "right": { "title": "Binary", "points": ["Needs tools to inspect", "Compact and fast", "Usually needs a schema", "High-volume services, storage, streaming"] }
+          },
+          "explanation": "Many systems use both: JSON at the public edges where humans debug, binary formats between internal services where volume and speed matter.",
+          "resources": [
+            { "title": "Wikipedia — Binary file", "url": "https://en.wikipedia.org/wiki/Binary_file", "kind": "article" },
+            { "title": "Wikipedia — Text file", "url": "https://en.wikipedia.org/wiki/Text_file", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-formats-intro-config",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["formats.basics"],
+          "prompt": "Which formats are commonly used for configuration files?",
+          "answer": "YAML (Kubernetes, CI pipelines, Docker Compose), TOML (`pyproject.toml`, `Cargo.toml`), JSON (`package.json`, `tsconfig.json`), INI and `.env` files.",
+          "explanation": "YAML is concise but has indentation and type-guessing traps; TOML is simpler and explicit; JSON is strict but lacks comments. The format is usually dictated by the tool you are configuring.",
+          "resources": [
+            { "title": "Wikipedia — YAML", "url": "https://en.wikipedia.org/wiki/YAML", "kind": "article" },
+            { "title": "TOML", "url": "https://toml.io/en/", "kind": "spec" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "fmt-text-formats",
       "name": "Text Formats & Their Traps",
       "description": "JSON limits and big numbers, YAML gotchas, CSV quoting and formula injection, and choosing a config format.",
@@ -95,7 +172,6 @@
             "right": { "title": "YAML", "points": ["Readable, supports comments", "Anchors and references reduce repetition", "Implicit typing surprises", "Indentation errors are silent structure changes"] }
           },
           "explanation": "Whatever the format, validate configuration against a schema when loading it and fail fast. For large, generated or environment-specific configuration, a real language with types (CUE, Jsonnet, Pkl, or code) can beat piles of templated YAML.",
-          "prerequisites": ["fmt-yaml-gotchas"],
           "resources": [
             { "title": "TOML specification", "url": "https://toml.io/en/v1.0.0", "kind": "spec" }
           ]

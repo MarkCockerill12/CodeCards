@@ -7,6 +7,91 @@
   "description": "Modern PHP 8: type juggling and strict types, arrays, closures, enums and readonly classes, OOP and traits, plus secure web development with PDO, sessions, Composer and the request lifecycle.",
   "modules": [
     {
+      "id": "php-big-picture",
+      "name": "The Big Picture",
+      "description": "What PHP is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "php-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["php.basics"],
+          "prompt": "What is PHP, and what is it mainly used for?",
+          "answer": "A server-side scripting language designed for building web pages and web applications. It runs a large share of the web — WordPress is written in PHP — along with frameworks such as Laravel and Symfony and platforms such as Drupal and MediaWiki (Wikipedia).",
+          "explanation": "In the classic model each HTTP request runs a PHP script from scratch, which produces HTML (or JSON) and exits. That \"shared-nothing\" design made PHP easy to host and to scale, which is a big reason it spread so widely.",
+          "resources": [
+            { "title": "PHP Manual — Introduction", "url": "https://www.php.net/manual/en/introduction.php", "kind": "docs" },
+            { "title": "Wikipedia — PHP", "url": "https://en.wikipedia.org/wiki/PHP", "kind": "article" }
+          ]
+        },
+        {
+          "id": "php-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["php.basics"],
+          "prompt": "Where did PHP come from, and what does the name stand for?",
+          "answer": "Rasmus Lerdorf created it in 1994 as \"Personal Home Page\" tools; today PHP is a recursive acronym for \"PHP: Hypertext Preprocessor\".",
+          "explanation": "Early PHP had a reputation for inconsistency and insecure code. PHP 7 (2015) roughly doubled performance, and PHP 8 (2020) added a JIT compiler, union types, attributes and match expressions — modern PHP is a very different language from the one in old tutorials.",
+          "resources": [
+            { "title": "Wikipedia — PHP", "url": "https://en.wikipedia.org/wiki/PHP", "kind": "article" },
+            { "title": "PHP Manual — History of PHP", "url": "https://www.php.net/manual/en/history.php.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["php.basics"],
+          "prompt": "How does PHP code run?",
+          "answer": "The PHP engine (the Zend Engine) compiles a script to opcodes and executes them, usually behind a web server via PHP-FPM; OPcache keeps the compiled opcodes in memory between requests. You can also run scripts from the command line: `php script.php`.",
+          "explanation": "For local development, `php -S localhost:8000` starts a built-in web server. Because PHP is interpreted per request, deploying is traditionally just copying files to the server.",
+          "resources": [
+            { "title": "PHP Manual — Your first PHP-enabled page", "url": "https://www.php.net/manual/en/tutorial.firstpage.php", "kind": "docs" },
+            { "title": "PHP Manual — OPcache", "url": "https://www.php.net/manual/en/book.opcache.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["php.basics"],
+          "prompt": "What does a minimal PHP script look like?",
+          "code": "<?php\necho \"Hello, world!\\n\";",
+          "lang": "php",
+          "answer": "PHP code lives between `<?php` tags; anything outside them is sent to the output as-is. `echo` writes text out.",
+          "explanation": "That \"template\" origin is why PHP can be embedded directly in HTML. In a file that contains only PHP code, the closing `?>` tag is left off on purpose, so stray whitespace after it cannot leak into the output.",
+          "resources": [
+            { "title": "PHP Manual — Basic syntax", "url": "https://www.php.net/manual/en/language.basic-syntax.phptags.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["php.basics"],
+          "prompt": "What kind of language is PHP: typing and paradigms?",
+          "answer": "Dynamically typed, with optional type declarations on parameters, return values and properties that are enforced at run time (strictly with `declare(strict_types=1)`). Variables start with `$`. It supports procedural and object-oriented code (classes, interfaces, traits) and has first-class functions.",
+          "explanation": "PHP arrays are a single ordered hash map that doubles as list and dictionary. Memory is managed automatically with reference counting plus cycle collection.",
+          "resources": [
+            { "title": "PHP Manual — Type declarations", "url": "https://www.php.net/manual/en/language.types.declarations.php", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "php-intro-ecosystem",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["php.basics"],
+          "prompt": "What are Composer and Packagist?",
+          "answer": "Composer is PHP's dependency manager: `composer.json` lists the packages a project needs and `composer install` fetches them (pinned by `composer.lock`) from Packagist, the main package registry. It also generates the autoloader that loads classes on demand.",
+          "explanation": "Before Composer (2012) PHP code was shared by copying files around. Today almost every modern PHP project, including Laravel and Symfony apps, is installed with Composer.",
+          "resources": [
+            { "title": "Composer — Introduction", "url": "https://getcomposer.org/doc/00-intro.md", "kind": "docs" },
+            { "title": "Packagist", "url": "https://packagist.org/", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "php-essentials",
       "name": "Language Essentials",
       "description": "Loose versus strict comparison, strict_types, arrays as ordered maps, value semantics, null handling, match, closures and generators.",
@@ -14,7 +99,7 @@
         {
           "id": "php-comparison",
           "type": "predict-output",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["php.types", "php.gotchas"],
           "prompt": "In PHP 8, what does this print?",
           "code": "<?php\nvar_dump(0 == \"a\");\nvar_dump(\"1\" == \"01\");\nvar_dump(\"10\" == \"1e1\");\nvar_dump(null == false);\nvar_dump(0 === \"0\");",

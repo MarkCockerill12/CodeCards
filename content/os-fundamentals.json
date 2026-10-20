@@ -7,6 +7,86 @@
   "description": "Kernels, processes, scheduling, system calls, file systems and I/O — the layer everything else stands on.",
   "modules": [
     {
+      "id": "os-fundamentals-big-picture",
+      "name": "The Big Picture",
+      "description": "What Operating Systems is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "os-fundamentals-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["os.basics"],
+          "prompt": "What is an operating system, and what does it do?",
+          "answer": "The software that manages the computer's hardware and gives programs a safe, uniform way to use it. It schedules programs onto the CPU, manages memory, provides files and devices, handles networking and enforces security between users and processes.",
+          "explanation": "Windows, macOS, Linux, Android and iOS are operating systems. Without one, every program would have to drive the hardware itself — and any program could crash or spy on all the others.",
+          "resources": [
+            { "title": "Wikipedia — Operating system", "url": "https://en.wikipedia.org/wiki/Operating_system", "kind": "article" },
+            { "title": "Operating Systems: Three Easy Pieces", "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "os-fundamentals-intro-kernel",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["os.basics"],
+          "prompt": "What is the kernel?",
+          "answer": "The core of the operating system that runs with full hardware privileges (kernel mode). It manages the CPU, memory and devices; ordinary programs run in a restricted user mode and must ask the kernel for anything privileged.",
+          "explanation": "The Linux kernel is just the kernel — a full \"Linux\" system adds tools, libraries and a desktop on top, typically from GNU and a distribution such as Ubuntu or Fedora.",
+          "resources": [
+            { "title": "Wikipedia — Kernel (operating system)", "url": "https://en.wikipedia.org/wiki/Kernel_(operating_system)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-fundamentals-intro-process",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["os.basics"],
+          "prompt": "What is a process?",
+          "answer": "A running instance of a program: the code plus its own private memory, open files, and one or more threads. Opening the same program twice creates two separate processes.",
+          "explanation": "The OS isolates processes from each other, so one crashing does not take down the rest. Task Manager (Windows), Activity Monitor (macOS) and `ps`/`top` (Linux) list them.",
+          "resources": [
+            { "title": "Wikipedia — Process (computing)", "url": "https://en.wikipedia.org/wiki/Process_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-fundamentals-intro-syscall",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["os.basics"],
+          "prompt": "What is a system call?",
+          "answer": "The way a program asks the kernel to do something it cannot do itself — open a file, read from the network, start a process, allocate memory. Library functions such as `open()` or `print` end up making system calls.",
+          "explanation": "System calls are the boundary between user mode and kernel mode. Tools such as `strace` (Linux) let you watch every system call a program makes, which is a powerful debugging trick.",
+          "resources": [
+            { "title": "Wikipedia — System call", "url": "https://en.wikipedia.org/wiki/System_call", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-fundamentals-intro-filesystem",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["os.basics"],
+          "prompt": "What is a file system?",
+          "answer": "The part of the OS that organises data on storage into files and directories (folders), keeping track of names, sizes, permissions and where each file's bytes physically live.",
+          "explanation": "Common file systems: NTFS (Windows), APFS (macOS), ext4 and XFS (Linux), FAT32/exFAT (USB sticks). They differ in maximum file sizes, journaling (crash safety) and features such as snapshots.",
+          "resources": [
+            { "title": "Wikipedia — File system", "url": "https://en.wikipedia.org/wiki/File_system", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-fundamentals-intro-drivers",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["os.basics"],
+          "prompt": "What is a device driver?",
+          "answer": "Software that lets the operating system talk to a specific piece of hardware — a graphics card, Wi-Fi chip or printer — translating generic OS requests into that device's commands.",
+          "explanation": "Drivers usually run inside the kernel, so a buggy driver can crash the whole system; many \"blue screens\" on Windows are driver faults.",
+          "resources": [
+            { "title": "Wikipedia — Device driver", "url": "https://en.wikipedia.org/wiki/Device_driver", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "os-core",
       "name": "Kernel, Processes & Scheduling",
       "description": "Privilege levels, process lifecycle, context switches and how the CPU is shared.",
@@ -87,7 +167,7 @@
         {
           "id": "os-paging-swap",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["os.memory", "memory.virtual"],
           "prompt": "What is a page fault, and when is it expensive?",
           "answer": "A page fault occurs when a process touches a virtual page with no valid mapping. Minor faults are resolved from memory (page cache, copy-on-write) and are cheap; major faults require disk I/O and cost milliseconds.",
@@ -166,7 +246,6 @@
           "prompt": "What does a CPU scheduler balance, and how does Linux's scheduler decide what runs?",
           "answer": "Throughput, latency (responsiveness) and fairness. Linux long used CFS, which tracks each task's virtual runtime and runs the one that has had the least, weighted by its nice value; since 6.6 it uses EEVDF, which adds latency-aware deadlines. Real-time classes (`SCHED_FIFO`, `SCHED_RR`) preempt normal tasks.",
           "explanation": "Preemptive schedulers interrupt a running task when its time slice ends or a higher-priority task wakes, so one busy loop cannot freeze the system. `nice`/`renice` adjust relative weights; CPU pinning (`taskset`) and cgroup CPU limits shape where and how much a process may run.",
-          "prerequisites": ["os-context-switch"],
           "resources": [
             { "title": "OSTEP — Scheduling: introduction", "url": "https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf", "kind": "book" }
           ]

@@ -7,6 +7,90 @@
   "description": "Arrays, hash tables, trees, heaps, graphs and tries — how they are built, what they cost, and when to pick which.",
   "modules": [
     {
+      "id": "data-structures-big-picture",
+      "name": "The Big Picture",
+      "description": "What Data Structures is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "data-structures-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ds.basics"],
+          "prompt": "What is a data structure?",
+          "answer": "A way of organising data in memory so that the operations you need — lookup, insertion, ordering, finding neighbours — are efficient. Choosing the right one often matters more than clever code.",
+          "explanation": "Every data structure is a trade-off: a hash map makes lookups by key fast but forgets order; a sorted array makes searching fast but inserting slow. Knowing the trade-offs is the core skill.",
+          "resources": [
+            { "title": "Wikipedia — Data structure", "url": "https://en.wikipedia.org/wiki/Data_structure", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-structures-intro-array",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ds.basics"],
+          "prompt": "What is an array (or list)?",
+          "answer": "An ordered collection of elements stored one after another and accessed by index — `items[0]` is the first. Reading any index is instant, O(1); inserting in the middle is slow, O(n), because later elements must shift.",
+          "explanation": "Most languages' everyday list type (Python `list`, JavaScript `Array`, Java `ArrayList`, Go slice) is a dynamic array that grows by reallocating a bigger block. Indexes usually start at 0.",
+          "resources": [
+            { "title": "Wikipedia — Array (data structure)", "url": "https://en.wikipedia.org/wiki/Array_(data_structure)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-structures-intro-hash-map",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ds.basics"],
+          "prompt": "What is a hash map (dictionary)?",
+          "answer": "A collection of key → value pairs with very fast lookup by key — O(1) on average. A hash function turns each key into a position in an internal array.",
+          "explanation": "Called `dict` in Python, `Map`/object in JavaScript, `HashMap` in Java and `map` in Go. Use one whenever you find yourself searching a list for a matching item: counting words, caching results, indexing records by id.",
+          "resources": [
+            { "title": "Wikipedia — Hash table", "url": "https://en.wikipedia.org/wiki/Hash_table", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-structures-intro-stack-queue",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["ds.basics"],
+          "prompt": "Stack vs queue",
+          "answer": "A stack is last-in, first-out (LIFO); a queue is first-in, first-out (FIFO).",
+          "columns": {
+            "left": { "title": "Stack (LIFO)", "points": ["push adds to the top, pop removes from the top", "Like a pile of plates", "Undo history, function call stack", "Depth-first search"] },
+            "right": { "title": "Queue (FIFO)", "points": ["enqueue at the back, dequeue at the front", "Like a line at a shop", "Job queues, print queues, buffers", "Breadth-first search"] }
+          },
+          "explanation": "Both restrict how you access data, and that restriction is the point: it makes the order of processing explicit and every operation O(1).",
+          "resources": [
+            { "title": "Wikipedia — Stack (abstract data type)", "url": "https://en.wikipedia.org/wiki/Stack_(abstract_data_type)", "kind": "article" },
+            { "title": "Wikipedia — Queue (abstract data type)", "url": "https://en.wikipedia.org/wiki/Queue_(abstract_data_type)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-structures-intro-tree",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ds.basics"],
+          "prompt": "What is a tree, in data structures?",
+          "answer": "A hierarchy of nodes: one root at the top, each node having child nodes, and nodes with no children called leaves. There are no cycles, so every node has exactly one parent (except the root).",
+          "explanation": "Trees are everywhere: file systems, the HTML DOM, organisation charts, JSON documents. A binary search tree keeps values ordered so search takes O(log n) when it is balanced.",
+          "resources": [
+            { "title": "Wikipedia — Tree (abstract data type)", "url": "https://en.wikipedia.org/wiki/Tree_(abstract_data_type)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "data-structures-intro-graph",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ds.basics"],
+          "prompt": "What is a graph, in data structures?",
+          "answer": "A set of nodes (vertices) connected by edges. Edges can be directed (one-way, like following someone) or undirected (two-way, like friendship), and can carry weights (like road distances).",
+          "explanation": "Graphs model networks of any kind: social networks, road maps, web links, package dependencies. A tree is a special graph with no cycles.",
+          "resources": [
+            { "title": "Wikipedia — Graph (abstract data type)", "url": "https://en.wikipedia.org/wiki/Graph_(abstract_data_type)", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "ds-linear",
       "name": "Linear Structures",
       "description": "Arrays, lists, stacks, queues and the cache behaviour that decides real performance.",
@@ -72,7 +156,6 @@
           "answer": "O(1) average, O(n) worst case; O(n) space.",
           "complexity": { "time": "O(1) average, O(n) worst", "space": "O(n)" },
           "explanation": "The worst case needs every key in one bucket — possible with adversarial input, which is why languages randomise string hashing per process (hash-flooding DoS). Ordering is not guaranteed; use a tree map or an insertion-ordered map when it matters.",
-          "prerequisites": ["ds-hash-collision"],
           "resources": [
             { "title": "Wikipedia — Hash table", "url": "https://en.wikipedia.org/wiki/Hash_table", "kind": "article" }
           ]
@@ -273,7 +356,7 @@
           "prompt": "Pick a structure for each: (a) dedupe a million user IDs, (b) \"undo\" in an editor, (c) keep the 10 most recent log lines, (d) find all words with a prefix, (e) answer \"which users are within this price range\" repeatedly.",
           "answer": "(a) hash set, (b) stack, (c) ring buffer / bounded deque, (d) trie, (e) balanced tree or sorted array with binary search (a B-tree index in a database).",
           "explanation": "Name the operations first — lookup, ordered iteration, range queries, push/pop at which end — then pick the structure whose cheap operations match. Most performance problems in application code are a list used where a set or map belonged.",
-          "prerequisites": ["ds-trie", "ds-ring-buffer"],
+          "prerequisites": ["ds-ring-buffer"],
           "resources": [
             { "title": "Open Data Structures (free textbook)", "url": "https://opendatastructures.org/", "kind": "book" }
           ]

@@ -7,6 +7,76 @@
   "description": "The test pyramid, doubles, TDD, property-based testing and writing tests that survive refactoring.",
   "modules": [
     {
+      "id": "testing-big-picture",
+      "name": "The Big Picture",
+      "description": "What Testing is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "testing-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["testing.basics"],
+          "prompt": "What is software testing, and why automate it?",
+          "answer": "Checking that software does what it should and keeps doing so as it changes. Automated tests are code that runs the program and checks results, so the whole suite can re-run in seconds on every change.",
+          "explanation": "The main value of automated tests is confidence to change code: refactoring and adding features without fear of silently breaking what already worked.",
+          "resources": [
+            { "title": "Wikipedia — Software testing", "url": "https://en.wikipedia.org/wiki/Software_testing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "testing-intro-unit",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["testing.basics"],
+          "prompt": "What is a unit test?",
+          "code": "def add(a, b):\n    return a + b\n\ndef test_add():\n    assert add(2, 3) == 5",
+          "lang": "python",
+          "answer": "A small, fast test that checks one piece of code — usually a function or class — in isolation: given these inputs, expect this output.",
+          "explanation": "Unit tests run in milliseconds, so you can have thousands and run them constantly. Each test should check one behaviour and have a name that says what it checks.",
+          "resources": [
+            { "title": "Wikipedia — Unit testing", "url": "https://en.wikipedia.org/wiki/Unit_testing", "kind": "article" },
+            { "title": "pytest — Get started", "url": "https://docs.pytest.org/en/stable/getting-started.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "testing-intro-pyramid",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["testing.basics"],
+          "prompt": "What is the test pyramid?",
+          "answer": "A guideline for balancing test types: many fast unit tests at the base, fewer integration tests in the middle (checking components work together), and a small number of slow end-to-end tests at the top (driving the whole system like a user).",
+          "explanation": "Higher-level tests give more realistic confidence but are slower and flakier. An \"ice cream cone\" suite, mostly end-to-end tests, is slow and painful to maintain.",
+          "resources": [
+            { "title": "Martin Fowler — Test pyramid", "url": "https://martinfowler.com/bliki/TestPyramid.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "testing-intro-aaa",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["testing.basics"],
+          "prompt": "What is the Arrange–Act–Assert structure?",
+          "answer": "A simple shape for every test: arrange the inputs and setup, act by calling the code under test, assert that the result is what you expected.",
+          "explanation": "Keeping the three phases visibly separate makes tests easy to read and keeps each test focused on one behaviour.",
+          "resources": [
+            { "title": "Microsoft Learn — Unit testing best practices", "url": "https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "testing-intro-regression",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["testing.basics"],
+          "prompt": "What is a regression, and a regression test?",
+          "answer": "A regression is a bug in something that used to work, introduced by a later change. A regression test is written to catch it — typically reproducing a fixed bug so it can never quietly return.",
+          "explanation": "A good habit: when you fix a bug, first write a test that fails because of it, then fix the code so the test passes.",
+          "resources": [
+            { "title": "Wikipedia — Regression testing", "url": "https://en.wikipedia.org/wiki/Regression_testing", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "test-strategy",
       "name": "Strategy & Structure",
       "description": "What to test at which level, and what a good test looks like.",
@@ -188,7 +258,6 @@
             "right": { "title": "Explicit assertions", "points": ["Check chosen properties", "Documents intent", "Misses unexpected changes elsewhere", "Survives harmless refactors"] }
           },
           "explanation": "Snapshots are cheap to write and catch unintended changes broadly, but large snapshots get approved without reading (\"just update them\"), so they stop protecting anything. Keep snapshots small and focused, or prefer assertions on what matters. They suit serialisers, CLIs and error messages.",
-          "prerequisites": ["test-brittle"],
           "resources": [
             { "title": "Jest — Snapshot testing", "url": "https://jestjs.io/docs/snapshot-testing", "kind": "docs" }
           ]

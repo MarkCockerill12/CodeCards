@@ -3,12 +3,13 @@
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Brain, Compass, Flame, Gift, Layers, Play, Sparkles, Target } from 'lucide-react';
+import { Brain, Flame, Gift, Layers, Play, Sparkles, Target } from 'lucide-react';
 import { Button, Panel, Ring, Spinner, Stat } from '@/components/ui/primitives';
 import { ChestOpener } from '@/components/game/ChestOpener';
 import { useStore } from '@/lib/store';
 import { useLibrary } from '@/lib/useLibrary';
 import { dueCount, moduleMastery, newCount } from '@/lib/session';
+import { TIER_COLOR, TIER_NAME, currentTier, tierProgress } from '@/lib/tiers';
 import { weakTags, tagLabel } from '@/lib/weakness';
 import { COSMETIC_BY_ID } from '@/data/cosmetics';
 import { levelFromXp, titleForLevel } from '@/data/levels';
@@ -19,13 +20,13 @@ export default function Dashboard() {
   const router = useRouter();
   const hydrated = useStore((s) => s.hydrated);
   const onboarded = useStore((s) => s.onboarded);
-  const calibrated = useStore((s) => s.calibrated);
   const reviews = useStore((s) => s.reviews);
   const tagStats = useStore((s) => s.tagStats);
   const xp = useStore((s) => s.xp);
   const name = useStore((s) => s.displayName);
   const mascotId = useStore((s) => s.equipped.mascot);
   const selected = useStore((s) => s.selectedTopics);
+  const testedOut = useStore((s) => s.testedOutTiers);
 
   const { topics, cards, loading } = useLibrary();
 
@@ -40,6 +41,8 @@ export default function Dashboard() {
     const mastery = moduleMastery(cards, reviews);
     return { due, fresh, seen, mastery };
   }, [cards, reviews]);
+
+  const progress = useMemo(() => tierProgress(cards, reviews, testedOut), [cards, reviews, testedOut]);
 
   const weak = useMemo(() => weakTags(tagStats, 6), [tagStats]);
   const level = levelFromXp(xp);
@@ -64,13 +67,6 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="ml-auto flex gap-2">
-          {!calibrated ? (
-            <Link href="/study?mode=calibration">
-              <Button variant="outline">
-                <Compass className="h-4 w-4" /> Calibrate
-              </Button>
-            </Link>
-          ) : null}
           <Link href="/study?mode=review">
             <Button size="lg">
               <Play className="h-4 w-4" /> Study now
@@ -78,22 +74,6 @@ export default function Dashboard() {
           </Link>
         </div>
       </section>
-
-      {!calibrated ? (
-        <Panel className="flex flex-wrap items-center gap-4 border-sky-400/25 bg-sky-500/5">
-          <Compass className="h-6 w-6 text-sky-300" />
-          <div className="min-w-0 flex-1">
-            <div className="font-medium">Take the 15-card calibration quiz</div>
-            <p className="text-sm muted">
-              It samples every difficulty band across your topics so the scheduler starts from
-              where you actually are — no crawling through fundamentals you already own.
-            </p>
-          </div>
-          <Link href="/study?mode=calibration">
-            <Button>Start</Button>
-          </Link>
-        </Panel>
-      ) : null}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
@@ -132,6 +112,7 @@ export default function Dashboard() {
                 const topicCards = topic.modules.flatMap((m) => m.cards);
                 const due = dueCount(topicCards, reviews);
                 const mastery = moduleMastery(topicCards, reviews);
+                const tier = currentTier(progress.get(topic.id));
                 return (
                   <li key={topic.id}>
                     <Link
@@ -144,7 +125,13 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{topic.name}</div>
                         <div className="text-xs muted">
-                          {topicCards.length} cards · {pct(mastery)} mastered
+                          {tier ? (
+                            <span style={{ color: TIER_COLOR[tier.tier] }}>
+                              {TIER_NAME[tier.tier]}
+                              {tier.complete ? ' ✓' : ` ${tier.seen}/${tier.cards.length}`}
+                            </span>
+                          ) : null}{' '}
+                          · {pct(mastery)} mastered
                         </div>
                       </div>
                       {due > 0 ? (
@@ -208,7 +195,7 @@ export default function Dashboard() {
           href="/path"
           icon={<Flame className="h-4 w-4 text-orange-300" />}
           title="Follow the path"
-          hint="Module-by-module progression with checkpoints"
+          hint="Basics to Expert, tier by tier, with test-outs"
         />
         <QuickLink
           href="/shop"

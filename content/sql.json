@@ -7,6 +7,89 @@
   "description": "Joins, indexes, normalisation, transactions and the query patterns that separate fast schemas from slow ones.",
   "modules": [
     {
+      "id": "sql-big-picture",
+      "name": "The Big Picture",
+      "description": "What SQL & Relational Databases is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "sql-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sql.basics"],
+          "prompt": "What is SQL, and what is a relational database?",
+          "answer": "SQL (Structured Query Language) is the standard language for querying and changing data in relational databases. A relational database stores data in tables — rows and columns — and links tables through shared key values.",
+          "explanation": "PostgreSQL, MySQL, SQLite, SQL Server and Oracle are all relational databases that speak SQL (each with its own dialect). SQL is declarative: you describe the result you want and the database works out how to get it.",
+          "resources": [
+            { "title": "Wikipedia — SQL", "url": "https://en.wikipedia.org/wiki/SQL", "kind": "article" },
+            { "title": "PostgreSQL docs — Tutorial: the SQL language", "url": "https://www.postgresql.org/docs/current/tutorial-sql.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-intro-table",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sql.basics"],
+          "prompt": "What are tables, rows and columns?",
+          "answer": "A table holds one kind of thing (customers, orders). Each row is one record (one customer); each column is one attribute with a fixed type (name, email, created_at).",
+          "explanation": "Columns have types (`INTEGER`, `TEXT`, `TIMESTAMP`) and constraints (`NOT NULL`, `UNIQUE`) that the database enforces, so bad data is rejected at the door rather than discovered later.",
+          "resources": [
+            { "title": "Wikipedia — Table (database)", "url": "https://en.wikipedia.org/wiki/Table_(database)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-intro-select",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sql.basics"],
+          "prompt": "What does a basic `SELECT` query do?",
+          "code": "SELECT name, email\nFROM users\nWHERE active = true\nORDER BY name;",
+          "lang": "sql",
+          "answer": "It reads data: choose columns (`SELECT name, email`), the table (`FROM users`), which rows (`WHERE active = true`) and the order (`ORDER BY name`). This returns the names and emails of active users, alphabetically.",
+          "explanation": "SELECT never changes data. `SELECT *` returns every column, handy for exploring but best avoided in application code, where it breaks silently when columns change.",
+          "resources": [
+            { "title": "PostgreSQL docs — Querying a table", "url": "https://www.postgresql.org/docs/current/tutorial-select.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "sql-intro-crud",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sql.basics"],
+          "prompt": "Which SQL statements create, read, update and delete rows?",
+          "answer": "`INSERT` (create), `SELECT` (read), `UPDATE` (update) and `DELETE` (delete) — together, the CRUD operations.",
+          "explanation": "`UPDATE` and `DELETE` without a `WHERE` clause affect every row in the table, the classic disaster. Run the matching `SELECT` first, or work inside a transaction you can roll back.",
+          "resources": [
+            { "title": "Wikipedia — Create, read, update and delete", "url": "https://en.wikipedia.org/wiki/Create,_read,_update_and_delete", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-intro-keys",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sql.basics"],
+          "prompt": "What are primary keys and foreign keys?",
+          "answer": "A primary key uniquely identifies each row in a table (usually an `id`). A foreign key is a column that refers to a primary key in another table — `orders.customer_id` points at `customers.id` — and the database guarantees the referenced row exists.",
+          "explanation": "Keys are what make the data \"relational\": instead of copying a customer's details into every order, each order just stores the customer's id, and a JOIN brings the two together when needed.",
+          "resources": [
+            { "title": "Wikipedia — Primary key", "url": "https://en.wikipedia.org/wiki/Primary_key", "kind": "article" },
+            { "title": "Wikipedia — Foreign key", "url": "https://en.wikipedia.org/wiki/Foreign_key", "kind": "article" }
+          ]
+        },
+        {
+          "id": "sql-intro-join",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sql.basics"],
+          "prompt": "What does a JOIN do?",
+          "answer": "It combines rows from two tables where a condition matches — typically a foreign key equalling a primary key — so one query can return each order together with its customer's name.",
+          "explanation": "`INNER JOIN` keeps only rows with a match on both sides; `LEFT JOIN` keeps every row from the left table and fills missing matches with NULL. Most real queries join several tables.",
+          "resources": [
+            { "title": "PostgreSQL docs — Joins between tables", "url": "https://www.postgresql.org/docs/current/tutorial-join.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "sql-query",
       "name": "Querying",
       "description": "Joins, grouping, NULL semantics and the order the engine actually evaluates your query in.",
@@ -135,7 +218,6 @@
           "prompt": "What does an index cost you?",
           "answer": "Storage, and write amplification — every INSERT, UPDATE of an indexed column and DELETE must maintain every index. It can also be ignored by the planner if it is not selective enough.",
           "explanation": "A table with ten indexes writes eleven structures per insert. Drop unused indexes (`pg_stat_user_indexes` shows scans), and remember that a low-selectivity index — a boolean on a huge table — is often slower than a sequential scan.",
-          "prerequisites": ["sql-index-leftmost"],
           "resources": [
             { "title": "PostgreSQL docs — Indexes", "url": "https://www.postgresql.org/docs/current/indexes.html", "kind": "docs" }
           ]
@@ -155,7 +237,7 @@
         {
           "id": "sql-acid",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["db.transactions", "db.acid"],
           "prompt": "What does ACID stand for?",
           "answer": "Atomicity (all or nothing), Consistency (constraints hold before and after), Isolation (concurrent transactions do not see each other's intermediate state), Durability (committed data survives a crash).",
@@ -237,7 +319,6 @@
           "lang": "python",
           "answer": "('ada', 2, 120)\n('cy', 2, 95)",
           "explanation": "`GROUP BY` collapses rows into one per group; aggregates (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`) summarise each group. `WHERE` filters rows before grouping, `HAVING` filters groups after — so a condition on `SUM(amount)` must go in HAVING. Every selected column must be grouped or aggregated.",
-          "prerequisites": ["sql-logical-order"],
           "resources": [
             { "title": "PostgreSQL docs — Aggregate functions", "url": "https://www.postgresql.org/docs/current/tutorial-agg.html", "kind": "docs" }
           ],

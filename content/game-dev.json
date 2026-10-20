@@ -7,6 +7,75 @@
   "description": "Game loops, delta time, ECS, physics, Unity/Unreal/Godot fundamentals and performance discipline.",
   "modules": [
     {
+      "id": "game-dev-big-picture",
+      "name": "The Big Picture",
+      "description": "What Game Development is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "game-dev-intro-engine",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["gamedev.basics"],
+          "prompt": "What is a game engine?",
+          "answer": "A framework that provides the common machinery games need — rendering, physics, audio, input, animation, asset management and an editor — so developers focus on the game itself. Unity, Unreal Engine and Godot are the best known.",
+          "explanation": "Writing an engine from scratch teaches a lot but takes years; most commercial games use an existing engine and customise it.",
+          "resources": [
+            { "title": "Wikipedia — Game engine", "url": "https://en.wikipedia.org/wiki/Game_engine", "kind": "article" }
+          ]
+        },
+        {
+          "id": "game-dev-intro-languages",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["gamedev.basics"],
+          "prompt": "Which languages are used to make games?",
+          "answer": "C++ for engines and performance-critical games (Unreal Engine), C# for Unity games, GDScript or C# in Godot, plus Lua and other scripting languages embedded for gameplay logic. JavaScript/TypeScript targets browser games.",
+          "explanation": "Engines often split the work: a fast core in C++ and gameplay written in an easier scripting language that designers can change quickly.",
+          "resources": [
+            { "title": "Unity — Scripting", "url": "https://docs.unity3d.com/Manual/scripting.html", "kind": "docs" },
+            { "title": "Godot — Scripting languages", "url": "https://docs.godotengine.org/en/stable/getting_started/step_by_step/scripting_languages.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "game-dev-intro-loop",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["gamedev.basics"],
+          "prompt": "What is the game loop?",
+          "answer": "The endless loop at the heart of every game: read input, update the game state (movement, physics, AI), render the frame, repeat — typically 30 to 144+ times per second.",
+          "explanation": "Each pass is one frame. Everything in a game must fit within the frame budget — about 16.7 ms at 60 frames per second — or the game stutters.",
+          "resources": [
+            { "title": "Game Programming Patterns — Game loop", "url": "https://gameprogrammingpatterns.com/game-loop.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "game-dev-intro-fps",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["gamedev.basics"],
+          "prompt": "What do frame rate (FPS) and frame time mean?",
+          "answer": "Frame rate is how many frames are drawn per second; frame time is how long each one takes. 60 FPS means a budget of 16.7 ms per frame; 120 FPS means 8.3 ms.",
+          "explanation": "Consistent frame times matter more than a high average: a game averaging 60 FPS with occasional 50 ms spikes feels worse than a steady 45 FPS.",
+          "resources": [
+            { "title": "Wikipedia — Frame rate", "url": "https://en.wikipedia.org/wiki/Frame_rate", "kind": "article" }
+          ]
+        },
+        {
+          "id": "game-dev-intro-sprite-mesh",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["gamedev.basics"],
+          "prompt": "What are sprites and meshes?",
+          "answer": "A sprite is a 2D image drawn on screen (a character, an item) — the building block of 2D games. A mesh is a 3D shape made of triangles (vertices and faces), covered with textures — the building block of 3D games.",
+          "explanation": "GPUs are built to draw enormous numbers of textured triangles quickly, which is why even 2D engines often draw sprites as two triangles forming a rectangle.",
+          "resources": [
+            { "title": "Wikipedia — Sprite (computer graphics)", "url": "https://en.wikipedia.org/wiki/Sprite_(computer_graphics)", "kind": "article" },
+            { "title": "Wikipedia — Polygon mesh", "url": "https://en.wikipedia.org/wiki/Polygon_mesh", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "gd-core",
       "name": "Engine Fundamentals",
       "description": "The loop, time, and the architecture patterns games are built on.",
@@ -14,7 +83,7 @@
         {
           "id": "gd-game-loop",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["gamedev.loop", "gamedev.fundamentals"],
           "prompt": "What does a game loop do, and why is physics usually on a fixed timestep?",
           "answer": "Each frame: process input, update simulation, render. Physics runs on a fixed timestep accumulator so the simulation is deterministic and stable regardless of frame rate, with rendering interpolating between physics states.",
@@ -194,7 +263,7 @@
           "prompt": "What does a rigid-body physics engine do each step?",
           "answer": "Integrates forces into velocities and positions, detects collisions (broad then narrow phase), and resolves them by solving contact and joint constraints — applying impulses so objects bounce, slide and stack plausibly — at a fixed timestep.",
           "explanation": "Physics engines trade accuracy for speed and stability. Moving objects by setting positions directly bypasses the solver and causes tunnelling and jitter — move physics objects through forces or velocities. Keep mass ratios reasonable; very light objects on very heavy ones destabilise stacks.",
-          "prerequisites": ["gd-collision-detection", "gd-game-loop"],
+          "prerequisites": ["gd-game-loop"],
           "resources": [
             { "title": "Box2D documentation — Simulation", "url": "https://box2d.org/documentation/", "kind": "docs" }
           ]

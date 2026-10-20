@@ -7,6 +7,95 @@
   "description": "The language underneath everything else: integer rules, pointers and arrays, strings, manual memory, undefined behaviour, the preprocessor and the tools that catch mistakes.",
   "modules": [
     {
+      "id": "c-big-picture",
+      "name": "The Big Picture",
+      "description": "What C is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "c-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.basics"],
+          "prompt": "What is C, and what is it still used for today?",
+          "answer": "A small, low-level, compiled language that gives direct control over memory and hardware. It is used for operating-system kernels (Linux, Windows and macOS kernels are largely C), embedded devices and microcontrollers, drivers, databases and the runtimes of other languages (CPython is written in C).",
+          "explanation": "C sits just above assembly: it maps closely onto what the CPU actually does, which makes it fast and predictable but also easy to misuse. Its calling conventions are the \"lingua franca\" other languages use to talk to each other.",
+          "resources": [
+            { "title": "Wikipedia — C (programming language)", "url": "https://en.wikipedia.org/wiki/C_(programming_language)", "kind": "article" },
+            { "title": "cppreference — C reference", "url": "https://en.cppreference.com/w/c", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.basics"],
+          "prompt": "Who created C, and why?",
+          "answer": "Dennis Ritchie at Bell Labs, in the early 1970s, to rewrite the Unix operating system in something more portable than assembly. The 1978 book by Kernighan and Ritchie (\"K&R\") made it famous.",
+          "explanation": "C was standardised as ANSI C (C89/C90) and then ISO C99, C11, C17 and C23. Its influence is everywhere: C++, Java, C#, JavaScript, Go and many others borrow its braces-and-semicolons syntax.",
+          "resources": [
+            { "title": "Wikipedia — C (programming language)", "url": "https://en.wikipedia.org/wiki/C_(programming_language)", "kind": "article" },
+            { "title": "Wikipedia — Dennis Ritchie", "url": "https://en.wikipedia.org/wiki/Dennis_Ritchie", "kind": "article" }
+          ]
+        },
+        {
+          "id": "c-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.basics"],
+          "prompt": "How does a C program get from source code to something you can run?",
+          "answer": "A compiler such as GCC or Clang translates the `.c` source into native machine code and links it into an executable: `gcc hello.c -o hello`, then `./hello`. The result runs directly on the CPU with no interpreter or virtual machine.",
+          "explanation": "Because the output is native code, you must compile separately for each operating system and CPU architecture. Compiler warnings are your first line of defence in C — build with `-Wall -Wextra` and treat warnings as bugs.",
+          "resources": [
+            { "title": "GCC online documentation", "url": "https://gcc.gnu.org/onlinedocs/", "kind": "docs" },
+            { "title": "Wikipedia — Compiler", "url": "https://en.wikipedia.org/wiki/Compiler", "kind": "article" }
+          ]
+        },
+        {
+          "id": "c-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.basics"],
+          "prompt": "What does a minimal C program look like?",
+          "code": "#include <stdio.h>\n\nint main(void) {\n    printf(\"Hello, world!\\n\");\n    return 0;\n}",
+          "lang": "c",
+          "answer": "`#include <stdio.h>` brings in the declaration of `printf`; `main` is where execution starts, and its return value (0 = success) becomes the process exit code.",
+          "explanation": "Lines starting with `#` are handled by the preprocessor before compilation. `\\n` is a newline — `printf` does not add one for you. Unlike Python, C has no built-in print statement: everything beyond the core language comes from the standard library.",
+          "resources": [
+            { "title": "cppreference — printf", "url": "https://en.cppreference.com/w/c/io/fprintf", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["c.basics"],
+          "prompt": "What kind of language is C: typing and memory management?",
+          "answer": "Statically but weakly typed (types are checked at compile time, but casts and implicit conversions are easy). Memory is managed manually: you request heap memory with `malloc` and must give it back with `free`. It is procedural — no classes, no exceptions, no garbage collector.",
+          "explanation": "Manual memory gives total control and no hidden costs, but mistakes (using freed memory, writing past the end of an array) are undefined behaviour and the root cause of many security vulnerabilities. Newer languages such as Rust exist largely to keep C's control without those bugs.",
+          "resources": [
+            { "title": "Wikipedia — Manual memory management", "url": "https://en.wikipedia.org/wiki/Manual_memory_management", "kind": "article" },
+            { "title": "cppreference — Memory management library", "url": "https://en.cppreference.com/w/c/memory", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "c-intro-vs-cpp",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["c.basics"],
+          "prompt": "C vs C++",
+          "answer": "C is a small procedural language; C++ started as \"C with classes\" and grew into a much larger multi-paradigm language. Most C code compiles as C++, but idiomatic C++ looks very different.",
+          "columns": {
+            "left": { "title": "C", "points": ["Procedural, small language", "Manual malloc/free", "No classes, templates or exceptions", "Kernels, embedded, ABIs"] },
+            "right": { "title": "C++", "points": ["Multi-paradigm, very large language", "RAII and smart pointers", "Classes, templates, exceptions", "Games, browsers, high-performance apps"] }
+          },
+          "explanation": "Pick C when you need the simplest possible toolchain and ABI (firmware, kernels, libraries other languages call). Pick C++ when you want C-level performance with abstractions that manage resources for you.",
+          "resources": [
+            { "title": "Wikipedia — Compatibility of C and C++", "url": "https://en.wikipedia.org/wiki/Compatibility_of_C_and_C%2B%2B", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "c-core",
       "name": "Types, Operators & Control Flow",
       "description": "How C programs are built, what the integer types really guarantee, and the arithmetic rules that surprise people.",
@@ -272,7 +361,7 @@
         {
           "id": "c-gets-fgets",
           "type": "spot-bug",
-          "difficulty": 2,
+          "difficulty": 3,
           "tags": ["c.io", "security.memory-safety"],
           "prompt": "Both input lines are unsafe. Why, and what replaces them?",
           "code": "char line[64];\ngets(line);\nscanf(\"%s\", line);",

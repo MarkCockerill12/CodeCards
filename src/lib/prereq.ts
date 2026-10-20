@@ -65,25 +65,6 @@ export function remedialFor(
   return out;
 }
 
-/**
- * How ready a learner is for a card: 1 when every prerequisite is mastered, 0 when
- * none are. Cards with no prerequisites are always ready.
- *
- * Prerequisites can live in other topics. When `available` is given, only those the
- * learner can actually study right now count — otherwise a card whose foundation sits
- * in an unselected topic would be judged "not ready" forever.
- */
-export function readiness(
-  card: Card,
-  reviews: Record<string, ReviewState>,
-  available?: ReadonlySet<string>,
-): number {
-  const pres = (card.prerequisites ?? []).filter((id) => !available || available.has(id));
-  if (pres.length === 0) return 1;
-  const mastered = pres.filter((id) => isMastered(reviews[id])).length;
-  return mastered / pres.length;
-}
-
 /** Detects cycles at runtime as a safety net; `scripts/build-content.mjs` rejects them at build time. */
 export function findCycles(graph: PrereqGraph): string[][] {
   const cycles: string[][] = [];

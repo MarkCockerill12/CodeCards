@@ -7,6 +7,75 @@
   "description": "REST semantics, status codes, versioning, pagination, GraphQL, gRPC and auth flows.",
   "modules": [
     {
+      "id": "api-design-big-picture",
+      "name": "The Big Picture",
+      "description": "What API Design is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "api-design-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["api.basics"],
+          "prompt": "What is an API?",
+          "answer": "An Application Programming Interface: a defined way for one piece of software to use another — the operations it offers, the inputs they take and the outputs they return — without knowing how it works inside.",
+          "explanation": "A library's public functions are an API; so is a web service you call over HTTP. When people say \"the API\" in web development they usually mean a web API returning JSON.",
+          "resources": [
+            { "title": "Wikipedia — API", "url": "https://en.wikipedia.org/wiki/API", "kind": "article" },
+            { "title": "MDN — Introduction to web APIs", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Client-side_APIs/Introduction", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-design-intro-rest",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["api.basics"],
+          "prompt": "What is a REST API, in plain terms?",
+          "answer": "A web API organised around resources identified by URLs (`/users/42`), manipulated with standard HTTP methods (`GET` to read, `POST` to create, `PUT`/`PATCH` to update, `DELETE` to remove), usually exchanging JSON.",
+          "explanation": "REST reuses the web's existing machinery — URLs, methods, status codes, caching — so any HTTP client can use it. It is the most common style for public web APIs.",
+          "resources": [
+            { "title": "Wikipedia — REST", "url": "https://en.wikipedia.org/wiki/REST", "kind": "article" },
+            { "title": "MDN — HTTP request methods", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-design-intro-status",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["api.basics"],
+          "prompt": "What do the HTTP status code classes mean?",
+          "answer": "1xx informational, 2xx success (`200 OK`, `201 Created`), 3xx redirection (`301`, `304`), 4xx client error — the request was wrong (`400`, `401`, `403`, `404`), 5xx server error — the server failed (`500`, `503`).",
+          "explanation": "Returning the right class matters: clients retry 5xx errors but should not retry a 4xx without changing the request. Returning `200` with an error message in the body breaks every generic client and monitor.",
+          "resources": [
+            { "title": "MDN — HTTP response status codes", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "api-design-intro-endpoint",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["api.basics"],
+          "prompt": "What are an endpoint, a request and a response in a web API?",
+          "answer": "An endpoint is a URL plus method the API accepts, such as `GET /orders/7`. The request is what the client sends (method, path, headers, optional body); the response is what comes back (status code, headers, body).",
+          "explanation": "API documentation is essentially a list of endpoints with the requests they accept and responses they return. OpenAPI is the standard machine-readable format for writing that down.",
+          "resources": [
+            { "title": "OpenAPI — What is OpenAPI?", "url": "https://www.openapis.org/what-is-openapi", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "api-design-intro-auth",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["api.basics"],
+          "prompt": "How do clients usually prove who they are to an API?",
+          "answer": "By sending a credential with each request, usually in the `Authorization` header: an API key for server-to-server calls, or an access token (often a JWT obtained through OAuth) on behalf of a user.",
+          "explanation": "Credentials must only ever travel over HTTPS and should never be committed to source code. Authentication answers \"who are you?\"; authorisation answers \"what may you do?\".",
+          "resources": [
+            { "title": "MDN — HTTP authentication", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Authentication", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "api-rest",
       "name": "REST & HTTP Semantics",
       "description": "Methods, status codes, idempotency and the conventions clients actually rely on.",
@@ -204,7 +273,6 @@
           "prompt": "What does an OpenAPI description give you?",
           "answer": "A machine-readable contract for an HTTP API — paths, parameters, request and response schemas, auth — from which you can generate documentation, client SDKs, server stubs, mock servers and request validation, and diff versions to detect breaking changes in CI.",
           "explanation": "Contract-first (write the spec, then implement) forces design review before code; code-first (generate the spec from annotations) keeps it in sync effortlessly. Either way, lint it and fail the build on unintended breaking changes.",
-          "prerequisites": ["api-versioning"],
           "resources": [
             { "title": "OpenAPI Specification", "url": "https://spec.openapis.org/oas/latest.html", "kind": "spec" }
           ]
@@ -212,7 +280,7 @@
         {
           "id": "api-deprecation",
           "type": "scenario",
-          "difficulty": 3,
+          "difficulty": 4,
           "tags": ["api.lifecycle", "api.versioning"],
           "prompt": "You must retire `/v1/orders` used by hundreds of external clients. How?",
           "answer": "Announce a timeline, mark responses with the `Deprecation` and `Sunset` headers plus a link to the migration guide, measure who still calls it (per API key), contact those clients directly, and shut down only after usage has actually dropped — optionally with scheduled brownouts first.",
@@ -262,7 +330,6 @@
             "right": { "title": "OAuth token", "points": ["Identifies user + client + scopes", "Short-lived, refreshable, revocable", "More moving parts", "Standard for delegated access"] }
           },
           "explanation": "API keys suit server-to-server calls where you control both ends — store them hashed, allow several per account for rotation, scope them, and never embed them in front-end code. Use OAuth when acting on behalf of users or when third parties integrate.",
-          "prerequisites": ["api-oauth-flow"],
           "resources": [
             { "title": "OWASP — REST Security Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html", "kind": "docs" }
           ]

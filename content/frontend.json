@@ -7,6 +7,79 @@
   "description": "Component-based UI: state and rendering, effects and data fetching, state management, performance, accessibility and testing — framework-neutral, with React examples.",
   "modules": [
     {
+      "id": "frontend-big-picture",
+      "name": "The Big Picture",
+      "description": "What Front-end Engineering is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "frontend-intro-front-back",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["frontend.basics"],
+          "prompt": "Front end vs back end",
+          "answer": "The front end is everything that runs in the user's browser or app — the interface they see and touch; the back end runs on servers — business logic, databases, authentication and APIs.",
+          "columns": {
+            "left": { "title": "Front end", "points": ["Runs on the user's device", "HTML, CSS, JavaScript/TypeScript", "React, Vue, Svelte, Angular", "Cares about UX, accessibility, load speed"] },
+            "right": { "title": "Back end", "points": ["Runs on servers", "Python, Java, Go, C#, Node.js, PHP …", "Django, Spring, ASP.NET, Express", "Cares about data, security, scale"] }
+          },
+          "explanation": "A full-stack developer works on both. The two halves talk through APIs, usually HTTP with JSON.",
+          "resources": [
+            { "title": "Wikipedia — Front end and back end", "url": "https://en.wikipedia.org/wiki/Front_end_and_back_end", "kind": "article" }
+          ]
+        },
+        {
+          "id": "frontend-intro-framework",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["frontend.basics"],
+          "prompt": "What is a front-end framework, and why use one?",
+          "answer": "A library such as React, Vue, Svelte or Angular that builds the user interface from reusable components and keeps the screen in sync with the application's data automatically.",
+          "explanation": "Updating the page by hand with DOM calls gets unmanageable as an app grows. Frameworks let you describe what the UI should look like for a given state, and they work out the DOM changes.",
+          "resources": [
+            { "title": "React — Quick start", "url": "https://react.dev/learn", "kind": "docs" },
+            { "title": "Vue — Introduction", "url": "https://vuejs.org/guide/introduction.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "frontend-intro-dom",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["frontend.basics"],
+          "prompt": "What is the DOM?",
+          "answer": "The Document Object Model: the browser's live, in-memory tree of the page's elements. JavaScript reads and changes the DOM to update what the user sees.",
+          "explanation": "The HTML file is just the starting point; after JavaScript runs, the DOM can look very different. Browser developer tools' \"Elements\" panel shows the current DOM, not the original HTML.",
+          "resources": [
+            { "title": "MDN — Introduction to the DOM", "url": "https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "frontend-intro-spa",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["frontend.basics"],
+          "prompt": "What is a single-page application (SPA)?",
+          "answer": "A web app that loads one HTML page and then updates the content with JavaScript as the user navigates, fetching data from APIs instead of loading a whole new page from the server each time.",
+          "explanation": "SPAs feel app-like and fast after the first load, but the first load is heavier and pages need extra work to be indexed by search engines. Many frameworks now mix server rendering with SPA-style navigation.",
+          "resources": [
+            { "title": "Wikipedia — Single-page application", "url": "https://en.wikipedia.org/wiki/Single-page_application", "kind": "article" }
+          ]
+        },
+        {
+          "id": "frontend-intro-devtools",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["frontend.basics"],
+          "prompt": "What are browser developer tools for?",
+          "answer": "Built-in tools (F12) to inspect and live-edit the DOM and CSS, read console errors and run JavaScript, watch network requests, debug with breakpoints, and profile performance and accessibility.",
+          "explanation": "The Network and Console panels answer most \"why isn't this working?\" questions: failed requests, wrong responses and JavaScript errors all show up there first.",
+          "resources": [
+            { "title": "Chrome DevTools", "url": "https://developer.chrome.com/docs/devtools/", "kind": "docs" },
+            { "title": "Firefox DevTools User Docs", "url": "https://firefox-source-docs.mozilla.org/devtools-user/", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "fe-components",
       "name": "Components, State & Rendering",
       "description": "The component model, props versus state, immutable updates, keys, reconciliation and where state should live.",
@@ -131,7 +204,6 @@
           "prompt": "What are effects for, and what does the cleanup function do?",
           "answer": "Effects synchronise a component with something outside the framework — subscriptions, timers, WebSocket connections, imperative widgets, the document title. The cleanup function undoes the setup (unsubscribe, clear the timer, close the socket) and runs before the effect re-runs and when the component unmounts.",
           "explanation": "Effects are not for transforming data or responding to user events — do those during render or in the event handler. List every reactive value the effect uses as a dependency; React's Strict Mode deliberately runs setup and cleanup twice in development to expose missing cleanups.",
-          "prerequisites": ["fe-derived-state"],
           "resources": [
             { "title": "react.dev — Synchronizing with effects", "url": "https://react.dev/learn/synchronizing-with-effects", "kind": "docs" }
           ]

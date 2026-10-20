@@ -14,8 +14,8 @@ export const BASE_XP: Record<Grade, number> = {
 };
 
 export const SESSION_COMPLETE_XP = 40;
-export const MODULE_COMPLETE_XP = 250;
-export const MODULE_COMPLETE_COINS = 150;
+export const TIER_CLEAR_XP = 250;
+export const TIER_CLEAR_COINS = 150;
 export const CHECKPOINT_XP = 120;
 export const CHECKPOINT_COINS = 60;
 

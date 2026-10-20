@@ -7,6 +7,87 @@
   "description": "Storage engines, B-trees vs LSM, WAL, MVCC, locking and how a query planner decides what to do.",
   "modules": [
     {
+      "id": "db-internals-big-picture",
+      "name": "The Big Picture",
+      "description": "What Database Internals is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "db-internals-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["db.basics"],
+          "prompt": "What is a database management system (DBMS)?",
+          "answer": "The software that stores data durably and lets many clients query and change it safely at the same time — handling storage on disk, indexes, query planning, transactions, concurrency and crash recovery.",
+          "explanation": "PostgreSQL, MySQL and SQLite are DBMSs. \"Database internals\" is the study of how they do this; knowing it explains why some queries are fast, others slow, and why the database occasionally needs maintenance.",
+          "resources": [
+            { "title": "Wikipedia — Database", "url": "https://en.wikipedia.org/wiki/Database", "kind": "article" }
+          ]
+        },
+        {
+          "id": "db-internals-intro-index",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["db.basics"],
+          "prompt": "What is a database index?",
+          "answer": "A separate data structure (usually a B-tree) that keeps a column's values sorted with pointers to their rows, so the database can find matching rows without scanning the whole table — like the index at the back of a book.",
+          "explanation": "Indexes make reads on the indexed columns dramatically faster but cost disk space and slow down every insert and update, which must keep the index current. Index the columns you filter and join on.",
+          "resources": [
+            { "title": "Wikipedia — Database index", "url": "https://en.wikipedia.org/wiki/Database_index", "kind": "article" },
+            { "title": "Use The Index, Luke!", "url": "https://use-the-index-luke.com/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "db-internals-intro-transaction",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["db.basics"],
+          "prompt": "What is a transaction?",
+          "answer": "A group of database operations that succeed or fail as one unit. A bank transfer debits one account and credits another; a transaction guarantees you never end up with only half of it done.",
+          "explanation": "You `BEGIN` a transaction, make changes, then `COMMIT` to keep them or `ROLLBACK` to undo them all. The guarantees transactions provide are summarised as ACID.",
+          "resources": [
+            { "title": "Wikipedia — Database transaction", "url": "https://en.wikipedia.org/wiki/Database_transaction", "kind": "article" }
+          ]
+        },
+        {
+          "id": "db-internals-intro-acid",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["db.basics"],
+          "prompt": "What does ACID stand for, in one line each?",
+          "answer": "Atomicity: all of a transaction happens or none of it. Consistency: it leaves the data valid under all rules. Isolation: concurrent transactions do not see each other's half-finished work. Durability: once committed, it survives a crash.",
+          "explanation": "Durability is usually achieved with a write-ahead log (WAL): changes are recorded in a log on disk before being applied, so after a crash the database can replay or undo them.",
+          "resources": [
+            { "title": "Wikipedia — ACID", "url": "https://en.wikipedia.org/wiki/ACID", "kind": "article" }
+          ]
+        },
+        {
+          "id": "db-internals-intro-storage",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["db.basics"],
+          "prompt": "How does a database store data on disk, at a high level?",
+          "answer": "In fixed-size pages (often 4–16 KB) inside data files. Tables and indexes are made of pages, a buffer pool caches hot pages in RAM, and a log records every change for crash recovery.",
+          "explanation": "Reading one row still loads its whole page, which is why related data stored close together (and sequential scans) can be faster than many random lookups.",
+          "resources": [
+            { "title": "PostgreSQL docs — Database page layout", "url": "https://www.postgresql.org/docs/current/storage-page-layout.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "db-internals-intro-planner",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["db.basics"],
+          "prompt": "What is a query planner (optimiser)?",
+          "answer": "The database component that decides how to execute a SQL query — which indexes to use, the order to join tables, which join algorithm — by estimating the cost of alternative plans from table statistics.",
+          "explanation": "Because SQL is declarative, the same query can be run many ways and the planner picks one. `EXPLAIN` shows you the chosen plan, which is the first tool for diagnosing a slow query.",
+          "resources": [
+            { "title": "Wikipedia — Query optimization", "url": "https://en.wikipedia.org/wiki/Query_optimization", "kind": "article" },
+            { "title": "PostgreSQL docs — Using EXPLAIN", "url": "https://www.postgresql.org/docs/current/using-explain.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "dbi-storage",
       "name": "Storage & Durability",
       "description": "How rows reach disk and survive a crash.",
@@ -42,7 +123,7 @@
         {
           "id": "dbi-mvcc",
           "type": "flip",
-          "difficulty": 5,
+          "difficulty": 4,
           "tags": ["db.transactions", "db.internals"],
           "prompt": "How does MVCC let readers avoid blocking writers?",
           "answer": "Each write creates a new row version tagged with transaction IDs. A reader sees the snapshot of versions visible to its own transaction, so it never waits on a writer's lock.",
@@ -149,7 +230,7 @@
           "prompt": "How does a cost-based query planner choose a plan, and why does it sometimes choose badly?",
           "answer": "It enumerates candidate plans (scan types, join orders, join algorithms), estimates each one's cost from table statistics — row counts, value distributions, correlations — and picks the cheapest estimate. Bad choices almost always trace back to bad row-count estimates.",
           "explanation": "Stale statistics after bulk loads, correlated columns the planner assumes independent, and parameters with skewed distributions are the usual causes. Fix with `ANALYZE`, extended statistics (`CREATE STATISTICS`), or rewriting the query — before reaching for hints.",
-          "prerequisites": ["sql-explain", "dbi-join-strategies"],
+          "prerequisites": ["sql-explain"],
           "resources": [
             { "title": "PostgreSQL docs — Using EXPLAIN", "url": "https://www.postgresql.org/docs/current/using-explain.html", "kind": "docs" }
           ]

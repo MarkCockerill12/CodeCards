@@ -7,6 +7,91 @@
   "description": "Threads, locks, races, memory ordering, async models and the deadlocks that eat production systems.",
   "modules": [
     {
+      "id": "concurrency-big-picture",
+      "name": "The Big Picture",
+      "description": "What Concurrency & Parallelism is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "concurrency-intro-vs-parallelism",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["concurrency.basics"],
+          "prompt": "Concurrency vs parallelism",
+          "answer": "Concurrency is dealing with many things at once (structuring a program as tasks that can overlap); parallelism is doing many things at once (actually running them simultaneously on multiple cores).",
+          "columns": {
+            "left": { "title": "Concurrency", "points": ["About structure", "Tasks interleave, maybe on one core", "Goal: responsiveness, handling many waits", "Example: a web server juggling 10,000 connections"] },
+            "right": { "title": "Parallelism", "points": ["About execution", "Tasks truly run simultaneously", "Goal: finish heavy work faster", "Example: rendering video frames on 16 cores"] }
+          },
+          "explanation": "Rob Pike's summary: concurrency is about dealing with lots of things at once, parallelism is about doing lots of things at once. A concurrent program may or may not run in parallel.",
+          "resources": [
+            { "title": "Rob Pike — Concurrency is not parallelism", "url": "https://go.dev/blog/waza-talk", "kind": "video" },
+            { "title": "Wikipedia — Concurrency (computer science)", "url": "https://en.wikipedia.org/wiki/Concurrency_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "concurrency-intro-thread",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["concurrency.basics"],
+          "prompt": "What is a thread?",
+          "answer": "An independent path of execution inside a program. A process can have many threads; they run concurrently and share the same memory, which makes communication easy and mistakes easy too.",
+          "explanation": "Each thread has its own stack and instruction pointer but shares the heap with its siblings. The operating system schedules threads onto CPU cores, switching between them many times per second.",
+          "resources": [
+            { "title": "Wikipedia — Thread (computing)", "url": "https://en.wikipedia.org/wiki/Thread_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "concurrency-intro-race",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["concurrency.basics"],
+          "prompt": "What is a race condition?",
+          "answer": "A bug where the result depends on the unpredictable timing of concurrent operations — typically two threads reading and writing the same data without coordination, so updates get lost or corrupted.",
+          "explanation": "Classic example: two threads each run `count = count + 1`. Both read 5, both write 6, and one increment vanishes. Race conditions are hard to reproduce because they only appear with unlucky timing.",
+          "resources": [
+            { "title": "Wikipedia — Race condition", "url": "https://en.wikipedia.org/wiki/Race_condition", "kind": "article" }
+          ]
+        },
+        {
+          "id": "concurrency-intro-lock",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["concurrency.basics"],
+          "prompt": "What is a lock (mutex)?",
+          "answer": "A mutual-exclusion object that lets only one thread at a time run a critical section of code. A thread acquires the lock before touching shared data and releases it afterwards; others wait their turn.",
+          "explanation": "Locks fix race conditions but cost performance when threads queue up, and they introduce new risks such as deadlock. Always release a lock on every path, including errors — language constructs like `with`, `using` or `defer` help.",
+          "resources": [
+            { "title": "Wikipedia — Lock (computer science)", "url": "https://en.wikipedia.org/wiki/Lock_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "concurrency-intro-deadlock",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["concurrency.basics"],
+          "prompt": "What is a deadlock?",
+          "answer": "A standstill where two or more threads each wait for a resource another one holds, so none can ever continue. Thread A holds lock 1 and wants lock 2; thread B holds lock 2 and wants lock 1.",
+          "explanation": "The simplest prevention is a global lock ordering: if every thread always acquires locks in the same order, the circular wait can never form.",
+          "resources": [
+            { "title": "Wikipedia — Deadlock (computer science)", "url": "https://en.wikipedia.org/wiki/Deadlock_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "concurrency-intro-async",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["concurrency.basics"],
+          "prompt": "What is asynchronous programming?",
+          "answer": "Starting a slow operation (a network call, a file read) and carrying on with other work instead of blocking until it finishes; the result is handled when it arrives. `async`/`await` syntax lets such code read top-to-bottom like ordinary code.",
+          "explanation": "Async shines for I/O-bound work: one thread can keep thousands of requests in flight because most of the time is spent waiting. It does not make CPU-heavy computation faster — that needs parallelism.",
+          "resources": [
+            { "title": "Wikipedia — Asynchrony (computer programming)", "url": "https://en.wikipedia.org/wiki/Asynchrony_(computer_programming)", "kind": "article" },
+            { "title": "MDN — Introducing asynchronous JavaScript", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Introducing", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "conc-basics",
       "name": "Models & Primitives",
       "description": "What concurrency is, how it differs from parallelism, and the tools for coordinating work.",
@@ -113,7 +198,6 @@
           "prompt": "What is compare-and-swap, and what is the ABA problem?",
           "answer": "CAS atomically sets a location to a new value only if it currently equals an expected value, reporting success. ABA is when a value changes A→B→A between your read and your CAS, so the CAS succeeds even though the state was mutated meanwhile.",
           "explanation": "CAS underpins lock-free stacks, queues and atomic counters, usually in a retry loop. ABA is defused with versioned pointers (a counter packed alongside), hazard pointers, or epoch-based reclamation — which is the hard part of lock-free data structures.",
-          "prerequisites": ["conc-memory-visibility"],
           "resources": [
             { "title": "Wikipedia — Compare-and-swap", "url": "https://en.wikipedia.org/wiki/Compare-and-swap", "kind": "article" }
           ]
@@ -189,7 +273,6 @@
           "prompt": "Producers generate work faster than consumers can process it, and memory keeps growing. What is the fix?",
           "answer": "A bounded queue between them. When it is full, producers block (or are rejected), which is backpressure: the slow stage automatically slows the fast one instead of buffering unboundedly.",
           "explanation": "Unbounded queues only hide overload until memory runs out. Size the bound for acceptable latency, not just throughput, and decide deliberately between blocking, dropping and shedding load. Go channels, Java's `ArrayBlockingQueue` and Python's `queue.Queue(maxsize=...)` all provide this.",
-          "prerequisites": ["conc-condition-variable"],
           "resources": [
             { "title": "Wikipedia — Producer–consumer problem", "url": "https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem", "kind": "article" }
           ]

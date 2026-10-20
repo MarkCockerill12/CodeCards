@@ -6,8 +6,9 @@
  *   npx playwright install chromium   # first run only
  *   npm run e2e
  *
- * Covers: consent -> onboarding -> study session (keyboard) -> reward overlay ->
- * persistence -> shop purchase and equip -> reload -> remaining routes.
+ * Covers: consent -> onboarding -> study session (keyboard) -> tier gating (a first
+ * session only shows Basics) -> reward overlay -> persistence -> path tiers -> shop
+ * purchase and equip -> reload -> v1 state migration -> remaining routes.
  * Fails on any console error or uncaught page error.
  */
 import { chromium } from 'playwright';
@@ -38,7 +39,7 @@ await page.waitForTimeout(300);
 const picker = await page.locator('text=cards selected').first().innerText();
 step(`topic picker: ${picker.trim()}`);
 await page.getByRole('button', { name: /^Next/ }).click();
-await page.getByRole('button', { name: 'Skip calibration' }).click();
+await page.getByRole('button', { name: /Start learning/ }).click();
 await page.waitForURL(`${BASE}/`, { timeout: 10000 });
 step('onboarding completed -> dashboard');
 
@@ -87,6 +88,28 @@ const firstReview = Object.values(stored.reviews)[0];
 if (!(firstReview.due > Date.now())) throw new Error('FSRS did not schedule a future due date');
 step(`store: ${stored.xp} XP, ${Object.keys(stored.reviews).length} FSRS review records, next due scheduled`);
 
+// ---- 5b. Tier gating: a brand-new learner only meets Basics cards ----
+const tiersSeen = await page.evaluate(async (ids) => {
+  const index = await (await fetch('/content/index.json')).json();
+  const tiers = {};
+  for (const t of index.topics) {
+    const topic = await (await fetch(`/content/topics/${t.id}.json`)).json();
+    for (const m of topic.modules) for (const c of m.cards) if (ids.includes(c.id)) tiers[c.id] = c.difficulty;
+  }
+  return tiers;
+}, Object.keys(stored.reviews));
+const above = Object.entries(tiersSeen).filter(([, d]) => d !== 1);
+if (above.length) throw new Error(`first session showed non-Basics cards: ${above.map(([id]) => id).join(', ')}`);
+step(`tier gating: all ${Object.keys(tiersSeen).length} first-session cards were Basics`);
+
+// ---- 5c. Path shows the ladder: Basics current, Fundamentals locked ----
+await page.goto(`${BASE}/path/`, { waitUntil: 'networkidle' });
+await page.waitForSelector('text=you are here', { timeout: 15000 });
+if ((await page.locator('text=Unlocks when Basics is cleared').count()) < 1) {
+  throw new Error('Fundamentals is not shown as locked behind Basics');
+}
+step('path: Basics is current, Fundamentals locked behind it');
+
 // ---- 6. Stats page reflects it ----
 await page.goto(`${BASE}/stats/`, { waitUntil: 'networkidle' });
 await page.waitForSelector('text=Total XP', { timeout: 15000 });
@@ -128,6 +151,25 @@ await page.waitForSelector('text=Total XP', { timeout: 15000 });
 const afterReload = num(await page.locator('text=Total XP').locator('..').innerText());
 if (afterReload !== totalXp) throw new Error(`XP changed across reload: ${totalXp} -> ${afterReload}`);
 step(`state survives a reload (${afterReload} XP)`);
+
+// ---- 8b. A v1 save migrates: card progress resets, XP and cosmetics stay ----
+await page.evaluate(() => {
+  const raw = JSON.parse(localStorage.getItem('cc.state.v1'));
+  raw.version = 1;
+  raw.state.calibrated = true;
+  raw.state.completedModules = ['py-core'];
+  localStorage.setItem('cc.state.v1', JSON.stringify(raw));
+});
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForSelector('text=Total XP', { timeout: 15000 });
+const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem('cc.state.v1')));
+if (migrated.version !== 2) throw new Error(`expected state version 2, got ${migrated.version}`);
+if (Object.keys(migrated.state.reviews).length !== 0) throw new Error('v1 reviews survived the migration');
+if ('calibrated' in migrated.state || 'completedModules' in migrated.state) throw new Error('v1 keys survived');
+if (migrated.state.xp !== stored.xp || migrated.state.owned.length !== ownedAfter) {
+  throw new Error('migration lost XP or cosmetics');
+}
+step('v1 save migrated: card progress reset, XP and cosmetics kept');
 
 // ---- 9. Remaining routes render ----
 for (const path of ['/path/', '/library/', '/settings/']) {

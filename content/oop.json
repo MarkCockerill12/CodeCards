@@ -7,6 +7,93 @@
   "description": "Encapsulation, polymorphism, SOLID, composition over inheritance and the failure modes of each.",
   "modules": [
     {
+      "id": "oop-big-picture",
+      "name": "The Big Picture",
+      "description": "What Object-Oriented Programming is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "oop-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["oop.basics"],
+          "prompt": "What is object-oriented programming (OOP)?",
+          "answer": "A style of programming that organises code around objects — bundles of data (fields) together with the functions that operate on that data (methods) — instead of keeping data and functions separate.",
+          "explanation": "An object models a thing in the problem: a `BankAccount` holds a balance and offers `deposit` and `withdraw`. OOP became the dominant style in the 1990s through C++ and Java and remains central to Java, C#, Python, Kotlin and Swift.",
+          "resources": [
+            { "title": "Wikipedia — Object-oriented programming", "url": "https://en.wikipedia.org/wiki/Object-oriented_programming", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-intro-class-object",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["oop.basics"],
+          "prompt": "Class vs object",
+          "answer": "A class is a blueprint describing what data and behaviour its objects have; an object (instance) is one concrete thing built from that blueprint.",
+          "columns": {
+            "left": { "title": "Class", "points": ["Defined once in code", "Describes fields and methods", "Like a house blueprint", "`class Dog:`"] },
+            "right": { "title": "Object (instance)", "points": ["Created many times at run time", "Holds its own field values", "Like one particular house", "`rex = Dog(\"Rex\")`"] }
+          },
+          "explanation": "Two `Dog` objects share the same methods but each has its own `name`. Creating an object from a class is called instantiation.",
+          "resources": [
+            { "title": "Wikipedia — Class (computer programming)", "url": "https://en.wikipedia.org/wiki/Class_(computer_programming)", "kind": "article" },
+            { "title": "Wikipedia — Object (computer science)", "url": "https://en.wikipedia.org/wiki/Object_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-intro-members",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["oop.basics"],
+          "prompt": "What are fields (attributes) and methods?",
+          "answer": "Fields are the data an object holds (a `Dog`'s `name` and `age`); methods are the functions defined on the class that act on that data (`bark()`, `birthday()`).",
+          "explanation": "Inside a method, the object itself is available as `self` (Python) or `this` (Java, C#, JavaScript, C++, Kotlin), so the method can read and change that particular object's fields.",
+          "resources": [
+            { "title": "Wikipedia — Method (computer programming)", "url": "https://en.wikipedia.org/wiki/Method_(computer_programming)", "kind": "article" },
+            { "title": "Wikipedia — Field (computer science)", "url": "https://en.wikipedia.org/wiki/Field_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-intro-constructor",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["oop.basics"],
+          "prompt": "What is a constructor?",
+          "code": "class Dog:\n    def __init__(self, name):\n        self.name = name\n\nrex = Dog(\"Rex\")  # runs __init__",
+          "lang": "python",
+          "answer": "A special method that runs when an object is created, to set up its initial state — `__init__` in Python, a method named after the class in Java and C#, `constructor` in JavaScript.",
+          "explanation": "Constructors are the place to require the data an object cannot be valid without, so that no half-initialised object can ever exist.",
+          "resources": [
+            { "title": "Wikipedia — Constructor (object-oriented programming)", "url": "https://en.wikipedia.org/wiki/Constructor_(object-oriented_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-intro-interface",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["oop.basics"],
+          "prompt": "What is an interface?",
+          "answer": "A contract that lists methods a type promises to provide, without saying how. Any class implementing the interface can be used wherever the interface is expected.",
+          "explanation": "Interfaces let code depend on capabilities (\"something that can `save()`\") rather than on specific classes, which makes swapping implementations and testing much easier. Java, C#, Go, TypeScript and Kotlin all have them; Python uses protocols and abstract base classes.",
+          "resources": [
+            { "title": "Wikipedia — Interface (object-oriented programming)", "url": "https://en.wikipedia.org/wiki/Interface_(object-oriented_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "oop-intro-languages",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["oop.basics"],
+          "prompt": "Which mainstream languages are object-oriented, and which are not?",
+          "answer": "Strongly OOP: Java, C#, Kotlin, Swift, Ruby. Multi-paradigm with full OOP support: Python, C++, JavaScript/TypeScript, PHP. Not class-based: C (procedural), Go (structs and interfaces, no classes or inheritance), Rust (structs and traits), Haskell (functional).",
+          "explanation": "OOP is a tool, not a requirement: Go and Rust deliberately dropped inheritance and still model problems well with composition and interfaces/traits.",
+          "resources": [
+            { "title": "Wikipedia — Object-oriented programming", "url": "https://en.wikipedia.org/wiki/Object-oriented_programming", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "oop-pillars",
       "name": "Pillars & Principles",
       "description": "The four pillars, SOLID, and what each principle is actually protecting you from.",
@@ -214,7 +301,7 @@
           "lang": "java",
           "answer": "Interface segregation: `ReadOnlyReport` is forced to implement write methods it cannot support, so it throws. Split the fat interface into role interfaces — `Readable`, `Writable` — and let classes implement only what they can honour.",
           "explanation": "Throwing `UnsupportedOperationException` from an interface method is the tell. It also breaks Liskov substitution, since callers of `Storage.save` cannot trust it. Small interfaces defined by what the *client* needs are easier to implement, mock and evolve.",
-          "prerequisites": ["oop-solid", "oop-liskov-violation"],
+          "prerequisites": ["oop-solid"],
           "resources": [
             { "title": "Wikipedia — Interface segregation principle", "url": "https://en.wikipedia.org/wiki/Interface_segregation_principle", "kind": "article" }
           ]

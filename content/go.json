@@ -7,6 +7,92 @@
   "description": "Goroutines, channels, interfaces, error handling and the deliberate simplicity that defines the language.",
   "modules": [
     {
+      "id": "go-big-picture",
+      "name": "The Big Picture",
+      "description": "What Go is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "go-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["go.basics"],
+          "prompt": "What is Go, and what is it mainly used for?",
+          "answer": "A simple, compiled, statically typed language from Google designed for building reliable networked services. It dominates cloud infrastructure — Docker, Kubernetes, Terraform and Prometheus are written in Go — and is popular for back-end APIs and command-line tools.",
+          "explanation": "Go deliberately leaves features out (it had no generics until 2022 and still has no inheritance or exceptions) so that code stays easy to read, and so that large teams write it in a similar way.",
+          "resources": [
+            { "title": "Go — Documentation", "url": "https://go.dev/doc/", "kind": "docs" },
+            { "title": "Wikipedia — Go (programming language)", "url": "https://en.wikipedia.org/wiki/Go_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["go.basics"],
+          "prompt": "Who created Go, and what problems was it meant to solve?",
+          "answer": "Robert Griesemer, Rob Pike and Ken Thompson at Google, announced in 2009 (1.0 in 2012). They wanted fast compilation, simple dependency management and easy concurrency for large server codebases, without the complexity of C++.",
+          "explanation": "Ken Thompson co-created Unix and the B language (C's predecessor), and Rob Pike worked on Unix and Plan 9, so Go has strong roots in that tradition. Go 1 came with a compatibility promise: code written for Go 1.0 still builds today.",
+          "resources": [
+            { "title": "Go FAQ — Origins", "url": "https://go.dev/doc/faq#history", "kind": "docs" },
+            { "title": "Wikipedia — Go (programming language)", "url": "https://en.wikipedia.org/wiki/Go_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "go-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["go.basics"],
+          "prompt": "How is a Go program built and run?",
+          "answer": "The `go` tool compiles it to a single native executable: `go build` produces the binary, `go run .` builds and runs in one step. The binary is usually statically linked, so it runs on a matching OS and CPU with nothing else installed.",
+          "explanation": "Cross-compiling is a matter of setting `GOOS` and `GOARCH` (for example `GOOS=linux GOARCH=arm64 go build`). Fast compiles and dependency-free binaries are a large part of why Go took over containers and DevOps tooling.",
+          "resources": [
+            { "title": "Go — Tutorial: Get started with Go", "url": "https://go.dev/doc/tutorial/getting-started", "kind": "docs" },
+            { "title": "Go — Command go", "url": "https://pkg.go.dev/cmd/go", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["go.basics"],
+          "prompt": "What does a minimal Go program look like?",
+          "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, world!\")\n}",
+          "lang": "go",
+          "answer": "Every file starts with a `package` clause; an executable needs `package main` with a `func main()`. Imports name the packages you use — `fmt` provides formatted printing.",
+          "explanation": "Go is strict about tidiness: an unused import or unused variable is a compile error, not a warning. Capitalised names (`Println`) are exported from their package; lower-case names are private.",
+          "resources": [
+            { "title": "Go — Tutorial: Get started with Go", "url": "https://go.dev/doc/tutorial/getting-started", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["go.basics"],
+          "prompt": "What kind of language is Go: typing, memory and concurrency?",
+          "answer": "Statically typed with type inference (`x := 5`), garbage collected, and built around lightweight concurrency: goroutines (cheap threads started with `go f()`) communicating over channels. Errors are ordinary return values, not exceptions.",
+          "explanation": "Instead of classes and inheritance Go has structs, methods and interfaces that are satisfied implicitly — a type implements an interface just by having the right methods. The `if err != nil { return err }` pattern is the most recognisable Go idiom.",
+          "resources": [
+            { "title": "A Tour of Go", "url": "https://go.dev/tour/", "kind": "docs" },
+            { "title": "Effective Go", "url": "https://go.dev/doc/effective_go", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "go-intro-tooling",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["go.basics"],
+          "prompt": "What tooling comes built into Go?",
+          "answer": "The single `go` command covers building, running, testing (`go test`), formatting (`gofmt` / `go fmt`), vetting (`go vet`) and dependency management with modules (`go mod init`, `go.mod`, `go.sum`).",
+          "explanation": "Because `gofmt` is universal, all Go code is formatted the same way and style debates simply do not happen. Modules are fetched directly from their source repositories through a public proxy and checksum database.",
+          "resources": [
+            { "title": "Go Modules Reference", "url": "https://go.dev/ref/mod", "kind": "docs" },
+            { "title": "Go — Command go", "url": "https://pkg.go.dev/cmd/go", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "go-core",
       "name": "Language & Errors",
       "description": "Types, interfaces, and Go's explicit approach to failure.",
@@ -87,7 +173,7 @@
         {
           "id": "go-channels",
           "type": "compare",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["go.concurrency", "go.channels"],
           "prompt": "Unbuffered vs buffered channels",
           "answer": "An unbuffered channel synchronises sender and receiver — the send blocks until someone receives. A buffered channel accepts up to its capacity without a receiver present.",
@@ -391,7 +477,6 @@
           "lang": "go",
           "answer": "0 5\n3 5\n6 10",
           "explanation": "`make([]int, 0, 5)` creates length 0 with capacity 5. Appending within capacity reuses the backing array; exceeding it allocates a new, larger array (roughly doubling for small slices) and copies. Pre-size with `make` when you know the count to avoid repeated reallocations.",
-          "prerequisites": ["go-slice-aliasing"],
           "resources": [
             { "title": "Go blog — Arrays, slices (and strings): the mechanics of append", "url": "https://go.dev/blog/slices", "kind": "article" }
           ],

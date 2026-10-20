@@ -7,50 +7,59 @@ import type { SessionMode } from '@/lib/types';
 import { useLibrary } from '@/lib/useLibrary';
 import { useStore } from '@/lib/store';
 import { buildQueue, CHECKPOINT_SIZE } from '@/lib/session';
+import { TIER_NAME, TIERS, tierProgress, type Tier } from '@/lib/tiers';
 import { SessionRunner } from '@/components/study/SessionRunner';
 import { Button, Spinner } from '@/components/ui/primitives';
 
-const MODES: SessionMode[] = ['review', 'topic', 'module', 'weak', 'calibration', 'checkpoint'];
+const MODES: SessionMode[] = ['review', 'topic', 'tier', 'weak', 'checkpoint'];
 
 function StudyInner() {
   const params = useSearchParams();
-  const mode = (params.get('mode') ?? 'review') as SessionMode;
+  const requested = (params.get('mode') ?? 'review') as SessionMode;
   const topicParam = params.get('topic') ?? undefined;
-  const moduleParam = params.get('module') ?? undefined;
+  const tierParam = Number(params.get('tier'));
+  const tier = TIERS.includes(tierParam as Tier) ? (tierParam as Tier) : undefined;
+  // Tier sessions need a topic and a tier; anything malformed falls back to a review.
+  const mode: SessionMode =
+    !MODES.includes(requested) || ((requested === 'tier' || requested === 'checkpoint') && (!topicParam || !tier))
+      ? 'review'
+      : requested;
 
   const selected = useStore((s) => s.selectedTopics);
   const settings = useStore((s) => s.settings);
   const reviews = useStore((s) => s.reviews);
   const tagStats = useStore((s) => s.tagStats);
+  const testedOut = useStore((s) => s.testedOutTiers);
   const hydrated = useStore((s) => s.hydrated);
 
   const topicIds = topicParam ? [topicParam] : selected;
   const { topics, cards, byId, graph, loading, error } = useLibrary(topicIds);
 
-  const scope = useMemo(() => {
-    if (!moduleParam) return { cards, title: topicParam ? topics[0]?.name : 'Review session' };
-    for (const topic of topics) {
-      const mod = topic.modules.find((m) => m.id === moduleParam);
-      if (mod) return { cards: mod.cards, title: `${topic.name} · ${mod.name}`, moduleName: mod.name };
-    }
-    return { cards: [], title: 'Module' };
-  }, [cards, moduleParam, topicParam, topics]);
+  const topicNames = useMemo(() => new Map(topics.map((t) => [t.id, t.name])), [topics]);
+
+  const locked = useMemo(() => {
+    if (!hydrated || (mode !== 'tier' && mode !== 'checkpoint') || cards.length === 0) return false;
+    const tiers = tierProgress(cards, reviews, testedOut).get(topicParam ?? '');
+    return !tiers?.find((t) => t.tier === tier)?.unlocked;
+    // Lock state is judged once on entry, like the queue itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, cards, mode, tier, topicParam]);
 
   const queue = useMemo(() => {
-    if (!hydrated || scope.cards.length === 0) return [];
-    const limit =
-      mode === 'calibration' ? 15 : mode === 'checkpoint' ? CHECKPOINT_SIZE : settings.cardsPerSession;
+    if (!hydrated || cards.length === 0 || locked) return [];
     return buildQueue({
-      cards: scope.cards,
+      cards,
       reviews,
-      mode: MODES.includes(mode) ? mode : 'review',
-      limit,
+      mode,
+      limit: mode === 'checkpoint' ? CHECKPOINT_SIZE : settings.cardsPerSession,
       newLimit: settings.newPerSession,
+      testedOut,
+      tier,
       tagStats,
     });
     // Queue is intentionally built once per mount — re-shuffling mid-session would be chaos.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, scope.cards, mode, settings.cardsPerSession, settings.newPerSession]);
+  }, [hydrated, cards, mode, tier, locked, settings.cardsPerSession, settings.newPerSession]);
 
   if (error) {
     return (
@@ -74,25 +83,42 @@ function StudyInner() {
     );
   }
 
+  const topicName = topics[0]?.name ?? 'Topic';
+  const tierName = tier ? TIER_NAME[tier] : '';
+
+  if (locked) {
+    return (
+      <div className="panel flex flex-col items-center gap-4 p-10 text-center">
+        <p className="text-lg">
+          {topicName} · {tierName} is still locked.
+        </p>
+        <p className="text-sm muted">Clear or test out of the tier before it to open this one.</p>
+        <Link href={`/path?topic=${topicParam}`}>
+          <Button>Back to the path</Button>
+        </Link>
+      </div>
+    );
+  }
+
   const titles: Record<SessionMode, string> = {
     review: 'Review session',
-    topic: scope.title ?? 'Topic session',
-    module: scope.title ?? 'Module',
+    topic: topicName,
+    tier: `${topicName} · ${tierName}`,
     weak: 'Weak spots',
-    calibration: 'Calibration quiz',
-    checkpoint: `Checkpoint · ${scope.title ?? ''}`,
+    checkpoint: `Tier test · ${topicName} · ${tierName}`,
   };
 
   return (
     <SessionRunner
       queue={queue}
+      cards={cards}
       byId={byId}
       graph={graph}
-      mode={MODES.includes(mode) ? mode : 'review'}
+      mode={mode}
       topicIds={topicIds}
-      title={titles[mode] ?? 'Study'}
-      moduleId={moduleParam}
-      moduleName={scope.moduleName}
+      topicNames={topicNames}
+      title={titles[mode]}
+      tier={tier}
     />
   );
 }

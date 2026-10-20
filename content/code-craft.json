@@ -7,6 +7,76 @@
   "description": "Naming, refactoring, code review, licensing, debugging discipline and the interview skills nobody teaches.",
   "modules": [
     {
+      "id": "code-craft-big-picture",
+      "name": "The Big Picture",
+      "description": "What Code Craft & Career is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "code-craft-intro-clean",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["craft.basics"],
+          "prompt": "What makes code \"clean\" or maintainable?",
+          "answer": "It is easy for someone else (or you in six months) to read, understand and change safely: clear names, small focused functions, consistent style, no duplication of knowledge, and tests that pin down behaviour.",
+          "explanation": "Code is read far more often than it is written, so optimising for the reader pays off. \"Clever\" code that saves a line but takes a minute to understand is usually a bad trade.",
+          "resources": [
+            { "title": "Wikipedia — Code readability", "url": "https://en.wikipedia.org/wiki/Code_readability", "kind": "article" },
+            { "title": "Google — Code review developer guide", "url": "https://google.github.io/eng-practices/review/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "code-craft-intro-naming",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["craft.basics"],
+          "prompt": "What makes a good name in code?",
+          "answer": "It says what the thing is or does, in the problem's language, at a length matching its scope: `unpaid_invoices` rather than `list2`, `send_reminder()` rather than `process()`. Booleans read as questions: `is_active`, `has_access`.",
+          "explanation": "If a good name is hard to find, the code is often doing too much or the concept is unclear — the naming problem is a design signal.",
+          "resources": [
+            { "title": "Google style guides", "url": "https://google.github.io/styleguide/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "code-craft-intro-comments",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["craft.basics"],
+          "prompt": "When should you write a comment?",
+          "answer": "To explain *why* — the intent, a constraint, a non-obvious decision or a workaround — not to repeat *what* the code already says. Write clear code first; comment what the code cannot express.",
+          "explanation": "`i += 1  # increment i` adds nothing; `# The API returns pages 1-indexed` saves the next reader a debugging session. Outdated comments are worse than none, so keep them close to the code they describe.",
+          "resources": [
+            { "title": "Wikipedia — Comment (computer programming)", "url": "https://en.wikipedia.org/wiki/Comment_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "code-craft-intro-dry-kiss",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["craft.basics"],
+          "prompt": "What do DRY, KISS and YAGNI mean?",
+          "answer": "DRY — Don't Repeat Yourself: each piece of knowledge should live in one place. KISS — Keep It Simple: prefer the simplest solution that works. YAGNI — You Aren't Gonna Need It: do not build features or flexibility before they are needed.",
+          "explanation": "They pull against over-engineering. Applied blindly, DRY can backfire: merging code that only looks similar couples things that change for different reasons.",
+          "resources": [
+            { "title": "Wikipedia — Don't repeat yourself", "url": "https://en.wikipedia.org/wiki/Don%27t_repeat_yourself", "kind": "article" },
+            { "title": "Wikipedia — KISS principle", "url": "https://en.wikipedia.org/wiki/KISS_principle", "kind": "article" },
+            { "title": "Wikipedia — You aren't gonna need it", "url": "https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it", "kind": "article" }
+          ]
+        },
+        {
+          "id": "code-craft-intro-review",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["craft.basics"],
+          "prompt": "What is code review for?",
+          "answer": "A teammate reading a change before it merges, to catch bugs and design problems, keep the codebase consistent, and spread knowledge so more than one person understands every part.",
+          "explanation": "Good reviews focus on correctness, design and clarity; formatting and style are better left to automated tools so humans can concentrate on what tools cannot judge.",
+          "resources": [
+            { "title": "Google — How to do a code review", "url": "https://google.github.io/eng-practices/review/reviewer/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "craft-code",
       "name": "Writing Code People Can Read",
       "description": "Naming, structure, refactoring and error handling.",
@@ -40,7 +110,7 @@
         {
           "id": "craft-refactoring",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["craft.refactoring"],
           "prompt": "What is refactoring, strictly, and what makes it safe?",
           "answer": "Changing the internal structure of code without changing its observable behaviour. It is safe when tests cover that behaviour and each step is small enough to verify — otherwise it is a rewrite wearing a disguise.",
@@ -238,7 +308,6 @@
           "prompt": "What should automated formatting, linting and type checking take off a team's plate?",
           "answer": "Formatters (Prettier, Black/ruff format, gofmt, rustfmt) end style debates; linters (ESLint/oxlint, ruff, clippy, golangci-lint) catch bug patterns and unsafe constructs; type checkers (tsc, mypy/pyright) catch type errors before runtime. All run in the editor for instant feedback and in CI as a gate.",
           "explanation": "Anything a machine can check should never appear in code review. Adopt rules gradually on legacy code (baseline existing violations) and treat new warnings as errors, so the codebase only gets better.",
-          "prerequisites": ["craft-review-giving"],
           "resources": [
             { "title": "Ruff documentation", "url": "https://docs.astral.sh/ruff/", "kind": "docs" }
           ]
@@ -246,7 +315,7 @@
         {
           "id": "craft-boy-scout",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["craft.maintenance"],
           "prompt": "What is the boy-scout rule, and how do you apply it without derailing a change?",
           "answer": "\"Leave the code better than you found it\": when you touch code, make small improvements nearby — rename an unclear variable, extract a confusing block, add a missing test. Continuous small clean-ups stop decay without big rewrites.",
@@ -288,7 +357,6 @@
             "right": { "title": "Mob programming", "points": ["Whole team, one task", "Driver rotates every few minutes", "Decisions made once, together", "Good for complex, cross-cutting work"] }
           },
           "explanation": "Both trade raw parallelism for fewer defects, shared knowledge and no review queue. Use them for hard problems, onboarding and risky changes rather than all day. Remote tools make both practical; rotate roles frequently so nobody just watches.",
-          "prerequisites": ["craft-review-giving"],
           "resources": [
             { "title": "Martin Fowler — On pair programming", "url": "https://martinfowler.com/articles/on-pair-programming.html", "kind": "article" }
           ]

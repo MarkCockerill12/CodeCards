@@ -7,6 +7,95 @@
   "description": "Stack vs heap, virtual memory, caches, allocation, garbage collection and the bugs that come from getting them wrong.",
   "modules": [
     {
+      "id": "memory-big-picture",
+      "name": "The Big Picture",
+      "description": "What Memory Fundamentals is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "memory-intro-ram-storage",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["memory.basics"],
+          "prompt": "RAM (memory) vs storage (disk)",
+          "answer": "RAM holds the data running programs are using right now — fast but volatile; storage (SSD or hard drive) keeps files permanently — larger and much slower.",
+          "columns": {
+            "left": { "title": "RAM", "points": ["Volatile: wiped on power-off", "Nanoseconds to access", "Typically gigabytes", "Running programs' working data"] },
+            "right": { "title": "Storage (SSD/HDD)", "points": ["Persistent", "Microseconds (SSD) to milliseconds (HDD)", "Typically hundreds of gigabytes to terabytes", "Files, databases, installed programs"] }
+          },
+          "explanation": "Opening a program copies it from storage into RAM. When RAM runs out, the OS can push some of it to disk (\"swap\"), which is why an overloaded machine suddenly becomes very slow.",
+          "resources": [
+            { "title": "Wikipedia — Random-access memory", "url": "https://en.wikipedia.org/wiki/Random-access_memory", "kind": "article" },
+            { "title": "Wikipedia — Computer data storage", "url": "https://en.wikipedia.org/wiki/Computer_data_storage", "kind": "article" }
+          ]
+        },
+        {
+          "id": "memory-intro-stack-heap",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["memory.basics"],
+          "prompt": "The stack vs the heap",
+          "answer": "The stack holds function call frames and local variables, managed automatically as functions are called and return; the heap holds data whose size or lifetime is not known in advance, allocated on request.",
+          "columns": {
+            "left": { "title": "Stack", "points": ["Automatic, freed when the function returns", "Very fast allocation", "Small and fixed-size", "Too deep recursion → stack overflow"] },
+            "right": { "title": "Heap", "points": ["Freed manually or by a garbage collector", "Slower allocation", "Large, grows as needed", "Forgotten allocations → memory leaks"] }
+          },
+          "explanation": "In Java, Python or JavaScript most objects live on the heap and the runtime cleans them up; in C you call `malloc` and `free` yourself; Rust and C++ free heap memory automatically when its owner goes out of scope.",
+          "resources": [
+            { "title": "Wikipedia — Stack-based memory allocation", "url": "https://en.wikipedia.org/wiki/Stack-based_memory_allocation", "kind": "article" },
+            { "title": "Wikipedia — Memory management", "url": "https://en.wikipedia.org/wiki/Memory_management", "kind": "article" }
+          ]
+        },
+        {
+          "id": "memory-intro-address",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["memory.basics"],
+          "prompt": "What is a memory address?",
+          "answer": "A number that identifies a location in memory, much like a house number on a street. Every variable and object lives at some address; a pointer or reference is a value that holds one.",
+          "explanation": "Addresses are usually shown in hexadecimal (`0x7ffd5e8c`). Python and Java hide raw addresses behind references; C and C++ let you work with them directly, which is powerful and error-prone.",
+          "resources": [
+            { "title": "Wikipedia — Memory address", "url": "https://en.wikipedia.org/wiki/Memory_address", "kind": "article" }
+          ]
+        },
+        {
+          "id": "memory-intro-gc",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["memory.basics"],
+          "prompt": "What is garbage collection?",
+          "answer": "Automatic memory management: the runtime finds objects the program can no longer reach and frees their memory, so programmers never call `free` themselves.",
+          "explanation": "Java, C#, Go, Python and JavaScript are garbage collected. It removes whole categories of bugs (use-after-free, double free) at the cost of extra CPU and memory and, in some designs, brief pauses.",
+          "resources": [
+            { "title": "Wikipedia — Garbage collection (computer science)", "url": "https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "memory-intro-leak",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["memory.basics"],
+          "prompt": "What is a memory leak?",
+          "answer": "Memory a program allocated and no longer needs but never releases, so its memory use keeps growing until it slows down or crashes.",
+          "explanation": "In C it is a missing `free`. Garbage-collected languages leak too, when something still references data you are done with — an ever-growing cache, a global list, an event listener never removed.",
+          "resources": [
+            { "title": "Wikipedia — Memory leak", "url": "https://en.wikipedia.org/wiki/Memory_leak", "kind": "article" }
+          ]
+        },
+        {
+          "id": "memory-intro-hierarchy",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["memory.basics"],
+          "prompt": "What is the memory hierarchy?",
+          "answer": "The layers of storage from fastest and smallest to slowest and largest: CPU registers → L1/L2/L3 caches → RAM → SSD → hard disk/network. Each step down is roughly 10–1,000× slower and much larger.",
+          "explanation": "Programs run fast when the data they need is already in the upper layers. That is why accessing memory sequentially (which caches love) can be many times faster than jumping around randomly, even with the same Big-O.",
+          "resources": [
+            { "title": "Wikipedia — Memory hierarchy", "url": "https://en.wikipedia.org/wiki/Memory_hierarchy", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "mem-model",
       "name": "The Memory Model",
       "description": "How a process sees memory, and what the hardware and OS are really doing underneath.",
@@ -30,7 +119,7 @@
         {
           "id": "mem-virtual-memory",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["memory.virtual", "os.memory"],
           "prompt": "What does virtual memory give you, and how does address translation work?",
           "answer": "Each process gets its own address space, isolated from others. The MMU translates virtual pages to physical frames via page tables, cached in the TLB; a missing page triggers a page fault the OS resolves.",
@@ -256,7 +345,7 @@
             "right": { "title": "Ownership", "points": ["Compiler tracks one owner per value", "Freed deterministically at scope end", "No GC, no use-after-free in safe code", "Borrow checker learning curve"] }
           },
           "explanation": "Each moves the cost somewhere: to bugs (manual), to runtime and memory (GC), or to learning and compile-time friction (ownership). Modern C++ with RAII and smart pointers sits between manual and ownership, but without compile-time guarantees.",
-          "prerequisites": ["mem-gc-strategies", "rs-ownership-rules"],
+          "prerequisites": ["rs-ownership-rules"],
           "resources": [
             { "title": "The Rust Book — What is ownership?", "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html", "kind": "article" }
           ]

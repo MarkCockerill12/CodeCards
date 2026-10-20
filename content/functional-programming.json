@@ -7,6 +7,93 @@
   "description": "Pure functions, immutability, higher-order functions, composition, recursion, algebraic data types, Option and Result chaining, laziness and functional architecture.",
   "modules": [
     {
+      "id": "functional-programming-big-picture",
+      "name": "The Big Picture",
+      "description": "What Functional Programming is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "functional-programming-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["fp.basics"],
+          "prompt": "What is functional programming?",
+          "answer": "A style of programming that builds software by combining functions, treating data as immutable and avoiding shared mutable state and side effects. You describe transformations of data rather than step-by-step changes to it.",
+          "explanation": "Some languages are designed around it (Haskell, Elixir, Clojure, F#), but its ideas — pure functions, `map`/`filter`, immutable values — are now mainstream in JavaScript, Python, Java, C#, Kotlin and Rust.",
+          "resources": [
+            { "title": "Wikipedia — Functional programming", "url": "https://en.wikipedia.org/wiki/Functional_programming", "kind": "article" }
+          ]
+        },
+        {
+          "id": "functional-programming-intro-first-class",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["fp.basics"],
+          "prompt": "What does it mean that functions are \"first-class\"?",
+          "answer": "Functions are values like any other: you can store them in variables, pass them as arguments, return them from other functions and put them in data structures.",
+          "explanation": "This is what makes callbacks, event handlers and `sorted(items, key=len)` possible. Languages without first-class functions need extra machinery (such as one-method interfaces) to achieve the same effect.",
+          "resources": [
+            { "title": "Wikipedia — First-class function", "url": "https://en.wikipedia.org/wiki/First-class_function", "kind": "article" }
+          ]
+        },
+        {
+          "id": "functional-programming-intro-higher-order",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["fp.basics"],
+          "prompt": "What is a higher-order function?",
+          "answer": "A function that takes another function as an argument or returns one. `map`, `filter` and `sort` with a key function are the everyday examples.",
+          "explanation": "Higher-order functions let you separate *what* to do to each item from *how* to loop over the items, so the looping logic is written once and reused.",
+          "resources": [
+            { "title": "Wikipedia — Higher-order function", "url": "https://en.wikipedia.org/wiki/Higher-order_function", "kind": "article" }
+          ]
+        },
+        {
+          "id": "functional-programming-intro-map-filter-reduce",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["fp.basics"],
+          "prompt": "What do `map`, `filter` and `reduce` do?",
+          "code": "const total = [1, 2, 3, 4]\n  .filter((n) => n % 2 === 0) // [2, 4]\n  .map((n) => n * n)          // [4, 16]\n  .reduce((sum, n) => sum + n, 0); // 20",
+          "lang": "javascript",
+          "answer": "`map` transforms every element; `filter` keeps the elements that pass a test; `reduce` combines all elements into a single value. Here the result is the sum of the squares of the even numbers: 4 + 16 = 20.",
+          "explanation": "Together they replace most hand-written loops with a declarative pipeline. Each returns a new collection (or value) and leaves the original untouched.",
+          "resources": [
+            { "title": "MDN — Array.prototype.map()", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map", "kind": "docs" },
+            { "title": "MDN — Array.prototype.reduce()", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "functional-programming-intro-immutability",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["fp.basics"],
+          "prompt": "What is immutability, and why does functional programming favour it?",
+          "answer": "An immutable value can never change after it is created; \"modifying\" it produces a new value instead. Code that never mutates shared data cannot be surprised by someone else changing it.",
+          "explanation": "Immutability makes code easier to reason about and safe to share between threads, at the cost of creating more objects. Strings are immutable in most languages already; tuples, records and frozen collections extend the idea.",
+          "resources": [
+            { "title": "Wikipedia — Immutable object", "url": "https://en.wikipedia.org/wiki/Immutable_object", "kind": "article" }
+          ]
+        },
+        {
+          "id": "functional-programming-intro-declarative",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["fp.basics"],
+          "prompt": "Imperative vs declarative style",
+          "answer": "Imperative code spells out how to do something step by step, changing state; declarative code states what result you want and leaves the how to the language or library.",
+          "columns": {
+            "left": { "title": "Imperative", "points": ["Loops, counters, mutation", "\"Add each even number to total\"", "Control flow explicit", "C, classic Java loops"] },
+            "right": { "title": "Declarative", "points": ["Expressions, transformations", "\"Total of the even numbers\"", "Control flow hidden", "SQL, HTML, map/filter pipelines"] }
+          },
+          "explanation": "Functional programming leans declarative. SQL is the most widely used declarative language: you describe the rows you want and the database chooses how to fetch them.",
+          "resources": [
+            { "title": "Wikipedia — Declarative programming", "url": "https://en.wikipedia.org/wiki/Declarative_programming", "kind": "article" },
+            { "title": "Wikipedia — Imperative programming", "url": "https://en.wikipedia.org/wiki/Imperative_programming", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "fp-core",
       "name": "Functional Foundations",
       "description": "Purity and side effects, immutability, higher-order functions, currying, composition, recursion and declarative style.",

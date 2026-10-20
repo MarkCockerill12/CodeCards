@@ -9,7 +9,7 @@ import { titleForLevel } from '@/data/levels';
 import { play } from '@/lib/sound';
 import { formatNumber } from '@/lib/economy';
 
-/** Full-screen celebration for level-ups, module completions and checkpoint passes. */
+/** Full-screen celebration for level-ups, tier clears and tier tests passed. */
 export function RewardOverlay() {
   const event = useStore((s) => s.rewardQueue[0]);
   const shiftReward = useStore((s) => s.shiftReward);
@@ -54,17 +54,18 @@ export function RewardOverlay() {
                 <div className="mt-1 text-5xl font-bold">{event.level}</div>
                 <div className="mt-1 text-sm text-sky-300">{titleForLevel(event.level ?? 1)}</div>
               </>
-            ) : event.kind === 'module' ? (
+            ) : event.kind === 'tier' ? (
               <>
                 <Sparkles className="mx-auto h-10 w-10 text-violet-300" />
-                <div className="mt-3 text-xs uppercase tracking-[0.2em] muted">Module complete</div>
-                <div className="mt-1 text-2xl font-semibold">{event.moduleName}</div>
+                <div className="mt-3 text-xs uppercase tracking-[0.2em] muted">Tier cleared</div>
+                <div className="mt-1 text-2xl font-semibold">{event.label}</div>
+                <div className="mt-1 text-sm text-sky-300">The next tier is open</div>
               </>
             ) : (
               <>
                 <Flag className="mx-auto h-10 w-10 text-emerald-300" />
-                <div className="mt-3 text-xs uppercase tracking-[0.2em] muted">Checkpoint passed</div>
-                <div className="mt-1 text-2xl font-semibold">Nicely done</div>
+                <div className="mt-3 text-xs uppercase tracking-[0.2em] muted">Tested out</div>
+                <div className="mt-1 text-2xl font-semibold">{event.label ?? 'Nicely done'}</div>
               </>
             )}
 
@@ -81,9 +82,9 @@ export function RewardOverlay() {
               ) : null}
             </div>
 
-            {event.kind === 'levelup' || event.kind === 'module' ? (
+            {event.kind === 'levelup' || event.kind === 'tier' ? (
               <p className="mt-3 text-xs muted">
-                A {event.kind === 'module' ? 'epic' : 'rare'} chest is waiting for you.
+                A {event.kind === 'tier' ? 'epic' : 'rare'} chest is waiting for you.
               </p>
             ) : null}
 

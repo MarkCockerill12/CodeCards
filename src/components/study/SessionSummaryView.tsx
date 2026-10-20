@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Coins, Repeat, Target, Timer, Zap } from 'lucide-react';
+import { ArrowRight, Coins, Map as MapIcon, Repeat, Target, Timer, Zap } from 'lucide-react';
 import type { Card, SessionCardResult, SessionMode } from '@/lib/types';
 import { Button, Panel, Ring, Stat } from '@/components/ui/primitives';
 import { useStore } from '@/lib/store';
 import { GRADE_COLOR, GRADE_LABEL, formatDue, maturity } from '@/lib/scheduler';
-import { moduleComplete } from '@/lib/session';
+import { CHECKPOINT_PASS } from '@/lib/session';
+import type { Tier } from '@/lib/tiers';
 import { tagLabel } from '@/lib/weakness';
 import { formatDuration, pct } from '@/lib/utils';
 import { SESSION_COMPLETE_XP } from '@/lib/economy';
@@ -18,20 +19,20 @@ export function SessionSummaryView({
   byId,
   startedAt,
   mode,
-  moduleId,
-  moduleName,
   topicIds,
+  tier,
+  testPassed,
 }: {
   results: SessionCardResult[];
   byId: Map<string, Card>;
   startedAt: number;
   mode: SessionMode;
-  moduleId?: string;
-  moduleName?: string;
   topicIds: string[];
+  tier?: Tier;
+  /** Set for tier tests only. */
+  testPassed?: boolean;
 }) {
   const reviews = useStore((s) => s.reviews);
-  const completeModule = useStore((s) => s.completeModule);
   const chests = useStore((s) => s.pendingChests.length);
 
   const total = results.length;
@@ -39,15 +40,6 @@ export function SessionSummaryView({
   const accuracy = total > 0 ? correct / total : 0;
   const xp = results.reduce((n, r) => n + r.xp, 0) + SESSION_COMPLETE_XP;
   const duration = Date.now() - startedAt;
-
-  // Module completion is checked here, once, rather than after every single grade.
-  useEffect(() => {
-    if (!moduleId) return;
-    const moduleCards = [...byId.values()].filter((c) => c.moduleId === moduleId);
-    if (moduleCards.length > 0 && moduleComplete(moduleCards, reviews)) {
-      completeModule(moduleId, moduleName ?? 'Module');
-    }
-  }, [byId, completeModule, moduleId, moduleName, reviews]);
 
   const weakest = useMemo(() => {
     const scores = new Map<string, { hits: number; misses: number }>();
@@ -81,10 +73,14 @@ export function SessionSummaryView({
     >
       <div className="text-center">
         <div className="text-xs uppercase tracking-[0.25em] muted">
-          {mode === 'calibration' ? 'Calibration complete' : 'Session complete'}
+          {mode === 'checkpoint' ? 'Tier test complete' : 'Session complete'}
         </div>
         <h1 className="mt-1 text-3xl font-semibold">
-          {accuracy >= 0.9
+          {mode === 'checkpoint'
+            ? testPassed
+              ? 'Tested out. Next tier unlocked.'
+              : `Not this time — ${pct(CHECKPOINT_PASS)} needed.`
+            : accuracy >= 0.9
             ? 'Sharp.'
             : accuracy >= 0.7
               ? 'Solid work.'
@@ -202,14 +198,23 @@ export function SessionSummaryView({
             </Button>
           </Link>
         ) : null}
-        <Link
-          href={`/study?mode=${mode === 'calibration' ? 'review' : mode}${topicIds.length === 1 ? `&topic=${topicIds[0]}` : ''}`}
-          className="flex-1"
-        >
-          <Button className="w-full">
-            <Zap className="h-4 w-4" /> Another round
-          </Button>
-        </Link>
+        {mode === 'checkpoint' || mode === 'tier' ? (
+          <Link href={`/path?topic=${topicIds[0]}`} className="flex-1">
+            <Button variant="outline" className="w-full">
+              <MapIcon className="h-4 w-4" /> Back to the path
+            </Button>
+          </Link>
+        ) : null}
+        {mode !== 'checkpoint' ? (
+          <Link
+            href={`/study?mode=${mode}${topicIds.length === 1 ? `&topic=${topicIds[0]}` : ''}${mode === 'tier' && tier ? `&tier=${tier}` : ''}`}
+            className="flex-1"
+          >
+            <Button className="w-full">
+              <Zap className="h-4 w-4" /> Another round
+            </Button>
+          </Link>
+        ) : null}
       </div>
     </motion.div>
   );

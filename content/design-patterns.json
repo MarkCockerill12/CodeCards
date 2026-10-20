@@ -7,6 +7,74 @@
   "description": "Creational, structural and behavioural patterns — what problem each solves, and when a pattern is the wrong answer.",
   "modules": [
     {
+      "id": "design-patterns-big-picture",
+      "name": "The Big Picture",
+      "description": "What Design Patterns is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "design-patterns-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["patterns.basics"],
+          "prompt": "What is a design pattern?",
+          "answer": "A named, reusable solution to a problem that keeps coming up in software design — not finished code, but a template for structuring classes and objects, such as Observer, Factory or Strategy.",
+          "explanation": "Patterns give teams a shared vocabulary: \"use a strategy here\" communicates a whole design in three words. They describe trade-offs too, so applying one where the problem does not exist only adds complexity.",
+          "resources": [
+            { "title": "Wikipedia — Software design pattern", "url": "https://en.wikipedia.org/wiki/Software_design_pattern", "kind": "article" },
+            { "title": "Refactoring.Guru — Design patterns", "url": "https://refactoring.guru/design-patterns/what-is-pattern", "kind": "article" }
+          ]
+        },
+        {
+          "id": "design-patterns-intro-gof",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["patterns.basics"],
+          "prompt": "What is the \"Gang of Four\" book?",
+          "answer": "\"Design Patterns: Elements of Reusable Object-Oriented Software\" (1994) by Gamma, Helm, Johnson and Vlissides. It catalogued 23 patterns that became the standard reference for object-oriented design.",
+          "explanation": "Many of its patterns are now built into languages and frameworks (iterators, event listeners, dependency injection containers), so you use them daily even without naming them.",
+          "resources": [
+            { "title": "Wikipedia — Design Patterns (book)", "url": "https://en.wikipedia.org/wiki/Design_Patterns", "kind": "article" }
+          ]
+        },
+        {
+          "id": "design-patterns-intro-categories",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["patterns.basics"],
+          "prompt": "What are the three classic categories of design patterns?",
+          "answer": "Creational patterns control how objects are created (Factory, Builder, Singleton). Structural patterns compose objects into larger structures (Adapter, Decorator, Facade). Behavioural patterns organise how objects communicate and share responsibility (Observer, Strategy, Command).",
+          "explanation": "Knowing the category narrows the search: a problem about \"too many ways to construct this\" is creational; \"these two interfaces do not fit\" is structural; \"who should react when this changes\" is behavioural.",
+          "resources": [
+            { "title": "Refactoring.Guru — Catalog of design patterns", "url": "https://refactoring.guru/design-patterns/catalog", "kind": "article" }
+          ]
+        },
+        {
+          "id": "design-patterns-intro-observer",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["patterns.basics"],
+          "prompt": "What is the Observer pattern, in one sentence?",
+          "answer": "An object (the subject) keeps a list of observers and notifies them automatically whenever its state changes, so they can react without the subject knowing who they are.",
+          "explanation": "Event listeners in the browser (`addEventListener`), UI data binding and publish/subscribe messaging are all the Observer pattern.",
+          "resources": [
+            { "title": "Refactoring.Guru — Observer", "url": "https://refactoring.guru/design-patterns/observer", "kind": "article" }
+          ]
+        },
+        {
+          "id": "design-patterns-intro-strategy",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["patterns.basics"],
+          "prompt": "What is the Strategy pattern, in one sentence?",
+          "answer": "Define a family of interchangeable algorithms behind a common interface and let the caller choose one at run time — for example different shipping-cost calculations or compression methods.",
+          "explanation": "In languages with first-class functions, a strategy is often just a function passed as an argument, like the `key` passed to a sort.",
+          "resources": [
+            { "title": "Refactoring.Guru — Strategy", "url": "https://refactoring.guru/design-patterns/strategy", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "dp-classic",
       "name": "Classic Patterns",
       "description": "The Gang of Four patterns you will actually see in real code.",
@@ -217,7 +285,6 @@
           "prompt": "What is the proxy pattern, and what are its common forms?",
           "answer": "An object with the same interface as another that controls access to it. Forms: virtual proxy (lazy loading of something expensive), remote proxy (a local stub for a network service, as in RPC clients), protection proxy (access checks), and caching or logging proxies.",
           "explanation": "ORM lazy-loading relations are virtual proxies — which is exactly how N+1 queries sneak in. Proxies and decorators look alike structurally; the difference is intent — a proxy controls access to the same thing, a decorator adds behaviour.",
-          "prerequisites": ["dp-decorator-vs-inheritance"],
           "resources": [
             { "title": "Refactoring.Guru — Proxy", "url": "https://refactoring.guru/design-patterns/proxy", "kind": "article" }
           ]
@@ -250,7 +317,6 @@
           "prompt": "What is the command pattern, and what does turning a request into an object enable?",
           "answer": "It encapsulates an action and its parameters as an object with an `execute` method. Because the request is data, you can queue it, log it, retry it, schedule it, send it elsewhere, and implement undo by storing commands with an `undo` method.",
           "explanation": "Editors' undo stacks, job queues, database migrations and CQRS commands are all this idea. In languages with closures, a command can be as simple as a function plus its arguments.",
-          "prerequisites": ["dp-functional-alternatives"],
           "resources": [
             { "title": "Refactoring.Guru — Command", "url": "https://refactoring.guru/design-patterns/command", "kind": "article" }
           ]

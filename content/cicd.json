@@ -7,6 +7,79 @@
   "description": "Continuous integration, deployment strategies, pipeline design, artefacts and release safety.",
   "modules": [
     {
+      "id": "cicd-big-picture",
+      "name": "The Big Picture",
+      "description": "What CI/CD & Pipelines is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "cicd-intro-ci",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cicd.basics"],
+          "prompt": "What is continuous integration (CI)?",
+          "answer": "Merging every developer's changes into the shared main branch frequently — at least daily — with an automated pipeline that builds the code and runs the tests on every change, so integration problems surface within minutes.",
+          "explanation": "Before CI, teams merged weeks of separate work at once and spent days untangling conflicts (\"integration hell\"). A red CI build is treated as the team's top priority to fix.",
+          "resources": [
+            { "title": "Wikipedia — Continuous integration", "url": "https://en.wikipedia.org/wiki/Continuous_integration", "kind": "article" },
+            { "title": "Martin Fowler — Continuous Integration", "url": "https://martinfowler.com/articles/continuousIntegration.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-intro-delivery-deployment",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["cicd.basics"],
+          "prompt": "Continuous delivery vs continuous deployment",
+          "answer": "Both keep every change releasable. Continuous delivery means any change that passes the pipeline could be deployed with one click; continuous deployment means it is deployed to production automatically.",
+          "columns": {
+            "left": { "title": "Continuous delivery", "points": ["Always releasable", "A human presses \"deploy\"", "Suits regulated or scheduled releases", "Release is a business decision"] },
+            "right": { "title": "Continuous deployment", "points": ["Always released", "No human gate after merge", "Needs excellent automated tests and monitoring", "Many deploys per day"] }
+          },
+          "explanation": "The \"CD\" in CI/CD can mean either. Both rely on the same foundations: automated tests, repeatable builds and safe deployment techniques.",
+          "resources": [
+            { "title": "Wikipedia — Continuous delivery", "url": "https://en.wikipedia.org/wiki/Continuous_delivery", "kind": "article" },
+            { "title": "Wikipedia — Continuous deployment", "url": "https://en.wikipedia.org/wiki/Continuous_deployment", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-intro-pipeline",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cicd.basics"],
+          "prompt": "What is a CI/CD pipeline?",
+          "answer": "An automated sequence of stages that every change passes through — typically checkout, build, test, security scans, package, then deploy to staging and production — defined as code in the repository.",
+          "explanation": "If any stage fails, the pipeline stops and reports, so broken changes never reach users. Popular platforms: GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure Pipelines.",
+          "resources": [
+            { "title": "GitHub Docs — Understanding GitHub Actions", "url": "https://docs.github.com/en/actions/get-started/understand-github-actions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cicd-intro-artifact",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cicd.basics"],
+          "prompt": "What is a build artifact?",
+          "answer": "The output a pipeline produces and later deploys — a container image, a JAR, a compiled binary, a bundle of static files — stored with a version so the exact same thing can be deployed to every environment.",
+          "explanation": "\"Build once, deploy many\": building a fresh artifact for production risks shipping something different from what was tested in staging.",
+          "resources": [
+            { "title": "Wikipedia — Artifact (software development)", "url": "https://en.wikipedia.org/wiki/Artifact_(software_development)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cicd-intro-environments",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cicd.basics"],
+          "prompt": "What are development, staging and production environments?",
+          "answer": "Development is where engineers build and experiment; staging is a production-like copy used for final checks; production is the live system real users depend on.",
+          "explanation": "The closer staging matches production — same configuration, versions and similar data — the more its test results mean. Production data and credentials should never be used casually in lower environments.",
+          "resources": [
+            { "title": "Wikipedia — Deployment environment", "url": "https://en.wikipedia.org/wiki/Deployment_environment", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "cicd-core",
       "name": "CI, CD and Pipeline Design",
       "description": "What the terms mean, and what a good pipeline actually does.",
@@ -26,7 +99,7 @@
         {
           "id": "cicd-pipeline-stages",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["devops.cicd", "devops.pipeline"],
           "prompt": "What stages belong in a solid pipeline, and in what order?",
           "answer": "Lint and type-check → unit tests → build once and produce an immutable artefact → integration tests → security scans (SCA/SAST) → deploy to staging → smoke and end-to-end tests → deploy to production → post-deploy verification.",
@@ -185,7 +258,6 @@
           "prompt": "What should protect deployments to production in a pipeline?",
           "answer": "Deployment environments with their own secrets, required reviewers or approval rules where appropriate, restrictions on which branches may deploy, wait timers or change windows if the business needs them, and an audit log of who deployed what and when.",
           "explanation": "Scope production credentials to the production environment so a workflow run from a feature branch or a fork can never obtain them. Automated gates (tests, security scans, SLO checks) are preferable to manual approval as the main safety mechanism.",
-          "prerequisites": ["cicd-secrets-pipeline"],
           "resources": [
             { "title": "GitHub Docs — Managing environments for deployment", "url": "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments", "kind": "docs" }
           ]

@@ -7,6 +7,78 @@
   "description": "Service boundaries, communication, data ownership, and honest accounting of what distribution costs.",
   "modules": [
     {
+      "id": "microservices-big-picture",
+      "name": "The Big Picture",
+      "description": "What Microservices is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "microservices-intro-vs-monolith",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["microservices.basics"],
+          "prompt": "Monolith vs microservices",
+          "answer": "A monolith is one application deployed as a single unit; a microservice architecture splits the system into many small services that are deployed independently and talk over the network.",
+          "columns": {
+            "left": { "title": "Monolith", "points": ["One codebase, one deployment", "Simple to build, test and run", "In-process calls — fast and reliable", "Scales as a whole"] },
+            "right": { "title": "Microservices", "points": ["Many services, deployed independently", "Teams own and release services separately", "Network calls — can fail or be slow", "Scale each part separately, at high operational cost"] }
+          },
+          "explanation": "Most systems should start as a well-structured monolith. Microservices pay off when many teams need to ship independently; adopted too early, they add distributed-systems problems with none of the benefits.",
+          "resources": [
+            { "title": "Martin Fowler — Microservices", "url": "https://martinfowler.com/articles/microservices.html", "kind": "article" },
+            { "title": "Martin Fowler — MonolithFirst", "url": "https://martinfowler.com/bliki/MonolithFirst.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "microservices-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["microservices.basics"],
+          "prompt": "What is a microservice?",
+          "answer": "A small, independently deployable service that owns one business capability (orders, payments, notifications) along with its own data, and exposes it to other services through an API or messages.",
+          "explanation": "The defining property is independence: a team can change, deploy and scale its service without coordinating a release with everyone else.",
+          "resources": [
+            { "title": "Wikipedia — Microservices", "url": "https://en.wikipedia.org/wiki/Microservices", "kind": "article" }
+          ]
+        },
+        {
+          "id": "microservices-intro-communication",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["microservices.basics"],
+          "prompt": "How do microservices communicate?",
+          "answer": "Synchronously, by calling each other's APIs (HTTP/REST or gRPC) and waiting for a reply; or asynchronously, by publishing events and messages to a broker (Kafka, RabbitMQ) that other services consume in their own time.",
+          "explanation": "Synchronous calls are simpler but chain failures together; asynchronous messaging decouples services but makes flows harder to follow and debug.",
+          "resources": [
+            { "title": "microservices.io — Communication patterns", "url": "https://microservices.io/patterns/communication-style/messaging.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "microservices-intro-database",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["microservices.basics"],
+          "prompt": "Why does each microservice usually own its own database?",
+          "answer": "So services stay independent: if two services share tables, neither can change its schema without breaking the other, and they must be deployed together — losing the main benefit of microservices.",
+          "explanation": "The cost is that data spans services: no cross-service joins or transactions, so you use APIs, events and eventual consistency instead.",
+          "resources": [
+            { "title": "microservices.io — Database per service", "url": "https://microservices.io/patterns/data/database-per-service.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "microservices-intro-api-gateway",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["microservices.basics"],
+          "prompt": "What is an API gateway?",
+          "answer": "A single entry point that sits in front of many backend services and routes each client request to the right one, often also handling authentication, rate limiting, TLS and response aggregation.",
+          "explanation": "Clients get one stable address instead of knowing about dozens of internal services, and cross-cutting concerns are handled once instead of in every service.",
+          "resources": [
+            { "title": "microservices.io — API gateway", "url": "https://microservices.io/patterns/apigateway.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "ms-boundaries",
       "name": "Boundaries & Ownership",
       "description": "Where to cut, who owns what data, and when not to split at all.",

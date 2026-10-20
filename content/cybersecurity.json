@@ -7,6 +7,88 @@
   "description": "Threat modelling, authentication, common attacks, defence in depth and incident response.",
   "modules": [
     {
+      "id": "cybersecurity-big-picture",
+      "name": "The Big Picture",
+      "description": "What Cyber Security is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "cybersecurity-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.basics"],
+          "prompt": "What is cyber security?",
+          "answer": "Protecting computers, networks, software and data from unauthorised access, damage, theft and disruption — through technology (patching, encryption, access control), processes (backups, incident response) and people (training, awareness).",
+          "explanation": "Security is about managing risk, not reaching perfection: you identify what is valuable, who might attack it and how, and spend effort where the risk is highest.",
+          "resources": [
+            { "title": "Wikipedia — Computer security", "url": "https://en.wikipedia.org/wiki/Computer_security", "kind": "article" },
+            { "title": "NCSC — Top tips for staying secure online", "url": "https://www.ncsc.gov.uk/collection/top-tips-for-staying-secure-online", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cybersecurity-intro-vocab",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.basics"],
+          "prompt": "Define vulnerability, threat, exploit and risk.",
+          "answer": "A vulnerability is a weakness (an unpatched bug, a weak password). A threat is someone or something that could take advantage of it. An exploit is the actual technique or code that does. Risk is the likelihood of that happening combined with the damage it would cause.",
+          "explanation": "Keeping the words distinct sharpens decisions: you cannot remove every threat, but you can fix vulnerabilities and reduce risk to an acceptable level.",
+          "resources": [
+            { "title": "NIST CSRC — Glossary", "url": "https://csrc.nist.gov/glossary", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "cybersecurity-intro-authn-authz",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.basics"],
+          "prompt": "What is the difference between authentication and authorisation?",
+          "answer": "Authentication proves who you are (password, key, fingerprint). Authorisation decides what you are allowed to do once identified (read this file, approve that payment).",
+          "explanation": "Many breaches are authorisation failures: the attacker is a legitimate, logged-in user who could reach data that was never meant for them.",
+          "resources": [
+            { "title": "Wikipedia — Authentication", "url": "https://en.wikipedia.org/wiki/Authentication", "kind": "article" },
+            { "title": "Wikipedia — Authorization", "url": "https://en.wikipedia.org/wiki/Authorization", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cybersecurity-intro-mfa",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.basics"],
+          "prompt": "What is multi-factor authentication (MFA), and why does it matter?",
+          "answer": "Requiring two or more different kinds of proof to log in: something you know (password), something you have (phone, security key) and something you are (fingerprint). A stolen password alone is then not enough.",
+          "explanation": "MFA blocks the large majority of account-takeover attacks. Phishing-resistant forms such as hardware security keys and passkeys are stronger than SMS codes.",
+          "resources": [
+            { "title": "Wikipedia — Multi-factor authentication", "url": "https://en.wikipedia.org/wiki/Multi-factor_authentication", "kind": "article" },
+            { "title": "CISA — More than a password", "url": "https://www.cisa.gov/MFA", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cybersecurity-intro-attacks",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.basics"],
+          "prompt": "Name some of the most common attacks against people and organisations.",
+          "answer": "Phishing (tricking people into revealing credentials or running malware), malware and ransomware, credential stuffing (reusing leaked passwords), exploiting unpatched software, and denial of service (overwhelming a service with traffic).",
+          "explanation": "Most successful attacks start with the human or with something unpatched, not with exotic zero-days — which is why awareness training, MFA and prompt patching give such good returns.",
+          "resources": [
+            { "title": "ENISA — Threat Landscape", "url": "https://www.enisa.europa.eu/topics/cyber-threats/threat-landscape", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cybersecurity-intro-defence-in-depth",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["security.basics"],
+          "prompt": "What is defence in depth?",
+          "answer": "Layering several independent security controls so that if one fails, others still stand — for example MFA, plus least-privilege access, plus network segmentation, plus monitoring, plus backups.",
+          "explanation": "Like a castle with a moat, walls and guards: no single layer is perfect, but an attacker has to beat all of them. Least privilege — giving every user and program only the access it needs — is one of the most effective layers.",
+          "resources": [
+            { "title": "Wikipedia — Defense in depth (computing)", "url": "https://en.wikipedia.org/wiki/Defense_in_depth_(computing)", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "cs-principles",
       "name": "Principles & Threat Modelling",
       "description": "How to think about security before you think about tools.",
@@ -333,7 +415,7 @@
           "prompt": "Why segment a network, and what does lateral movement mean?",
           "answer": "Lateral movement is an attacker pivoting from the first compromised machine to others. Segmentation splits the network into zones with controlled paths between them — production away from corporate laptops, databases reachable only from their applications — so one foothold does not reach everything.",
           "explanation": "Flat networks turn a phished laptop into a domain-wide breach. Micro-segmentation extends the idea per workload with identity-based policies, which is where it meets zero trust. Watch east–west traffic, not only the perimeter.",
-          "prerequisites": ["sec-zero-trust", "sec-defence-depth"],
+          "prerequisites": ["sec-defence-depth"],
           "resources": [
             { "title": "NIST SP 800-207 — Zero Trust Architecture", "url": "https://csrc.nist.gov/pubs/sp/800/207/final", "kind": "spec" }
           ]

@@ -7,6 +7,91 @@
   "description": "Scaling, caching, queues, consistency, capacity estimation and the interview framework that structures all of it.",
   "modules": [
     {
+      "id": "system-design-big-picture",
+      "name": "The Big Picture",
+      "description": "What System Design is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "system-design-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sd.basics"],
+          "prompt": "What is system design?",
+          "answer": "Deciding the high-level structure of a software system — its components (clients, servers, databases, caches, queues), how they connect, and how data flows — so that it meets its requirements for scale, reliability, speed and cost.",
+          "explanation": "System design is about trade-offs, not correct answers: every choice (SQL or NoSQL, sync or async, one region or many) buys something and costs something.",
+          "resources": [
+            { "title": "Wikipedia — Systems design", "url": "https://en.wikipedia.org/wiki/Systems_design", "kind": "article" },
+            { "title": "The System Design Primer", "url": "https://github.com/donnemartin/system-design-primer", "kind": "book" }
+          ]
+        },
+        {
+          "id": "system-design-intro-scaling",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["sd.basics"],
+          "prompt": "Vertical vs horizontal scaling",
+          "answer": "Vertical scaling makes one machine bigger; horizontal scaling adds more machines and spreads the load across them.",
+          "columns": {
+            "left": { "title": "Vertical (scale up)", "points": ["Bigger CPU, more RAM", "Simple — no code changes", "Hard ceiling and a single point of failure", "Often fine for databases for a long time"] },
+            "right": { "title": "Horizontal (scale out)", "points": ["More machines", "Needs stateless services and load balancing", "Near-unlimited, survives machine failures", "Standard for web/application servers"] }
+          },
+          "explanation": "Keeping application servers stateless (no user data stored on the server itself) is what makes horizontal scaling straightforward.",
+          "resources": [
+            { "title": "Wikipedia — Scalability", "url": "https://en.wikipedia.org/wiki/Scalability", "kind": "article" }
+          ]
+        },
+        {
+          "id": "system-design-intro-load-balancer",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sd.basics"],
+          "prompt": "What does a load balancer do?",
+          "answer": "Sits in front of several servers and spreads incoming requests across them, skipping servers that fail health checks — so traffic is shared and one server dying does not take the service down.",
+          "explanation": "Load balancers are a basic building block of horizontal scaling and high availability. They exist in hardware, software (NGINX, HAProxy) and as cloud services.",
+          "resources": [
+            { "title": "Wikipedia — Load balancing (computing)", "url": "https://en.wikipedia.org/wiki/Load_balancing_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "system-design-intro-cache",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sd.basics"],
+          "prompt": "What is a cache, and why use one?",
+          "answer": "A fast store (often in memory, such as Redis) that keeps copies of frequently requested data so it can be served without repeating slow work — a database query, an API call, a rendered page.",
+          "explanation": "Caching is one of the biggest performance levers there is. The hard part is invalidation: deciding when cached data is stale and must be refreshed.",
+          "resources": [
+            { "title": "Wikipedia — Cache (computing)", "url": "https://en.wikipedia.org/wiki/Cache_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "system-design-intro-latency-throughput",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sd.basics"],
+          "prompt": "What are latency and throughput?",
+          "answer": "Latency is how long one request takes (milliseconds). Throughput is how many requests the system handles per unit of time (requests per second). They are related but distinct — a system can have high throughput and poor latency.",
+          "explanation": "Users feel latency; capacity planning is about throughput. Latency is usually reported as percentiles (p50, p99) because averages hide the slowest requests.",
+          "resources": [
+            { "title": "Wikipedia — Latency (engineering)", "url": "https://en.wikipedia.org/wiki/Latency_(engineering)", "kind": "article" },
+            { "title": "Wikipedia — Network throughput", "url": "https://en.wikipedia.org/wiki/Network_throughput", "kind": "article" }
+          ]
+        },
+        {
+          "id": "system-design-intro-requirements",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["sd.basics"],
+          "prompt": "What are functional and non-functional requirements?",
+          "answer": "Functional requirements say what the system must do (\"users can upload photos\"). Non-functional requirements say how well it must do it: scale, latency, availability, security, cost (\"serve 10,000 uploads per minute with p99 under 300 ms\").",
+          "explanation": "Non-functional requirements drive most architecture decisions. A system design discussion should pin them down before drawing any boxes.",
+          "resources": [
+            { "title": "Wikipedia — Non-functional requirement", "url": "https://en.wikipedia.org/wiki/Non-functional_requirement", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "sd-foundations",
       "name": "Scaling Foundations",
       "description": "How systems grow, and where they break when they do.",
@@ -232,7 +317,7 @@
           "prompt": "How do you ensure only one instance runs a scheduled job or acts as leader?",
           "answer": "Use a lease from a strongly consistent coordinator — etcd, ZooKeeper, Consul, a Kubernetes Lease object, or a database row with an expiry — renewed while the leader is healthy. If the leader stops renewing, another instance acquires the lease.",
           "explanation": "A paused leader (GC pause, network partition) may still believe it leads after its lease expired, so two leaders can act at once. Fencing tokens — a monotonically increasing number checked by the resource being written — reject the stale leader's writes.",
-          "prerequisites": ["sd-consensus", "nosql-redis-patterns"],
+          "prerequisites": ["nosql-redis-patterns"],
           "resources": [
             { "title": "Martin Kleppmann — How to do distributed locking", "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html", "kind": "article" }
           ]
@@ -249,7 +334,6 @@
             "right": { "title": "Stream", "points": ["Unbounded input, continuous", "Low latency results", "Windows, watermarks, late data", "Fraud detection, alerting, live metrics"] }
           },
           "explanation": "Batch is simpler, easier to reprocess and fine when hours of latency are acceptable. Streaming handles fraud detection, live dashboards and alerts, but brings windowing, late-arriving events and exactly-once-processing complexity. Many systems combine them.",
-          "prerequisites": ["sd-kafka-log"],
           "resources": [
             { "title": "Designing Data-Intensive Applications (Kleppmann)", "url": "https://dataintensive.net/", "kind": "book" }
           ]

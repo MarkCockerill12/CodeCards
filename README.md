@@ -1,7 +1,7 @@
 # CodeCards 🃏
 
-A gamified, spaced-repetition study platform for software engineering. 1,326 cards across 58
-topics — languages, computer science, databases, web, systems, networking, security, cloud,
+A gamified, spaced-repetition study platform for software engineering. 1,694 cards across 59
+topics — programming foundations, languages, computer science, databases, web, systems, networking, security, cloud,
 architecture, AI, game development and process — scheduled by FSRS-5 so you revise each card
 just before you would have forgotten it.
 
@@ -16,7 +16,13 @@ every byte of your progress lives in your own browser.
   each card Again / Hard / Good / Easy and the scheduler adapts.
 - **Seven card types, all reveal-then-self-grade** — no typing, no multiple choice:
   concept flip, predict-the-output, spot-the-bug, fill-the-blank, compare, complexity, scenario.
-- **Calibration quiz** on day one samples every difficulty band so experts skip the basics.
+- **Tiered progression, Basics → Expert.** Every topic climbs five tiers: Basics (what it is
+  and what it is for), Fundamentals, Intermediate, Advanced, Expert. New cards only come from a
+  topic's current tier, in authored order, interleaved across topics — so a first session meets
+  "what is Python", "what is Git" and "what is SQL" before anything detailed. A tier unlocks the
+  next once every card is seen and 80% are recalled; already know it? Pass its tier test (85%).
+- **Start Here topic.** Programming Foundations covers what programming is, the building blocks
+  every language shares, and what each major language is used for.
 - **Weakness detection per tag**, including a fluency signal — a "Good" that took far longer
   than your usual counts for less.
 - **Prerequisite graph.** Fail a card and its unmastered foundations are injected into the
@@ -38,6 +44,8 @@ Deliberately absent, by design: streaks, daily quests, leaderboards and XP throt
 ```
 content/*.json ──▶ zod schema validation
                ──▶ prerequisite resolution, cycle and duplicate-id checks
+               ──▶ tier checks: every topic opens with Basics, and no prerequisite sits
+                   in a later tier than the card that needs it
                ──▶ Shiki highlighting for every purchasable syntax theme
                ──▶ public/content/**  (fetched lazily, one file per topic)
 ```
@@ -76,7 +84,7 @@ you precisely what is wrong. A card needs at minimum:
 {
   "id": "kebab-case-unique",
   "type": "flip",              // or predict-output | spot-bug | cloze | compare | complexity | scenario
-  "difficulty": 3,             // 1-5
+  "difficulty": 3,             // tier: 1 Basics, 2 Fundamentals, 3 Intermediate, 4 Advanced, 5 Expert
   "tags": ["python.generators"],
   "prompt": "…",
   "answer": "…",

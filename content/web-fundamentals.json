@@ -7,6 +7,92 @@
   "description": "How a page loads, the browser rendering pipeline, storage, the same-origin policy, CORS and Core Web Vitals.",
   "modules": [
     {
+      "id": "web-fundamentals-big-picture",
+      "name": "The Big Picture",
+      "description": "What Web Fundamentals is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "web-fundamentals-intro-web-internet",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["web.basics"],
+          "prompt": "The internet vs the World Wide Web",
+          "answer": "The internet is the global network of connected computers; the web is one service that runs on top of it — pages and resources linked together and fetched over HTTP.",
+          "columns": {
+            "left": { "title": "Internet", "points": ["Infrastructure: cables, routers, IP", "Carries all kinds of traffic", "Email, games, video calls, SSH", "Developed from the 1960s ARPANET"] },
+            "right": { "title": "World Wide Web", "points": ["An application on the internet", "Pages and resources linked by URLs", "Accessed with web browsers over HTTP", "Invented by Tim Berners-Lee in 1989"] }
+          },
+          "explanation": "People use the words interchangeably, but email or an online game uses the internet without using the web.",
+          "resources": [
+            { "title": "Wikipedia — World Wide Web", "url": "https://en.wikipedia.org/wiki/World_Wide_Web", "kind": "article" },
+            { "title": "Wikipedia — Internet", "url": "https://en.wikipedia.org/wiki/Internet", "kind": "article" }
+          ]
+        },
+        {
+          "id": "web-fundamentals-intro-client-server",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["web.basics"],
+          "prompt": "What are a client and a server on the web?",
+          "answer": "The client (usually a browser) sends requests; the server is a program on another machine that receives them and sends back responses — an HTML page, an image, some JSON.",
+          "explanation": "Front-end code runs on the client and back-end code runs on the server. One machine can be both; the words describe roles in a conversation, not types of hardware.",
+          "resources": [
+            { "title": "Wikipedia — Client–server model", "url": "https://en.wikipedia.org/wiki/Client–server_model", "kind": "article" },
+            { "title": "MDN — How the web works", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-fundamentals-intro-url",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["web.basics"],
+          "prompt": "What are the parts of a URL?",
+          "answer": "In `https://shop.example.com:443/products/42?sort=price#reviews`: scheme (`https`), host or domain (`shop.example.com`), port (`443`, usually implied), path (`/products/42`), query string (`?sort=price`) and fragment (`#reviews`, handled only by the browser).",
+          "explanation": "A URL (Uniform Resource Locator) tells the browser which protocol to use, which server to contact and which resource to ask for.",
+          "resources": [
+            { "title": "MDN — What is a URL?", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-fundamentals-intro-http",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["web.basics"],
+          "prompt": "What is HTTP?",
+          "answer": "HyperText Transfer Protocol: the request–response protocol browsers and servers use to exchange web content. A request has a method (`GET`, `POST` …), a URL and headers; the response has a status code (`200 OK`, `404 Not Found`), headers and a body.",
+          "explanation": "HTTPS is HTTP sent over an encrypted TLS connection; today almost all web traffic is HTTPS. HTTP itself is stateless — each request stands alone, which is why cookies exist.",
+          "resources": [
+            { "title": "MDN — An overview of HTTP", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "web-fundamentals-intro-dns",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["web.basics"],
+          "prompt": "What does DNS do?",
+          "answer": "The Domain Name System translates human-friendly names such as `example.com` into the IP addresses computers use to connect — the internet's phone book.",
+          "explanation": "Every visit to a new domain starts with a DNS lookup, and answers are cached at many levels to keep it fast. When \"the site is down\" for some people but not others, DNS is a common culprit.",
+          "resources": [
+            { "title": "Wikipedia — Domain Name System", "url": "https://en.wikipedia.org/wiki/Domain_Name_System", "kind": "article" },
+            { "title": "Cloudflare — What is DNS?", "url": "https://www.cloudflare.com/learning/dns/what-is-dns/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "web-fundamentals-intro-page-load",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["web.basics"],
+          "prompt": "At a high level, what happens when you open a web page?",
+          "answer": "The browser looks up the domain via DNS, opens a secure connection to the server, sends an HTTP request, receives HTML, then fetches the CSS, JavaScript and images it references, and finally renders and runs them to draw the page.",
+          "explanation": "Every step costs time, which is why web performance work focuses on fewer and smaller requests, caching and getting the first useful content on screen quickly.",
+          "resources": [
+            { "title": "MDN — How browsers work", "url": "https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "web-loading",
       "name": "Loading & Rendering",
       "description": "What happens between typing a URL and seeing pixels.",
@@ -224,7 +310,6 @@
           "prompt": "Which HTTP security headers should most sites send?",
           "answer": "`Strict-Transport-Security` (force HTTPS, with `includeSubDomains`), `Content-Security-Policy` (including `frame-ancestors` against clickjacking), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy` to disable unused browser features.",
           "explanation": "HSTS prevents SSL-stripping downgrades after the first visit (preloading covers the first). `frame-ancestors` supersedes `X-Frame-Options`. Check the result with a scanner such as Mozilla Observatory, and test CSP in report-only mode first.",
-          "prerequisites": ["web-csp"],
           "resources": [
             { "title": "OWASP — HTTP Headers Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html", "kind": "docs" }
           ]
@@ -257,7 +342,6 @@
           "prompt": "What are the essentials of shipping images on the web?",
           "answer": "Modern formats (AVIF/WebP), correctly sized variants via `srcset` and `sizes`, explicit `width` and `height` to reserve space, `loading=\"lazy\"` for below-the-fold images, and `fetchpriority=\"high\"` (never lazy) for the LCP hero image.",
           "explanation": "Images are usually the heaviest part of a page. Missing dimensions cause layout shift (CLS); lazy-loading the hero delays LCP. Every meaningful image needs `alt` text; decorative images get `alt=\"\"` so screen readers skip them.",
-          "prerequisites": ["web-core-web-vitals"],
           "resources": [
             { "title": "web.dev — Optimize images", "url": "https://web.dev/learn/images", "kind": "article" }
           ]
@@ -299,7 +383,6 @@
           "prompt": "Users in Australia see slow loads from a server in Frankfurt. What helps most?",
           "answer": "A CDN: edge servers near users cache static assets (and cacheable HTML/API responses), cutting round trips from ~300 ms to ~20 ms. TLS also terminates at the edge, so connection setup is local.",
           "explanation": "Latency is bounded by the speed of light, so distance only shrinks by moving content closer. Cache keys and `Cache-Control` decide what the CDN may store; never cache personalised responses publicly. For dynamic, uncacheable data, regional replicas or edge compute are the next step.",
-          "prerequisites": ["web-http-caching"],
           "resources": [
             { "title": "MDN — CDN", "url": "https://developer.mozilla.org/en-US/docs/Glossary/CDN", "kind": "docs" }
           ]
@@ -312,7 +395,6 @@
           "prompt": "What technical basics matter most for search engines?",
           "answer": "Crawlable, server-rendered HTML with a unique `<title>` and meta description per page, semantic headings, descriptive link text, a canonical URL for duplicate content, a sitemap and sensible `robots.txt`, fast Core Web Vitals, mobile-friendly layout, and structured data (JSON-LD) where relevant.",
           "explanation": "Content that only appears after client-side JavaScript runs may be indexed late or not at all by some crawlers, which is a common reason to prefer SSR or static generation for public pages. Semantic, accessible HTML and good SEO largely overlap.",
-          "prerequisites": ["web-ssr-csr"],
           "resources": [
             { "title": "Google Search Central — SEO starter guide", "url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "kind": "docs" }
           ]

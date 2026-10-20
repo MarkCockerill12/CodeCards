@@ -27,6 +27,7 @@ export interface CompareColumns {
 export interface Card {
   id: string;
   type: CardType;
+  /** Doubles as the card's tier: 1 Basics … 5 Expert (see lib/tiers.ts). */
   difficulty: 1 | 2 | 3 | 4 | 5;
   tags: string[];
   prompt: string;
@@ -40,7 +41,7 @@ export interface Card {
   complexity?: { time: string; space?: string };
   prerequisites?: string[];
   resources: Resource[];
-  verify?: { runtime: 'node' | 'python' | 'go' | 'rust' | 'java' | 'csharp' | 'php' | 'kotlin'; expectedOutput: string };
+  verify?: { runtime: 'node' | 'python' | 'go' | 'rust' | 'java' | 'csharp' | 'php' | 'kotlin' | 'c'; expectedOutput: string };
   verifiedAt?: string;
   /** Injected at load time so a card always knows where it lives. */
   topicId?: string;
@@ -188,4 +189,5 @@ export interface SessionSummary {
   mode: SessionMode;
 }
 
-export type SessionMode = 'review' | 'topic' | 'module' | 'weak' | 'calibration' | 'checkpoint';
+/** `tier` studies one unlocked tier of a topic; `checkpoint` is that tier's test-out quiz. */
+export type SessionMode = 'review' | 'topic' | 'tier' | 'weak' | 'checkpoint';

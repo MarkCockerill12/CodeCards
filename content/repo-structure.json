@@ -7,6 +7,74 @@
   "description": "Monorepo vs polyrepo, layering, dependency direction, package management and project layout that survives growth.",
   "modules": [
     {
+      "id": "repo-structure-big-picture",
+      "name": "The Big Picture",
+      "description": "What Repository & Project Structure is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "repo-structure-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["repo.basics"],
+          "prompt": "What is a repository?",
+          "answer": "A project's folder of files tracked by version control (usually Git), together with its complete history of changes. It holds the source code and everything needed to build, test and understand the project.",
+          "explanation": "Hosting services such as GitHub, GitLab and Bitbucket add collaboration around repositories: pull requests, issues, CI and access control.",
+          "resources": [
+            { "title": "Wikipedia — Repository (version control)", "url": "https://en.wikipedia.org/wiki/Repository_(version_control)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "repo-structure-intro-layout",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["repo.basics"],
+          "prompt": "What does a typical project layout look like?",
+          "answer": "Source code in `src/` (or a package directory), tests in `tests/`, documentation in `docs/`, helper scripts in `scripts/`, plus top-level files: README, licence, `.gitignore`, the build/dependency manifest (`package.json`, `pyproject.toml`, `go.mod`) and CI configuration.",
+          "explanation": "Following the conventions of your language community matters more than any one \"perfect\" layout: newcomers and tools both expect things where they usually are.",
+          "resources": [
+            { "title": "GitHub Docs — About repositories", "url": "https://docs.github.com/en/repositories/creating-and-managing-repositories/about-repositories", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "repo-structure-intro-gitignore",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["repo.basics"],
+          "prompt": "What does `.gitignore` do?",
+          "answer": "Lists files and folders Git should not track: build output, dependency folders (`node_modules/`, `.venv/`), editor settings, logs, and local secrets such as `.env` files.",
+          "explanation": "Ignoring generated files keeps the repository small and diffs readable. A `.gitignore` does not affect files that are already committed — those must be removed with `git rm --cached`.",
+          "resources": [
+            { "title": "Git — gitignore documentation", "url": "https://git-scm.com/docs/gitignore", "kind": "docs" },
+            { "title": "github/gitignore templates", "url": "https://github.com/github/gitignore", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "repo-structure-intro-manifest",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["repo.basics"],
+          "prompt": "What is a dependency manifest, and what is a lock file?",
+          "answer": "The manifest lists the packages a project depends on and acceptable version ranges (`package.json`, `pyproject.toml`, `Cargo.toml`). The lock file records the exact versions actually installed (`package-lock.json`, `uv.lock`, `Cargo.lock`) so every machine gets the same ones.",
+          "explanation": "Commit both for applications: the lock file is what makes \"works on my machine\" also work in CI and production.",
+          "resources": [
+            { "title": "Wikipedia — Package manager", "url": "https://en.wikipedia.org/wiki/Package_manager", "kind": "article" }
+          ]
+        },
+        {
+          "id": "repo-structure-intro-license",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["repo.basics"],
+          "prompt": "Why does a repository need a licence file?",
+          "answer": "Without a licence, copyright law means nobody else may legally use, copy or modify the code, even if it is public. A licence (MIT, Apache 2.0, GPL …) states what others are allowed to do.",
+          "explanation": "Permissive licences (MIT, Apache 2.0) allow almost any use; copyleft licences (GPL) require derivative works to be released under the same terms.",
+          "resources": [
+            { "title": "choosealicense.com", "url": "https://choosealicense.com/", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "repo-layout",
       "name": "Repositories",
       "description": "How to organise code across teams and services.",
@@ -43,7 +111,7 @@
         {
           "id": "repo-semver",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["repo.versioning", "craft"],
           "prompt": "What do the three parts of a semantic version mean, and what do `^` and `~` allow?",
           "answer": "MAJOR breaking, MINOR backwards-compatible feature, PATCH backwards-compatible fix. `^1.2.3` allows any 1.x.y at or above 1.2.3; `~1.2.3` allows 1.2.x only. Below 1.0.0 the rules are looser and `^0.2.3` allows only 0.2.x.",
@@ -55,7 +123,7 @@
         {
           "id": "repo-lockfile",
           "type": "scenario",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["repo.dependencies", "devops.build"],
           "prompt": "The build works locally and fails in CI with a different library version. What is the cause and the fix?",
           "answer": "A lockfile that was not committed, ignored, or bypassed by an install command that resolves ranges afresh. Commit it and use the reproducible install command (`npm ci`, `pnpm install --frozen-lockfile`, `poetry install`).",
@@ -118,7 +186,7 @@
         {
           "id": "repo-readme",
           "type": "flip",
-          "difficulty": 2,
+          "difficulty": 1,
           "tags": ["repo.docs", "craft"],
           "prompt": "What belongs in a repository's README and supporting docs?",
           "answer": "What the project is in one sentence, how to run it locally, how to run the tests, how to deploy, the architecture in a diagram or a paragraph, and where to get help. Longer material goes in `docs/`, with decisions recorded as ADRs.",
@@ -191,7 +259,7 @@
         {
           "id": "repo-editorconfig",
           "type": "cloze",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["repo.tooling"],
           "prompt": "A `.___` file at the repository root tells editors which indentation, line endings, charset and final-newline rules to use per file type.",
           "answer": "editorconfig",
@@ -213,7 +281,6 @@
             "right": { "title": "Generate at build time", "points": ["Single source of truth", "Cleaner repository and reviews", "Every build needs the toolchain", "Harder to browse the generated API"] }
           },
           "explanation": "If you commit it, CI must regenerate and fail when the output differs, or it silently drifts. Mark generated files (`linguist-generated` in `.gitattributes`) so reviews collapse them. Never hand-edit generated files — change the source or the template.",
-          "prerequisites": ["repo-monorepo-tooling"],
           "resources": [
             { "title": "GitHub Docs — Customizing how changed files appear on GitHub", "url": "https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github", "kind": "docs" }
           ]

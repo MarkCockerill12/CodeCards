@@ -7,6 +7,92 @@
   "description": "Object lifetime, RAII, move semantics, templates and the undefined behaviour that separates working code from lucky code.",
   "modules": [
     {
+      "id": "cpp-big-picture",
+      "name": "The Big Picture",
+      "description": "What C++ is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "cpp-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cpp.basics"],
+          "prompt": "What is C++, and what is it mainly used for?",
+          "answer": "A compiled, high-performance, multi-paradigm language that extends C with classes, templates and automatic resource management. It powers game engines (Unreal), web browsers (Chrome, Firefox), trading systems, databases, embedded and desktop software — anywhere speed and control matter.",
+          "explanation": "C++'s motto is \"zero-cost abstractions\": features such as classes and templates should cost nothing at run time compared with hand-written C. That makes it fast, but the language is large and has many sharp edges.",
+          "resources": [
+            { "title": "Wikipedia — C++", "url": "https://en.wikipedia.org/wiki/C%2B%2B", "kind": "article" },
+            { "title": "Standard C++ — A tour of C++", "url": "https://isocpp.org/tour", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cpp.basics"],
+          "prompt": "Who created C++, and how did it start?",
+          "answer": "Bjarne Stroustrup at Bell Labs, starting in 1979 as \"C with Classes\"; it was renamed C++ in 1983. It is now an ISO standard updated every three years (C++11, 14, 17, 20, 23).",
+          "explanation": "C++11 was such a large change that people speak of \"modern C++\" — code written with smart pointers, move semantics, `auto` and lambdas looks very different from 1990s C++. Learning resources older than C++11 teach habits that are now discouraged.",
+          "resources": [
+            { "title": "Wikipedia — C++", "url": "https://en.wikipedia.org/wiki/C%2B%2B", "kind": "article" },
+            { "title": "Wikipedia — Bjarne Stroustrup", "url": "https://en.wikipedia.org/wiki/Bjarne_Stroustrup", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cpp-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cpp.basics"],
+          "prompt": "How is a C++ program built and run?",
+          "answer": "A compiler (GCC's `g++`, Clang's `clang++` or Microsoft's MSVC) compiles each source file to machine code and the linker combines them into an executable. Larger projects describe the build with CMake.",
+          "explanation": "C++ compiles to native code, so the program runs with no virtual machine — but it must be rebuilt for each platform. Compile times can be long because headers are re-processed in every file that includes them; C++20 modules aim to fix that.",
+          "resources": [
+            { "title": "CMake tutorial", "url": "https://cmake.org/cmake/help/latest/guide/tutorial/index.html", "kind": "docs" },
+            { "title": "Wikipedia — Compiler", "url": "https://en.wikipedia.org/wiki/Compiler", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cpp-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cpp.basics"],
+          "prompt": "What does a minimal C++ program look like?",
+          "code": "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, world!\\n\";\n}",
+          "lang": "cpp",
+          "answer": "`<iostream>` provides `std::cout`, the standard output stream; `<<` sends text to it. `std::` is the standard library's namespace.",
+          "explanation": "C++23 adds `std::println`, which is closer to Python's `print`, but `std::cout` is what most existing code uses. `main` returning without a `return` statement is allowed in C++ and means success (0).",
+          "resources": [
+            { "title": "cppreference — std::cout", "url": "https://en.cppreference.com/w/cpp/io/cout", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "cpp-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cpp.basics"],
+          "prompt": "What kind of language is C++: typing, memory and paradigms?",
+          "answer": "Statically typed. Memory is managed by you, but idiomatically through RAII — objects release their resources (memory, files, locks) automatically in their destructor when they go out of scope, with smart pointers (`std::unique_ptr`, `std::shared_ptr`) instead of raw `new`/`delete`. It supports procedural, object-oriented and generic (template) programming.",
+          "explanation": "There is no garbage collector, so cleanup timing is deterministic — a key reason games and real-time systems use C++. The cost is that memory-safety bugs remain possible, just less likely with modern idioms.",
+          "resources": [
+            { "title": "cppreference — RAII", "url": "https://en.cppreference.com/w/cpp/language/raii", "kind": "docs" },
+            { "title": "Wikipedia — Resource acquisition is initialization", "url": "https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cpp-intro-stdlib",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cpp.basics"],
+          "prompt": "What is the C++ Standard Library (and the STL)?",
+          "answer": "The library every C++ compiler ships: containers (`std::vector`, `std::map`, `std::string`), algorithms (`std::sort`, `std::find`), smart pointers, I/O streams, threads and more. \"STL\" originally named the containers-and-algorithms part and is often used for the whole thing.",
+          "explanation": "Reach for standard containers before writing your own: `std::vector` should be your default sequence container. C++ has no single official package manager; projects use vcpkg or Conan, or vendor dependencies via CMake.",
+          "resources": [
+            { "title": "cppreference — C++ Standard Library", "url": "https://en.cppreference.com/w/cpp", "kind": "docs" },
+            { "title": "Wikipedia — C++ Standard Library", "url": "https://en.wikipedia.org/wiki/C%2B%2B_Standard_Library", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "cpp-lifetime",
       "name": "Objects, Lifetime & RAII",
       "description": "Construction, destruction, ownership and the rules that keep C++ memory-safe by design.",

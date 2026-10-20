@@ -7,6 +7,91 @@
   "description": "The JVM memory model, collections, generics erasure, equals/hashCode and the concurrency toolkit.",
   "modules": [
     {
+      "id": "java-big-picture",
+      "name": "The Big Picture",
+      "description": "What Java is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "java-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["java.basics"],
+          "prompt": "What is Java, and what is it mainly used for?",
+          "answer": "A general-purpose, statically typed, object-oriented language that runs on the Java Virtual Machine (JVM). It is a mainstay of large enterprise back ends, financial systems and big-data tooling, and was the original language for Android apps.",
+          "explanation": "Java's strengths are stability, tooling and backwards compatibility: code written decades ago still runs. Frameworks such as Spring Boot power a large share of corporate web services, and the JVM also hosts other languages (Kotlin, Scala, Clojure).",
+          "resources": [
+            { "title": "Wikipedia — Java (programming language)", "url": "https://en.wikipedia.org/wiki/Java_(programming_language)", "kind": "article" },
+            { "title": "dev.java — Learn Java", "url": "https://dev.java/learn/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["java.basics"],
+          "prompt": "Who created Java, and what was its famous promise?",
+          "answer": "James Gosling and his team at Sun Microsystems, released in 1995. The promise was \"write once, run anywhere\": compile once to bytecode and run it on any machine that has a JVM.",
+          "explanation": "Oracle acquired Sun in 2010 and now stewards Java, which is developed in the open as OpenJDK. A new feature release ships every six months, with a long-term-support (LTS) release every two years.",
+          "resources": [
+            { "title": "Wikipedia — Java (programming language)", "url": "https://en.wikipedia.org/wiki/Java_(programming_language)", "kind": "article" },
+            { "title": "Wikipedia — OpenJDK", "url": "https://en.wikipedia.org/wiki/OpenJDK", "kind": "article" }
+          ]
+        },
+        {
+          "id": "java-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["java.basics"],
+          "prompt": "How does Java code get from a `.java` file to a running program?",
+          "answer": "`javac` compiles source into platform-independent bytecode (`.class` files); the JVM then runs that bytecode, interpreting it at first and JIT-compiling hot methods to native machine code.",
+          "explanation": "The bytecode layer is what makes Java portable across operating systems and CPUs. It also means a Java program needs a JVM installed (or bundled) to run. For quick experiments, `java Hello.java` compiles and runs a single file in one step.",
+          "resources": [
+            { "title": "dev.java — Learn Java", "url": "https://dev.java/learn/", "kind": "docs" },
+            { "title": "Wikipedia — Java virtual machine", "url": "https://en.wikipedia.org/wiki/Java_virtual_machine", "kind": "article" }
+          ]
+        },
+        {
+          "id": "java-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["java.basics"],
+          "prompt": "What does the classic minimal Java program look like?",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, world!\");\n    }\n}",
+          "lang": "java",
+          "answer": "A class with a `public static void main(String[] args)` method — the entry point the JVM calls. `System.out.println` prints a line.",
+          "explanation": "Everything in Java lives inside a class, which is why even \"hello world\" needs one. Modern Java (JDK 25) also allows a much shorter \"compact source file\" with a bare `void main()`, aimed at beginners and scripts, but the classic form is what you will read in most existing code.",
+          "resources": [
+            { "title": "dev.java — Learn Java", "url": "https://dev.java/learn/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["java.basics"],
+          "prompt": "What kind of language is Java: typing, memory and paradigms?",
+          "answer": "Statically and strongly typed: every variable has a declared (or inferred, with `var`) type checked at compile time. Memory is garbage collected — you allocate with `new` and never free. It is class-based object-oriented, with functional features (lambdas, streams) added since Java 8.",
+          "explanation": "Static typing makes Java verbose compared with Python, but it lets the compiler and IDE catch errors and refactor huge codebases safely. Garbage collection removes whole classes of memory bugs at the cost of some run-time overhead.",
+          "resources": [
+            { "title": "dev.java — Language basics", "url": "https://dev.java/learn/language-basics/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "java-intro-ecosystem",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["java.basics"],
+          "prompt": "What are Maven and Gradle?",
+          "answer": "Java's two main build tools. They compile code, run tests, package JARs and download dependencies from repositories such as Maven Central. Maven uses an XML `pom.xml`; Gradle uses a Groovy or Kotlin build script.",
+          "explanation": "Both use the same dependency coordinates (`group:artifact:version`) and the same central repository, so a library is equally available to either. Gradle is the default for Android; Maven remains common in enterprise back ends.",
+          "resources": [
+            { "title": "Apache Maven — What is Maven?", "url": "https://maven.apache.org/what-is-maven.html", "kind": "docs" },
+            { "title": "Gradle User Manual", "url": "https://docs.gradle.org/current/userguide/userguide.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "java-core",
       "name": "Language & Object Contracts",
       "description": "References, equality, immutability and the contracts every Java object must honour.",

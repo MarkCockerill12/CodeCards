@@ -7,6 +7,80 @@
   "description": "Weights, gradients, training, overfitting, transformers and the vocabulary needed to read a model card.",
   "modules": [
     {
+      "id": "ai-fundamentals-big-picture",
+      "name": "The Big Picture",
+      "description": "What AI & ML Fundamentals is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "ai-fundamentals-intro-ai-ml-dl",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["ai.basics"],
+          "prompt": "AI vs machine learning vs deep learning",
+          "answer": "They are nested: deep learning is a kind of machine learning, which is one approach to artificial intelligence.",
+          "columns": {
+            "left": { "title": "AI and machine learning", "points": ["AI: any technique that makes computers do tasks needing intelligence", "Includes hand-written rules and search", "ML: systems that learn patterns from data instead of explicit rules", "Spam filters, recommendations, fraud scoring"] },
+            "right": { "title": "Deep learning", "points": ["ML using neural networks with many layers", "Learns its own features from raw data", "Needs lots of data and compute (GPUs)", "Image recognition, speech, large language models"] }
+          },
+          "explanation": "Most AI in the news today is deep learning. Classic machine learning (decision trees, linear models) still dominates many business problems with tabular data.",
+          "resources": [
+            { "title": "Wikipedia — Artificial intelligence", "url": "https://en.wikipedia.org/wiki/Artificial_intelligence", "kind": "article" },
+            { "title": "Wikipedia — Machine learning", "url": "https://en.wikipedia.org/wiki/Machine_learning", "kind": "article" },
+            { "title": "Wikipedia — Deep learning", "url": "https://en.wikipedia.org/wiki/Deep_learning", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-fundamentals-intro-model",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ai.basics"],
+          "prompt": "What is a \"model\" in machine learning?",
+          "answer": "A mathematical function with adjustable parameters that maps inputs to outputs — an email to \"spam/not spam\", a photo to \"cat\". Training adjusts the parameters so its outputs match examples; the trained model is then used to make predictions.",
+          "explanation": "A model is only as good as the data it learned from: biased or unrepresentative training data produces a biased model.",
+          "resources": [
+            { "title": "Google — Machine Learning Crash Course", "url": "https://developers.google.com/machine-learning/crash-course", "kind": "video" }
+          ]
+        },
+        {
+          "id": "ai-fundamentals-intro-training-inference",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ai.basics"],
+          "prompt": "What is the difference between training and inference?",
+          "answer": "Training is the learning phase: feeding the model many examples and adjusting its parameters to reduce errors — expensive and done in advance. Inference is using the trained model to make predictions on new inputs — what happens every time you use an AI feature.",
+          "explanation": "Training a large model can take thousands of GPUs for weeks; inference on it costs fractions of a cent per request but happens billions of times.",
+          "resources": [
+            { "title": "Wikipedia — Machine learning", "url": "https://en.wikipedia.org/wiki/Machine_learning", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-fundamentals-intro-data",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ai.basics"],
+          "prompt": "What are features, labels and a dataset?",
+          "answer": "A dataset is a collection of examples. Features are the input attributes of each example (a house's size, location, age); the label is the answer the model should learn to predict (its sale price).",
+          "explanation": "Choosing and cleaning features and getting reliable labels is often most of the work in a machine learning project — \"garbage in, garbage out\" applies strongly.",
+          "resources": [
+            { "title": "Google ML Crash Course — Framing", "url": "https://developers.google.com/machine-learning/crash-course/framing/ml-terminology", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ai-fundamentals-intro-neural-network",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ai.basics"],
+          "prompt": "What is a neural network, in plain terms?",
+          "answer": "A model built from layers of simple connected units (\"neurons\"). Each unit takes a weighted sum of its inputs and applies a simple function; training adjusts the weights. Stacking many layers lets it learn very complex patterns.",
+          "explanation": "The \"neural\" name is a loose inspiration from the brain, not an accurate model of it. The key training algorithm, backpropagation, works out how to nudge every weight to reduce the error.",
+          "resources": [
+            { "title": "Wikipedia — Neural network (machine learning)", "url": "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)", "kind": "article" },
+            { "title": "3Blue1Brown — But what is a neural network?", "url": "https://www.3blue1brown.com/lessons/neural-networks", "kind": "video" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "ai-basics",
       "name": "How Learning Works",
       "description": "Parameters, loss, gradient descent and the training loop.",
@@ -52,7 +126,7 @@
         {
           "id": "ai-train-val-test",
           "type": "spot-bug",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["ai.evaluation", "ai.data"],
           "prompt": "What is wrong with this evaluation?",
           "code": "X_scaled = scaler.fit_transform(X)          # fit on ALL data\nX_train, X_test = train_test_split(X_scaled)\nmodel.fit(X_train, y_train)\nprint(model.score(X_test, y_test))          # optimistic",
@@ -67,7 +141,7 @@
         {
           "id": "ai-metrics",
           "type": "scenario",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["ai.evaluation", "ai.metrics"],
           "prompt": "A fraud detector is 99.9% accurate. Why might that be worthless?",
           "answer": "Because 99.9% of transactions are legitimate — predicting 'not fraud' every time scores 99.9%. Use precision, recall, F1 and PR-AUC on the minority class, and pick the threshold from the real cost of each error type.",
@@ -112,7 +186,7 @@
         {
           "id": "ai-supervision-types",
           "type": "compare",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["ai.fundamentals"],
           "prompt": "Supervised vs unsupervised vs reinforcement learning",
           "answer": "Supervised learns from labelled examples; unsupervised finds structure in unlabelled data; reinforcement learns from rewards received by acting in an environment.",
@@ -272,7 +346,6 @@
             "right": { "title": "Transformer", "points": ["Self-attention across all positions", "Parallel training on GPUs", "Language, code, vision, audio, multimodal", "Cost grows quadratically with sequence length"] }
           },
           "explanation": "Architecture encodes assumptions (inductive bias) about the data. RNNs struggle with long-range dependencies and cannot parallelise across time steps, which is why transformers replaced them for most sequence tasks.",
-          "prerequisites": ["ai-transformer-attention"],
           "resources": [
             { "title": "Dive into Deep Learning (free textbook)", "url": "https://d2l.ai/", "kind": "book" }
           ]

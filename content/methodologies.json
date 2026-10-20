@@ -7,6 +7,78 @@
   "description": "Agile, Scrum, Kanban, waterfall, estimation, and the team practices that decide whether software ships.",
   "modules": [
     {
+      "id": "methodologies-big-picture",
+      "name": "The Big Picture",
+      "description": "What Methodologies & Teamwork is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "methodologies-intro-sdlc",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["process.basics"],
+          "prompt": "What is the software development life cycle (SDLC)?",
+          "answer": "The stages software goes through: planning and requirements, design, implementation (coding), testing, deployment, and maintenance. Methodologies differ in how they order and repeat these stages.",
+          "explanation": "Even teams that work in tiny iterations still do every stage — they just do them in small slices, many times, instead of once each.",
+          "resources": [
+            { "title": "Wikipedia — Systems development life cycle", "url": "https://en.wikipedia.org/wiki/Systems_development_life_cycle", "kind": "article" }
+          ]
+        },
+        {
+          "id": "methodologies-intro-waterfall-agile",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["process.basics"],
+          "prompt": "Waterfall vs Agile",
+          "answer": "Waterfall runs the stages once, in sequence, delivering at the end; Agile delivers working software in short iterations and adapts the plan based on feedback.",
+          "columns": {
+            "left": { "title": "Waterfall", "points": ["Plan everything up front", "One big delivery at the end", "Change is expensive", "Fits fixed, well-understood requirements"] },
+            "right": { "title": "Agile", "points": ["Plan a little, deliver, learn, repeat", "Working software every few weeks", "Change is expected", "Fits uncertain or evolving requirements"] }
+          },
+          "explanation": "Most software teams today work in some Agile style, because requirements rarely survive contact with real users unchanged.",
+          "resources": [
+            { "title": "Wikipedia — Waterfall model", "url": "https://en.wikipedia.org/wiki/Waterfall_model", "kind": "article" },
+            { "title": "Wikipedia — Agile software development", "url": "https://en.wikipedia.org/wiki/Agile_software_development", "kind": "article" }
+          ]
+        },
+        {
+          "id": "methodologies-intro-agile",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["process.basics"],
+          "prompt": "What are the four values of the Agile Manifesto?",
+          "answer": "Individuals and interactions over processes and tools; working software over comprehensive documentation; customer collaboration over contract negotiation; responding to change over following a plan.",
+          "explanation": "The manifesto (2001) says the items on the right still have value — the ones on the left are valued more. \"Agile\" is a set of values, not a specific process.",
+          "resources": [
+            { "title": "Manifesto for Agile Software Development", "url": "https://agilemanifesto.org/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "methodologies-intro-scrum",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["process.basics"],
+          "prompt": "What is Scrum, in brief?",
+          "answer": "An Agile framework that organises work into fixed-length sprints (usually two weeks), with a prioritised product backlog, a sprint planning meeting, a short daily stand-up, a sprint review demo and a retrospective. Roles: product owner, Scrum master, developers.",
+          "explanation": "Scrum's value is the regular rhythm of delivering, inspecting and adapting. Done as ceremony without the inspection and adaptation, it becomes meetings for their own sake.",
+          "resources": [
+            { "title": "The Scrum Guide", "url": "https://scrumguides.org/scrum-guide.html", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "methodologies-intro-kanban",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["process.basics"],
+          "prompt": "What is Kanban?",
+          "answer": "A method for managing work as a flow: tasks move across a board of columns (To do → In progress → Done), with limits on how many items can be in progress at once.",
+          "explanation": "Work-in-progress limits are the key idea: finishing work before starting new work shortens how long each item takes and exposes bottlenecks.",
+          "resources": [
+            { "title": "Wikipedia — Kanban (development)", "url": "https://en.wikipedia.org/wiki/Kanban_(development)", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "meth-models",
       "name": "Process Models",
       "description": "The frameworks, what they are actually for, and how they fail.",
@@ -230,7 +302,6 @@
           "prompt": "A distributed team across five time zones is drowning in meetings. How should it communicate?",
           "answer": "Default to asynchronous, written communication: decisions and proposals in documents with comment periods, status in the tracker instead of meetings, recorded demos, and clear ownership. Reserve synchronous time for discussion that genuinely benefits from it — conflict, brainstorming, relationship-building.",
           "explanation": "Writing things down creates a searchable record and includes people who could not attend. Explicit response-time expectations prevent constant interruption, and overlapping hours should be protected for the conversations that need them.",
-          "prerequisites": ["meth-documentation"],
           "resources": [
             { "title": "Basecamp — How we communicate", "url": "https://basecamp.com/guides/how-we-communicate", "kind": "docs" }
           ]

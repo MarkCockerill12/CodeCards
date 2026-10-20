@@ -7,6 +7,93 @@
   "description": "Null safety, data and sealed classes, extension functions, scope functions, collections and sequences, coroutines and Flow, and interop with Java.",
   "modules": [
     {
+      "id": "kotlin-big-picture",
+      "name": "The Big Picture",
+      "description": "What Kotlin is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "kotlin-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "What is Kotlin, and what is it mainly used for?",
+          "answer": "A modern, concise, statically typed language that runs on the JVM and interoperates fully with Java. It is Google's preferred language for Android apps, and is also used for server-side code (Spring, Ktor) and for sharing code across platforms with Kotlin Multiplatform.",
+          "explanation": "Kotlin keeps everything good about the Java ecosystem — libraries, tools, the JVM — while removing much of Java's boilerplate and its most common bug, the `NullPointerException`.",
+          "resources": [
+            { "title": "Kotlin docs — Get started", "url": "https://kotlinlang.org/docs/getting-started.html", "kind": "docs" },
+            { "title": "Wikipedia — Kotlin (programming language)", "url": "https://en.wikipedia.org/wiki/Kotlin_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "kotlin-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "Who created Kotlin, and when did it become important?",
+          "answer": "JetBrains (the makers of IntelliJ IDEA), announced in 2011 with 1.0 in 2016. Google announced official Android support in 2017 and made Android development \"Kotlin-first\" in 2019.",
+          "explanation": "JetBrains built Kotlin because it wanted a better language for its own large Java codebase — so seamless Java interop was a requirement from day one.",
+          "resources": [
+            { "title": "Wikipedia — Kotlin (programming language)", "url": "https://en.wikipedia.org/wiki/Kotlin_(programming_language)", "kind": "article" },
+            { "title": "Android Developers — Kotlin", "url": "https://developer.android.com/kotlin", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kotlin-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "How does Kotlin code run?",
+          "answer": "Usually it is compiled to JVM bytecode and runs on the JVM, exactly like Java. Kotlin can also compile to JavaScript, to WebAssembly and to native binaries (Kotlin/Native), which is how Kotlin Multiplatform shares code with iOS.",
+          "explanation": "Because the output is ordinary JVM bytecode, Kotlin and Java classes can live in the same project and call each other directly. Projects are built with Gradle, usually with a Kotlin build script (`build.gradle.kts`).",
+          "resources": [
+            { "title": "Kotlin docs — FAQ", "url": "https://kotlinlang.org/docs/faq.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kotlin-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "What does a minimal Kotlin program look like?",
+          "code": "fun main() {\n    println(\"Hello, world!\")\n}",
+          "lang": "kotlin",
+          "answer": "A top-level `fun main()` — no class required — calling the built-in `println`. No semicolons are needed.",
+          "explanation": "Kotlin functions can live outside classes, unlike Java. `fun` declares a function, `val` a read-only variable and `var` a mutable one; types are usually inferred.",
+          "resources": [
+            { "title": "Kotlin docs — Basic syntax", "url": "https://kotlinlang.org/docs/basic-syntax.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kotlin-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "What are Kotlin's headline language features?",
+          "answer": "Null safety in the type system (`String` can never be null, `String?` can), type inference, data classes, extension functions, concise lambdas, and coroutines for asynchronous code. It is statically typed and, on the JVM, garbage collected.",
+          "explanation": "Null safety is the big one: the compiler forces you to handle the null case, so the \"billion-dollar mistake\" of null references mostly disappears. Data classes replace pages of Java getters, `equals` and `hashCode` with one line.",
+          "resources": [
+            { "title": "Kotlin docs — Null safety", "url": "https://kotlinlang.org/docs/null-safety.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "kotlin-intro-vs-java",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["kotlin.basics"],
+          "prompt": "Kotlin vs Java",
+          "answer": "Both run on the JVM and share libraries. Kotlin is more concise and null-safe by design; Java is older, more verbose, and more widespread in existing enterprise code.",
+          "columns": {
+            "left": { "title": "Kotlin", "points": ["Null safety enforced by the compiler", "Concise: data classes, inference", "Coroutines for async code", "Default for new Android apps"] },
+            "right": { "title": "Java", "points": ["Nulls allowed anywhere", "More verbose (shrinking with records, var)", "Virtual threads for concurrency", "Vast existing enterprise codebase"] }
+          },
+          "explanation": "Teams often mix them: new code in Kotlin calling existing Java libraries. Java has been closing the gap (records, pattern matching, virtual threads), but Kotlin's null safety remains its clearest advantage.",
+          "resources": [
+            { "title": "Kotlin docs — Comparison to Java", "url": "https://kotlinlang.org/docs/comparison-to-java.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "kt-essentials",
       "name": "Language Essentials",
       "description": "val and var, null safety, smart casts, string templates, when, ranges, extension functions and default arguments.",
@@ -106,7 +193,7 @@
         {
           "id": "kt-default-named-args",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["kotlin.functions"],
           "prompt": "What do default and named arguments replace in Kotlin?",
           "answer": "Parameters can have defaults (`fun connect(host: String, port: Int = 443, timeoutMs: Long = 5_000)`) and callers can name arguments (`connect(\"db\", timeoutMs = 1_000)`), which removes most Java-style overload chains and many builder classes.",

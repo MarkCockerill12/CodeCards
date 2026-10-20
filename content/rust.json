@@ -7,6 +7,94 @@
   "description": "Ownership, borrowing, lifetimes, traits and fearless concurrency — the model that makes memory safety a compile-time property.",
   "modules": [
     {
+      "id": "rust-big-picture",
+      "name": "The Big Picture",
+      "description": "What Rust is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "rust-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["rust.basics"],
+          "prompt": "What is Rust, and what is it mainly used for?",
+          "answer": "A compiled systems language that offers C/C++-level performance with memory safety guaranteed at compile time — without a garbage collector. It is used for systems software, command-line tools, browsers, WebAssembly, embedded devices, cloud infrastructure and, increasingly, OS kernels (Linux, Windows).",
+          "explanation": "Most serious security bugs in C and C++ code are memory-safety bugs. Rust's compiler rejects programs that could have them, which is why governments and large companies now recommend memory-safe languages for new systems code.",
+          "resources": [
+            { "title": "The Rust Programming Language (the Book)", "url": "https://doc.rust-lang.org/book/", "kind": "book" },
+            { "title": "Wikipedia — Rust (programming language)", "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "rust-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["rust.basics"],
+          "prompt": "Where did Rust come from?",
+          "answer": "Graydon Hoare began it as a personal project in 2006; Mozilla sponsored it from 2009, and Rust 1.0 shipped in 2015. Since 2021 it has been stewarded by the independent Rust Foundation.",
+          "explanation": "Rust was used to build parts of Firefox (the Servo-derived CSS engine). It has topped Stack Overflow's \"most admired language\" survey for years, reflecting how much its users like it once past the learning curve.",
+          "resources": [
+            { "title": "Wikipedia — Rust (programming language)", "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "rust-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["rust.basics"],
+          "prompt": "How is a Rust program built and run?",
+          "answer": "With Cargo: `cargo new hello` creates a project, `cargo run` compiles and runs it, `cargo build --release` produces an optimised native binary. Under the hood `rustc` compiles via LLVM to machine code.",
+          "explanation": "Rust compiles slower than Go because the compiler does a lot of checking and optimisation. The toolchain itself is installed and updated with `rustup`.",
+          "resources": [
+            { "title": "The Rust Book — Hello, Cargo!", "url": "https://doc.rust-lang.org/book/ch01-03-hello-cargo.html", "kind": "book" },
+            { "title": "The Cargo Book", "url": "https://doc.rust-lang.org/cargo/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rust-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["rust.basics"],
+          "prompt": "What does a minimal Rust program look like?",
+          "code": "fn main() {\n    println!(\"Hello, world!\");\n}",
+          "lang": "rust",
+          "answer": "`fn main()` is the entry point. `println!` is a macro (the `!` marks it), which lets it check the format string at compile time.",
+          "explanation": "Variables are immutable by default (`let x = 5;`); you opt into mutation with `let mut`. That default is a small example of Rust's general approach: make the safe choice the easy one.",
+          "resources": [
+            { "title": "The Rust Book — Hello, World!", "url": "https://doc.rust-lang.org/book/ch01-02-hello-world.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rust-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["rust.basics"],
+          "prompt": "How does Rust manage memory without a garbage collector?",
+          "answer": "Through ownership: every value has exactly one owner, and it is freed automatically when the owner goes out of scope. Other code can borrow a value through references, and the borrow checker enforces at compile time that you have either many readers or one writer — never both.",
+          "explanation": "These rules eliminate use-after-free, double free and data races before the program ever runs. The cost is a learning curve: \"fighting the borrow checker\" is a real phase for every new Rust programmer.",
+          "resources": [
+            { "title": "The Rust Book — What is ownership?", "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "rust-intro-vs-go",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["rust.basics"],
+          "prompt": "Rust vs Go",
+          "answer": "Both are modern compiled languages popular for infrastructure. Go optimises for simplicity and fast development; Rust for control, safety and peak performance.",
+          "columns": {
+            "left": { "title": "Rust", "points": ["No garbage collector — ownership", "Rich type system, steep learning curve", "Predictable latency, max performance", "Systems, embedded, performance-critical code"] },
+            "right": { "title": "Go", "points": ["Garbage collected", "Small language, quick to learn", "Very fast compiles", "Network services, cloud and DevOps tools"] }
+          },
+          "explanation": "A common rule of thumb: Go for services and tooling a team needs to ship and maintain quickly; Rust where memory safety must coexist with C-level performance or no runtime at all.",
+          "resources": [
+            { "title": "Wikipedia — Rust (programming language)", "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)", "kind": "article" },
+            { "title": "Wikipedia — Go (programming language)", "url": "https://en.wikipedia.org/wiki/Go_(programming_language)", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "rust-ownership",
       "name": "Ownership & Borrowing",
       "description": "The core model: who owns a value, who may look at it, and for how long.",
@@ -134,7 +222,7 @@
         {
           "id": "rs-send-sync",
           "type": "flip",
-          "difficulty": 5,
+          "difficulty": 4,
           "tags": ["rust.concurrency", "rust.traits"],
           "prompt": "What do the `Send` and `Sync` marker traits mean?",
           "answer": "`Send`: the type can be transferred to another thread. `Sync`: `&T` can be shared between threads (equivalently, `T: Sync` iff `&T: Send`). Both are auto-derived when all fields qualify.",
@@ -275,7 +363,6 @@
           "prompt": "What are `Box<T>`, `Rc<T>` and `Arc<T>` for?",
           "answer": "`Box<T>` is single-owner heap allocation — for recursive types, large values and trait objects. `Rc<T>` is shared ownership via a non-atomic reference count, single-threaded only. `Arc<T>` is the atomic, thread-safe equivalent.",
           "explanation": "Rc and Arc give shared *immutable* access; add `RefCell` or `Mutex` for mutation. Reference cycles leak, just as in any refcounting scheme — break them with `Weak<T>`, typically for parent pointers in trees.",
-          "prerequisites": ["rs-interior-mutability"],
           "resources": [
             { "title": "The Rust Book — Smart pointers", "url": "https://doc.rust-lang.org/book/ch15-00-smart-pointers.html", "kind": "book" }
           ]
@@ -385,7 +472,7 @@
         {
           "id": "rs-clippy-fmt",
           "type": "cloze",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["rust.tooling"],
           "prompt": "Rust's official linter, run with `cargo ___`, catches hundreds of common mistakes and non-idiomatic patterns beyond what the compiler warns about.",
           "answer": "clippy",

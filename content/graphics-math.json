@@ -7,6 +7,75 @@
   "description": "Vectors, matrices, transforms, quaternions, the rendering pipeline and shader fundamentals.",
   "modules": [
     {
+      "id": "graphics-math-big-picture",
+      "name": "The Big Picture",
+      "description": "What Graphics & Math is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "graphics-math-intro-vector",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["graphics.basics"],
+          "prompt": "What is a vector, in graphics and games?",
+          "answer": "A quantity with a direction and a length, written as components such as (x, y) or (x, y, z). Vectors represent positions, movement directions, velocities and forces.",
+          "explanation": "Adding a velocity vector to a position vector each frame is how things move. The length of a vector (its magnitude) is found with Pythagoras: √(x² + y² + z²).",
+          "resources": [
+            { "title": "Wikipedia — Euclidean vector", "url": "https://en.wikipedia.org/wiki/Euclidean_vector", "kind": "article" },
+            { "title": "Khan Academy — Vectors", "url": "https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:vectors", "kind": "video" }
+          ]
+        },
+        {
+          "id": "graphics-math-intro-coordinates",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["graphics.basics"],
+          "prompt": "How do coordinate systems work in graphics?",
+          "answer": "Every point has coordinates measured from an origin along axes: x and y in 2D, plus z in 3D. Screens usually put the origin at the top-left with y increasing downwards; 3D engines put it at the world centre with y (or z) pointing up.",
+          "explanation": "Different engines and tools disagree on which axis is \"up\" and on left- versus right-handed systems, a frequent source of flipped or mirrored models when importing assets.",
+          "resources": [
+            { "title": "Wikipedia — Cartesian coordinate system", "url": "https://en.wikipedia.org/wiki/Cartesian_coordinate_system", "kind": "article" }
+          ]
+        },
+        {
+          "id": "graphics-math-intro-matrix",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["graphics.basics"],
+          "prompt": "What is a transformation matrix used for?",
+          "answer": "A grid of numbers that encodes a transformation — moving (translation), rotating or scaling — so that multiplying a point by it applies the transformation. Several transformations combine into one matrix by multiplying them.",
+          "explanation": "GPUs are extremely fast at matrix maths, which is why every vertex of every model passes through a few matrix multiplications to reach its place on screen.",
+          "resources": [
+            { "title": "Wikipedia — Transformation matrix", "url": "https://en.wikipedia.org/wiki/Transformation_matrix", "kind": "article" }
+          ]
+        },
+        {
+          "id": "graphics-math-intro-pixel",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["graphics.basics"],
+          "prompt": "What are pixels, resolution and RGB colour?",
+          "answer": "A pixel is one dot of the image grid; resolution is how many there are (1920 × 1080). Each pixel's colour is usually stored as red, green and blue intensities, commonly 0–255 each, plus optional alpha for transparency.",
+          "explanation": "Mixing light: (255, 0, 0) is pure red, (255, 255, 255) white and (0, 0, 0) black. A 1080p frame is about two million pixels, redrawn every frame.",
+          "resources": [
+            { "title": "Wikipedia — Pixel", "url": "https://en.wikipedia.org/wiki/Pixel", "kind": "article" },
+            { "title": "Wikipedia — RGB color model", "url": "https://en.wikipedia.org/wiki/RGB_color_model", "kind": "article" }
+          ]
+        },
+        {
+          "id": "graphics-math-intro-rendering",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["graphics.basics"],
+          "prompt": "What does \"rendering\" mean?",
+          "answer": "Turning a description of a scene — models, materials, lights and a camera — into the 2D image shown on screen. Real-time rendering (games) must do it many times per second; offline rendering (films) can take minutes per frame.",
+          "explanation": "Real-time graphics mostly uses rasterisation (projecting triangles onto the pixel grid); ray tracing (simulating light rays) gives more realistic lighting and is increasingly used in games with hardware support.",
+          "resources": [
+            { "title": "Wikipedia — Rendering (computer graphics)", "url": "https://en.wikipedia.org/wiki/Rendering_(computer_graphics)", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "gm-math",
       "name": "Vector & Matrix Math",
       "description": "The linear algebra you use every day in graphics and games.",
@@ -86,7 +155,7 @@
         {
           "id": "gm-pipeline",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["graphics.pipeline"],
           "prompt": "What are the stages of the rasterisation pipeline?",
           "answer": "Vertex shader → (optional tessellation and geometry) → primitive assembly and clipping → rasterisation → fragment/pixel shader → per-fragment tests (depth, stencil, blending) → framebuffer.",
@@ -154,7 +223,6 @@
           "lang": "python",
           "answer": "5.0\n(0.6, 0.8)\n1.0",
           "explanation": "A vector's length (magnitude) is the square root of the sum of squared components — 3-4-5 here. Normalising divides by the length to get a unit vector: same direction, length 1. Directions for lighting, movement and dot-product tests should be normalised; normalising a zero vector divides by zero, so guard it.",
-          "prerequisites": ["gm-dot-product"],
           "resources": [
             { "title": "LearnOpenGL — Transformations — vectors", "url": "https://learnopengl.com/Getting-started/Transformations", "kind": "article" }
           ],
@@ -168,7 +236,6 @@
           "prompt": "Why do graphics use 4×4 matrices and homogeneous coordinates for 3-D?",
           "answer": "A 3×3 matrix can rotate and scale but cannot translate. Adding a fourth coordinate w lets translation be expressed as a matrix multiplication too, so any chain of translate, rotate, scale and projection collapses into one 4×4 matrix. Points use w = 1 (affected by translation); directions use w = 0 (not affected).",
           "explanation": "The w component also makes perspective projection possible: the projection matrix puts depth into w, and dividing by w afterwards shrinks distant objects. Getting w wrong for normals or directions is a classic lighting bug.",
-          "prerequisites": ["gm-transform-order"],
           "resources": [
             { "title": "LearnOpenGL — Transformations", "url": "https://learnopengl.com/Getting-started/Transformations", "kind": "article" }
           ]
@@ -185,7 +252,6 @@
             "right": { "title": "Orthographic", "points": ["Size independent of distance", "Defined by a box: left, right, top, bottom", "2-D, isometric, UI, CAD", "Used for directional-light shadow maps"] }
           },
           "explanation": "Perspective suits first- and third-person 3-D views; orthographic suits 2-D games, isometric views, UI, CAD and shadow-map rendering for directional lights. The near and far planes of a perspective projection affect depth precision — keep the near plane as far out as you can.",
-          "prerequisites": ["gm-spaces"],
           "resources": [
             { "title": "LearnOpenGL — Coordinate systems", "url": "https://learnopengl.com/Getting-started/Coordinate-Systems", "kind": "article" }
           ]
@@ -213,7 +279,6 @@
           "lang": "python",
           "answer": "15.0\n[0.0, 0.25, 1.0]",
           "explanation": "`lerp(a, b, t) = a + (b − a)·t` blends linearly between two values for t from 0 to 1. Easing functions reshape t before lerping — ease-in-quad (t²) starts slow and accelerates — to make motion feel natural. Slerp does the same on the sphere for rotations.",
-          "prerequisites": ["gm-quaternions"],
           "resources": [
             { "title": "easings.net — Easing functions cheat sheet", "url": "https://easings.net/", "kind": "article" }
           ],
@@ -234,7 +299,7 @@
           "prompt": "How do the Phong/Blinn–Phong model and physically based rendering (PBR) differ?",
           "answer": "Blinn–Phong sums ambient, diffuse (N·L) and specular highlight terms with artist-tuned constants — cheap and intuitive but not energy-conserving. PBR models surfaces with physical parameters (albedo, metallic, roughness) and microfacet BRDFs that conserve energy, so materials look right under any lighting.",
           "explanation": "PBR is the standard in modern engines because one material works in every environment. Image-based lighting — environment maps for reflections and ambient light — is a large part of what makes PBR scenes convincing.",
-          "prerequisites": ["gm-dot-product", "gm-color-space"],
+          "prerequisites": ["gm-dot-product"],
           "resources": [
             { "title": "LearnOpenGL — PBR — Theory", "url": "https://learnopengl.com/PBR/Theory", "kind": "article" }
           ]

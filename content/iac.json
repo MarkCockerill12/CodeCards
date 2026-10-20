@@ -7,6 +7,75 @@
   "description": "Terraform, state, drift, modules and configuration management — infrastructure you can review, test and rebuild.",
   "modules": [
     {
+      "id": "iac-big-picture",
+      "name": "The Big Picture",
+      "description": "What Infrastructure as Code is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "iac-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["iac.basics"],
+          "prompt": "What is Infrastructure as Code (IaC)?",
+          "answer": "Defining servers, networks, databases and other infrastructure in version-controlled code files, and letting a tool create and update the real resources to match — instead of clicking through a cloud console by hand.",
+          "explanation": "IaC makes infrastructure reproducible (rebuild an environment exactly), reviewable (changes go through pull requests) and documented (the code is the description).",
+          "resources": [
+            { "title": "Wikipedia — Infrastructure as code", "url": "https://en.wikipedia.org/wiki/Infrastructure_as_code", "kind": "article" },
+            { "title": "HashiCorp — What is Infrastructure as Code?", "url": "https://developer.hashicorp.com/terraform/tutorials/aws-get-started/infrastructure-as-code", "kind": "article" }
+          ]
+        },
+        {
+          "id": "iac-intro-tools",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["iac.basics"],
+          "prompt": "Name the main Infrastructure as Code tools.",
+          "answer": "Terraform and its open-source fork OpenTofu (multi-cloud, HCL language), Pulumi (general-purpose languages such as TypeScript and Python), AWS CloudFormation and Azure Bicep (provider-specific), and Ansible (mostly configuring existing servers).",
+          "explanation": "Terraform is the most widely used for provisioning cloud resources across providers. Configuration-management tools such as Ansible focus on what is installed and running on machines.",
+          "resources": [
+            { "title": "Terraform — Introduction", "url": "https://developer.hashicorp.com/terraform/intro", "kind": "docs" },
+            { "title": "OpenTofu", "url": "https://opentofu.org/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "iac-intro-drift",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["iac.basics"],
+          "prompt": "What is configuration drift?",
+          "answer": "When real infrastructure no longer matches its definition because someone changed it by hand — opened a firewall port in the console, resized a server during an incident.",
+          "explanation": "Drift makes environments unpredictable and rebuilds unreliable. IaC tools detect it (Terraform's `plan` shows differences); the cure is making every change through code.",
+          "resources": [
+            { "title": "Terraform tutorial — Manage resource drift", "url": "https://developer.hashicorp.com/terraform/tutorials/state/resource-drift", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-intro-declarative",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["iac.basics"],
+          "prompt": "What does it mean that tools like Terraform are declarative?",
+          "answer": "You describe the end state you want — \"three servers of this size, this network\" — and the tool works out which create, update and delete operations will get there from whatever exists now.",
+          "explanation": "Running the same declarative code twice changes nothing the second time (it is idempotent). Imperative scripts (\"create a server\") would create a duplicate.",
+          "resources": [
+            { "title": "Terraform — What is Terraform?", "url": "https://developer.hashicorp.com/terraform/intro", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "iac-intro-immutable",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["iac.basics"],
+          "prompt": "What is immutable infrastructure?",
+          "answer": "Never modifying servers after they are deployed: to change anything, you build a new image or server and replace the old one, rather than patching it in place.",
+          "explanation": "Replacing instead of patching removes drift and \"snowflake\" servers whose exact state nobody knows, and makes rollback as simple as switching back to the previous image.",
+          "resources": [
+            { "title": "Martin Fowler — ImmutableServer", "url": "https://martinfowler.com/bliki/ImmutableServer.html", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "iac-core",
       "name": "Principles & Terraform",
       "description": "Declarative infrastructure, state, and the workflow that keeps it safe.",
@@ -26,7 +95,7 @@
         {
           "id": "iac-declarative-imperative",
           "type": "compare",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["devops.iac", "architecture.model"],
           "prompt": "Declarative vs imperative infrastructure tooling",
           "answer": "Declarative describes the desired end state and lets the tool compute the diff; imperative runs the steps you write to get there.",
@@ -42,7 +111,7 @@
         {
           "id": "iac-state",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["terraform.state", "devops.iac"],
           "prompt": "What is Terraform state, and why does it need care?",
           "answer": "A mapping from your configuration to real resource ids, plus cached attributes. It is how Terraform knows what it already created. It must be stored remotely, locked during apply, versioned, and treated as sensitive — it can contain secrets in plaintext.",
@@ -146,7 +215,7 @@
         {
           "id": "iac-tf-workflow",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["iac.terraform"],
           "prompt": "What do `terraform init`, `plan` and `apply` each do?",
           "answer": "`init` downloads providers and modules and configures the state backend; `plan` compares configuration, state and real infrastructure and shows the proposed changes; `apply` executes a plan (ideally a saved plan file from `plan -out`).",
@@ -164,7 +233,6 @@
           "prompt": "What do the `lifecycle` settings `prevent_destroy`, `create_before_destroy` and `ignore_changes` do?",
           "answer": "`prevent_destroy` makes any plan that would destroy the resource an error — for databases and buckets. `create_before_destroy` builds the replacement before removing the old one, avoiding downtime on forced replacement. `ignore_changes` stops Terraform reverting attributes managed elsewhere (for example an autoscaler's desired count).",
           "explanation": "These encode operational intent that the provider cannot know. Overusing `ignore_changes` hides real drift, so scope it to specific attributes and comment why.",
-          "prerequisites": ["iac-plan-review"],
           "resources": [
             { "title": "Terraform docs — The lifecycle meta-argument", "url": "https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle", "kind": "docs" }
           ]
@@ -177,7 +245,6 @@
           "prompt": "What are input variables, locals and outputs in Terraform?",
           "answer": "Input variables are a module's parameters (with types, defaults, descriptions and validation rules). Locals are named intermediate expressions inside a module. Outputs expose values — IDs, endpoints — to the calling module or to other configurations.",
           "explanation": "Type and validate variables so mistakes fail at plan time. Mark secrets `sensitive = true` to keep them out of plan output (they still land in state). Treat outputs as a module's public API: renaming one breaks every consumer.",
-          "prerequisites": ["iac-modules"],
           "resources": [
             { "title": "Terraform docs — Variables and outputs", "url": "https://developer.hashicorp.com/terraform/language/values", "kind": "docs" }
           ]
@@ -204,7 +271,6 @@
           "lang": "hcl",
           "answer": "`count` addresses instances by index, so removing an element shifts every later index: `bucket[1]` becomes what was `bucket[2]`, and Terraform sees changes it must apply by replacement. `for_each` over a set or map keys each instance by a stable key (`bucket[\"prod\"]`), so removing one leaves the rest untouched.",
           "explanation": "Use `count` only for identical copies or as an on/off switch (`count = var.enabled ? 1 : 0`). When refactoring from `count` to `for_each`, add `moved` blocks so existing resources are re-addressed instead of recreated.",
-          "prerequisites": ["iac-plan-review"],
           "resources": [
             { "title": "Terraform docs — The for_each meta-argument", "url": "https://developer.hashicorp.com/terraform/language/meta-arguments/for_each", "kind": "docs" }
           ]

@@ -7,6 +7,92 @@
   "description": "Lexing, parsing, IR, optimisation, JIT vs AOT and what actually happens between your source and the CPU.",
   "modules": [
     {
+      "id": "compilers-big-picture",
+      "name": "The Big Picture",
+      "description": "What Compilers & Runtimes is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "compilers-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["compilers.basics"],
+          "prompt": "What is a compiler?",
+          "answer": "A program that translates source code written in one language into another, usually lower-level, form — native machine code (C, Rust, Go) or bytecode for a virtual machine (Java, C#) — before the program runs.",
+          "explanation": "Compiling ahead of time lets the compiler check the whole program for errors and optimise it, so the result runs fast. The trade is an extra build step between editing code and running it.",
+          "resources": [
+            { "title": "Wikipedia — Compiler", "url": "https://en.wikipedia.org/wiki/Compiler", "kind": "article" },
+            { "title": "Crafting Interpreters — A map of the territory", "url": "https://craftinginterpreters.com/a-map-of-the-territory.html", "kind": "book" }
+          ]
+        },
+        {
+          "id": "compilers-intro-vs-interpreter",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["compilers.basics"],
+          "prompt": "Compiler vs interpreter",
+          "answer": "A compiler translates the whole program before it runs; an interpreter executes the program directly, statement by statement. Many real systems mix both.",
+          "columns": {
+            "left": { "title": "Compiler", "points": ["Translates before running", "Errors reported up front", "Output runs fast on its own", "C, C++, Rust, Go"] },
+            "right": { "title": "Interpreter", "points": ["Executes source (or bytecode) directly", "Errors found when the line runs", "Quick edit-run loop, slower execution", "Shell scripts, classic Python and Ruby"] }
+          },
+          "explanation": "The line is blurry in practice: CPython compiles to bytecode and then interprets it, and JavaScript engines interpret first and JIT-compile hot code. \"Compiled language\" really describes the usual implementation, not the language itself.",
+          "resources": [
+            { "title": "Wikipedia — Interpreter (computing)", "url": "https://en.wikipedia.org/wiki/Interpreter_(computing)", "kind": "article" },
+            { "title": "Wikipedia — Compiler", "url": "https://en.wikipedia.org/wiki/Compiler", "kind": "article" }
+          ]
+        },
+        {
+          "id": "compilers-intro-levels",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["compilers.basics"],
+          "prompt": "Define source code, assembly, machine code and bytecode.",
+          "answer": "Source code is what programmers write. Machine code is the binary instructions a specific CPU executes. Assembly is a human-readable text form of machine code (`mov`, `add`, `jmp`). Bytecode is a compact instruction set for a virtual machine (the JVM, .NET, CPython) rather than for real hardware.",
+          "explanation": "Machine code is tied to a CPU architecture (x86-64, ARM64), which is why native programs are built separately per platform. Bytecode is portable: the same `.class` file runs on any JVM.",
+          "resources": [
+            { "title": "Wikipedia — Machine code", "url": "https://en.wikipedia.org/wiki/Machine_code", "kind": "article" },
+            { "title": "Wikipedia — Bytecode", "url": "https://en.wikipedia.org/wiki/Bytecode", "kind": "article" }
+          ]
+        },
+        {
+          "id": "compilers-intro-jit",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["compilers.basics"],
+          "prompt": "What is just-in-time (JIT) compilation?",
+          "answer": "Compiling code to native machine code while the program is running, typically only for the \"hot\" parts executed most often. It combines an interpreter's quick start-up with near-compiled speed.",
+          "explanation": "JIT compilers can optimise using information only available at run time, such as which types actually flow through a function. They power the JVM, .NET and every major JavaScript engine.",
+          "resources": [
+            { "title": "Wikipedia — Just-in-time compilation", "url": "https://en.wikipedia.org/wiki/Just-in-time_compilation", "kind": "article" }
+          ]
+        },
+        {
+          "id": "compilers-intro-runtime",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["compilers.basics"],
+          "prompt": "What is a runtime (runtime environment)?",
+          "answer": "The supporting software a program needs while it runs: memory management (allocation and garbage collection), threads, error handling, the standard library and often a JIT. Examples: the JVM, the .NET CLR, Node.js, the Go runtime.",
+          "explanation": "Even \"runtime-free\" languages have a small one — C has its C runtime start-up code that calls `main`. The bigger the runtime, the more it does for you, and the more it costs in start-up time and memory.",
+          "resources": [
+            { "title": "Wikipedia — Runtime system", "url": "https://en.wikipedia.org/wiki/Runtime_system", "kind": "article" }
+          ]
+        },
+        {
+          "id": "compilers-intro-transpiler",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["compilers.basics"],
+          "prompt": "What is a transpiler?",
+          "answer": "A source-to-source compiler: it translates code into another language at a similar level of abstraction — TypeScript to JavaScript, modern JavaScript to older JavaScript (Babel), or Sass to CSS.",
+          "explanation": "Transpilers let you write in a nicer or newer language while still running on platforms that only understand the target. Browsers only run JavaScript and WebAssembly, so the web depends heavily on them.",
+          "resources": [
+            { "title": "Wikipedia — Source-to-source compiler", "url": "https://en.wikipedia.org/wiki/Source-to-source_compiler", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "comp-pipeline",
       "name": "The Compilation Pipeline",
       "description": "From characters to machine code, stage by stage.",
@@ -14,7 +100,7 @@
         {
           "id": "comp-stages",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["compilers.pipeline"],
           "prompt": "What are the stages of a typical compiler?",
           "answer": "Lexing (characters → tokens), parsing (tokens → AST), semantic analysis (types, scopes, symbol tables), IR generation, optimisation passes, then code generation and register allocation.",
@@ -220,7 +306,6 @@
           "prompt": "Name the classic compiler optimisations and what each does.",
           "answer": "Constant folding and propagation (compute known values at compile time), dead-code elimination, common subexpression elimination, inlining (replace a call with the body), loop-invariant code motion, strength reduction (`x * 2` → `x << 1`), and vectorisation (use SIMD instructions for loops).",
           "explanation": "Inlining is the enabling optimisation: it exposes the callee to every other optimisation in the caller's context. It is also why virtual calls, function pointers and cross-module calls (without LTO) are slower — the optimiser cannot see through them.",
-          "prerequisites": ["comp-ssa"],
           "resources": [
             { "title": "LLVM — Analysis and Transform Passes", "url": "https://llvm.org/docs/Passes.html", "kind": "docs" }
           ]

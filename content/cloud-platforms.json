@@ -7,6 +7,77 @@
   "description": "AWS, Azure and GCP core services, the shared responsibility model, IAM, networking and cost control.",
   "modules": [
     {
+      "id": "cloud-platforms-big-picture",
+      "name": "The Big Picture",
+      "description": "What Cloud Platforms is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "cloud-platforms-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cloud.basics"],
+          "prompt": "What is cloud computing?",
+          "answer": "Renting computing resources — servers, storage, databases, networking, AI services — on demand over the internet from a provider, paying for what you use instead of buying and running your own hardware.",
+          "explanation": "The cloud lets a team get a server in seconds and scale to thousands when traffic spikes. The trade-offs are ongoing costs that need watching and dependence on the provider.",
+          "resources": [
+            { "title": "Wikipedia — Cloud computing", "url": "https://en.wikipedia.org/wiki/Cloud_computing", "kind": "article" },
+            { "title": "NIST SP 800-145 — The NIST definition of cloud computing", "url": "https://csrc.nist.gov/pubs/sp/800/145/final", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "cloud-platforms-intro-providers",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cloud.basics"],
+          "prompt": "Who are the big three cloud providers?",
+          "answer": "Amazon Web Services (AWS), Microsoft Azure and Google Cloud Platform (GCP). AWS is the largest; Azure is strong with Microsoft-centric enterprises; GCP is known for data and AI services.",
+          "explanation": "The core building blocks map closely across providers — virtual machines (EC2 / Azure VMs / Compute Engine), object storage (S3 / Blob Storage / Cloud Storage) — so concepts transfer even when names differ.",
+          "resources": [
+            { "title": "Wikipedia — Amazon Web Services", "url": "https://en.wikipedia.org/wiki/Amazon_Web_Services", "kind": "article" },
+            { "title": "Wikipedia — Microsoft Azure", "url": "https://en.wikipedia.org/wiki/Microsoft_Azure", "kind": "article" },
+            { "title": "Wikipedia — Google Cloud Platform", "url": "https://en.wikipedia.org/wiki/Google_Cloud_Platform", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cloud-platforms-intro-service-models",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cloud.basics"],
+          "prompt": "What are IaaS, PaaS and SaaS?",
+          "answer": "Infrastructure as a Service: rent raw virtual machines, storage and networks and manage everything above them (EC2). Platform as a Service: deploy your code and the provider runs the servers (Heroku, App Engine). Software as a Service: use finished software over the web (Gmail, Salesforce).",
+          "explanation": "Moving from IaaS to SaaS, you control less and manage less. Serverless functions (AWS Lambda) push PaaS further: you supply only a function and pay per invocation.",
+          "resources": [
+            { "title": "Microsoft Azure — What is IaaS, PaaS and SaaS?", "url": "https://azure.microsoft.com/en-us/resources/cloud-computing-dictionary/what-is-iaas", "kind": "article" },
+            { "title": "Wikipedia — Cloud computing", "url": "https://en.wikipedia.org/wiki/Cloud_computing", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cloud-platforms-intro-regions",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cloud.basics"],
+          "prompt": "What are regions and availability zones?",
+          "answer": "A region is a geographic area (e.g. eu-west-1, Ireland) containing several availability zones — separate data centres with independent power and networking. Spreading an application across zones survives a single data-centre failure.",
+          "explanation": "Choose regions close to users for speed and in the right jurisdiction for data-protection rules. Multi-region designs survive a whole region failing, at significant extra cost and complexity.",
+          "resources": [
+            { "title": "AWS — Regions and Availability Zones", "url": "https://aws.amazon.com/about-aws/global-infrastructure/regions_az/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cloud-platforms-intro-shared-responsibility",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["cloud.basics"],
+          "prompt": "What is the shared responsibility model?",
+          "answer": "The split of security duties between the cloud provider and the customer: the provider secures the cloud itself (data centres, hardware, the virtualisation layer); the customer secures what they put in it (their data, access permissions, configurations, code).",
+          "explanation": "Most cloud breaches are customer-side misconfigurations — a public storage bucket, an over-powerful access key — not failures of the provider.",
+          "resources": [
+            { "title": "AWS — Shared responsibility model", "url": "https://aws.amazon.com/compliance/shared-responsibility-model/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "cloud-core",
       "name": "Core Concepts & Services",
       "description": "The service categories every provider offers, and what the equivalents are called.",
@@ -77,7 +148,7 @@
         {
           "id": "cloud-iam-least-privilege",
           "type": "scenario",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["cloud.iam", "security.principles"],
           "prompt": "A service needs to read one S3 bucket. What does the policy look like, and what mistake do people make?",
           "answer": "A role with `s3:GetObject` scoped to `arn:aws:s3:::bucket/*`, assumed by the service — no long-lived keys. The common mistake is attaching a broad managed policy such as `AmazonS3FullAccess`, or worse, `*:*`.",
@@ -222,7 +293,6 @@
             "right": { "title": "Spot", "points": ["Spare capacity, deepest discount", "Reclaimed with ~2 minutes' notice", "Batch, CI, stateless workers", "Diversify instance types to reduce interruptions"] }
           },
           "explanation": "Cover the steady baseline with commitments, burst with on-demand, and run interruption-tolerant work — batch jobs, CI runners, stateless workers behind a queue — on spot. Anything on spot must checkpoint or be safely retryable.",
-          "prerequisites": ["cloud-cost-drivers"],
           "resources": [
             { "title": "AWS — Amazon EC2 pricing", "url": "https://aws.amazon.com/ec2/pricing/", "kind": "docs" }
           ]

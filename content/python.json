@@ -7,6 +7,92 @@
   "description": "Semantics, the data model, idioms and the gotchas that bite in interviews and production.",
   "modules": [
     {
+      "id": "python-big-picture",
+      "name": "The Big Picture",
+      "description": "What Python is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "python-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.basics"],
+          "prompt": "What is Python, and what is it mainly used for?",
+          "answer": "A general-purpose, high-level language built for readability. It dominates data science and machine learning, and is widely used for scripting and automation, web back ends (Django, Flask, FastAPI), testing and teaching.",
+          "explanation": "Python trades raw speed for how quickly people can write and read it. Where speed matters, the heavy lifting is done by libraries written in C, C++ or Rust (NumPy, PyTorch, Polars) that Python code drives — which is why a \"slow\" language runs most of the world's machine learning.",
+          "resources": [
+            { "title": "Wikipedia — Python (programming language)", "url": "https://en.wikipedia.org/wiki/Python_(programming_language)", "kind": "article" },
+            { "title": "Python docs — The Python Tutorial", "url": "https://docs.python.org/3/tutorial/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "python-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.basics"],
+          "prompt": "Who created Python, and what idea shaped its design?",
+          "answer": "Guido van Rossum, first released in 1991. Its guiding idea is that code is read far more often than it is written, so it favours clear, uncluttered syntax — indentation instead of braces, and \"one obvious way to do it\".",
+          "explanation": "The informal design principles are collected in \"The Zen of Python\" (PEP 20): run `import this` to print them. \"Readability counts\" and \"Explicit is better than implicit\" are the two lines you will hear quoted most often in code reviews.",
+          "resources": [
+            { "title": "PEP 20 — The Zen of Python", "url": "https://peps.python.org/pep-0020/", "kind": "spec" },
+            { "title": "Wikipedia — Python (programming language)", "url": "https://en.wikipedia.org/wiki/Python_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "python-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.basics"],
+          "prompt": "How does Python code get from a `.py` file to a running program?",
+          "answer": "You run it with an interpreter: `python script.py`. The standard interpreter, CPython, first compiles the source to bytecode, then executes that bytecode on its virtual machine. There is no separate build step.",
+          "explanation": "Because there is no ahead-of-time compile, Python finds many mistakes only when the offending line actually runs. That is the trade for its fast edit-run loop — and why tests, linters and type checkers matter so much in Python projects. The interactive REPL (`python` with no arguments) runs code one line at a time.",
+          "resources": [
+            { "title": "Python docs — Using the Python interpreter", "url": "https://docs.python.org/3/tutorial/interpreter.html", "kind": "docs" },
+            { "title": "Wikipedia — CPython", "url": "https://en.wikipedia.org/wiki/CPython", "kind": "article" }
+          ]
+        },
+        {
+          "id": "python-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.basics"],
+          "prompt": "What does a minimal Python program look like?",
+          "code": "print(\"Hello, world!\")",
+          "lang": "python",
+          "answer": "A single line. No class, no `main` function and no semicolons are required — top-level statements just run, in order.",
+          "explanation": "`print` is a built-in function that writes to standard output. Python uses indentation to group statements (blocks), so whitespace is part of the syntax; most other languages use braces for that.",
+          "resources": [
+            { "title": "Python docs — An informal introduction", "url": "https://docs.python.org/3/tutorial/introduction.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "python-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.basics"],
+          "prompt": "What kind of language is Python: typing, memory and paradigms?",
+          "answer": "Dynamically typed (types belong to values, checked at run time) but strongly typed (no silent `\"1\" + 1`). Memory is managed automatically by reference counting plus a cycle-detecting garbage collector. It is multi-paradigm: procedural, object-oriented and functional styles all work.",
+          "explanation": "Optional type hints (`def f(x: int) -> str`) can be checked by tools such as mypy or pyright, but the interpreter ignores them at run time. \"Everything is an object\" — numbers, functions and classes included — is the model that explains most of the language's behaviour.",
+          "resources": [
+            { "title": "Python docs — Data model", "url": "https://docs.python.org/3/reference/datamodel.html", "kind": "docs" },
+            { "title": "Wikipedia — Type system", "url": "https://en.wikipedia.org/wiki/Type_system", "kind": "article" }
+          ]
+        },
+        {
+          "id": "python-intro-ecosystem",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["python.basics"],
+          "prompt": "How do you install third-party libraries in Python, and what is a virtual environment?",
+          "answer": "Packages come from PyPI (the Python Package Index) and are installed with `pip` (or the faster `uv`). A virtual environment (`python -m venv .venv`) is a per-project folder of installed packages, so two projects can depend on different versions without clashing.",
+          "explanation": "Installing everything into the system Python leads to version conflicts and can break OS tools that rely on it. The habit to build from day one: one virtual environment per project, with dependencies recorded in `pyproject.toml` (or `requirements.txt`).",
+          "resources": [
+            { "title": "Python Packaging User Guide — Installing packages", "url": "https://packaging.python.org/en/latest/tutorials/installing-packages/", "kind": "docs" },
+            { "title": "Python docs — venv", "url": "https://docs.python.org/3/library/venv.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "python-core",
       "name": "Core Semantics",
       "description": "Names, binding, scope and the rules that explain most surprising Python behaviour.",
@@ -427,7 +513,7 @@
         {
           "id": "py-fstrings",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["python.strings", "python.core"],
           "prompt": "What can go inside an f-string, and what do `!r`, `:>10` and `=` do?",
           "answer": "Any expression. `!r` uses `repr()` instead of `str()`, a format spec after `:` controls layout (`:>10` right-aligns in 10 columns, `:.2f` two decimals, `:,` thousands separators), and a trailing `=` (3.8+) prints the expression text as well as its value — `f\"{x=}\"` gives `x=42`.",
@@ -526,7 +612,7 @@
         {
           "id": "py-main-guard",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["python.modules", "python.core"],
           "prompt": "What does `if __name__ == \"__main__\":` do, and why use it?",
           "answer": "A module's `__name__` is `\"__main__\"` only when it is run directly as a script; when imported it is the module's name. The guard runs code only in the first case, so the file can be both an importable module and a runnable script.",
@@ -770,7 +856,6 @@
           "prompt": "What do `async def`, `await`, `asyncio.run` and `asyncio.gather` each do?",
           "answer": "`async def` defines a coroutine function — calling it returns a coroutine object without running it. `await` suspends until the awaited thing finishes, yielding control to the event loop. `asyncio.run` starts a loop and runs a top-level coroutine. `gather` (or a `TaskGroup`) runs several concurrently and collects the results.",
           "explanation": "Concurrency only happens when you schedule several tasks: awaiting coroutines one after another is still sequential. Prefer `async with asyncio.TaskGroup()` (3.11+), which cancels siblings when one fails, and use `asyncio.timeout()` to bound waits.",
-          "prerequisites": ["py-async-blocking-bug"],
           "resources": [
             { "title": "Python docs — asyncio — Coroutines and tasks", "url": "https://docs.python.org/3/library/asyncio-task.html", "kind": "docs" }
           ]

@@ -7,6 +7,75 @@
   "description": "Key authentication, host verification, the config file, tunnels, agent forwarding and hardening a server.",
   "modules": [
     {
+      "id": "ssh-big-picture",
+      "name": "The Big Picture",
+      "description": "What SSH & Remote Access is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "ssh-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ssh.basics"],
+          "prompt": "What is SSH, and what is it used for?",
+          "answer": "Secure Shell: an encrypted protocol for logging in to and running commands on a remote machine over an untrusted network. It is also used to copy files (`scp`, `sftp`), tunnel other traffic, and authenticate to Git hosts such as GitHub.",
+          "explanation": "SSH replaced Telnet and rlogin, which sent everything — passwords included — in plain text. It is the standard way to administer Linux servers.",
+          "resources": [
+            { "title": "Wikipedia — Secure Shell", "url": "https://en.wikipedia.org/wiki/Secure_Shell", "kind": "article" },
+            { "title": "OpenSSH", "url": "https://www.openssh.com/", "kind": "tool" }
+          ]
+        },
+        {
+          "id": "ssh-intro-connect",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ssh.basics"],
+          "prompt": "How do you connect to a server with SSH?",
+          "answer": "`ssh user@host` (for example `ssh alice@203.0.113.5`), optionally with `-p 2222` for a non-standard port. The first time, SSH shows the server's fingerprint and asks you to confirm it; after that it remembers the server in `~/.ssh/known_hosts`.",
+          "explanation": "That fingerprint check protects against connecting to an impostor. If SSH later warns that a host key has changed, stop and find out why before continuing.",
+          "resources": [
+            { "title": "man7.org — ssh(1)", "url": "https://man7.org/linux/man-pages/man1/ssh.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-intro-keys",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ssh.basics"],
+          "prompt": "What is SSH key authentication?",
+          "answer": "Logging in with a key pair instead of a password: the private key stays on your machine, and the matching public key is placed in the server's `~/.ssh/authorized_keys`. The server checks you hold the private key without it ever being sent.",
+          "explanation": "Keys are far stronger than passwords and cannot be guessed by brute force. Create a pair with `ssh-keygen -t ed25519`, protect the private key with a passphrase, and never share or commit it.",
+          "resources": [
+            { "title": "man7.org — ssh-keygen(1)", "url": "https://man7.org/linux/man-pages/man1/ssh-keygen.1.html", "kind": "docs" },
+            { "title": "Wikipedia — Public-key cryptography", "url": "https://en.wikipedia.org/wiki/Public-key_cryptography", "kind": "article" }
+          ]
+        },
+        {
+          "id": "ssh-intro-scp",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ssh.basics"],
+          "prompt": "How do you copy files to or from a server over SSH?",
+          "answer": "`scp file.txt user@host:/path/` copies to the server and `scp user@host:/path/file.txt .` copies back; `sftp user@host` gives an interactive session; `rsync -avz` over SSH copies only what changed.",
+          "explanation": "All three ride on the same SSH connection and authentication, so if `ssh user@host` works, they work too.",
+          "resources": [
+            { "title": "man7.org — scp(1)", "url": "https://man7.org/linux/man-pages/man1/scp.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "ssh-intro-config",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ssh.basics"],
+          "prompt": "What is `~/.ssh/config` for?",
+          "answer": "A per-user file of shortcuts and settings for hosts you connect to often — host aliases, usernames, ports, which key to use — so `ssh prod` can replace `ssh -p 2222 -i ~/.ssh/work_ed25519 deploy@203.0.113.5`.",
+          "explanation": "Tools built on SSH (Git, scp, rsync, VS Code Remote) read the same config, so an alias defined once works everywhere.",
+          "resources": [
+            { "title": "man7.org — ssh_config(5)", "url": "https://man7.org/linux/man-pages/man5/ssh_config.5.html", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "ssh-core",
       "name": "Keys, Trust & Config",
       "description": "How SSH authenticates both directions, and how to make it pleasant to use.",

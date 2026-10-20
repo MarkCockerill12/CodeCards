@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, Compass } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Play } from 'lucide-react';
 import { Button, Panel, Spinner } from '@/components/ui/primitives';
 import { useIndex } from '@/lib/useLibrary';
 import { useStore } from '@/lib/store';
@@ -203,6 +203,12 @@ export default function Onboarding() {
                 ))}
               </div>
             </div>
+
+            <p className="rounded-xl border border-white/8 bg-white/4 p-3 text-xs muted">
+              Every topic starts at <span className="text-emerald-300">Basics</span> — what it is and
+              what it is for — and climbs through Fundamentals, Intermediate and Advanced to Expert.
+              Already know a topic? Take a tier test from the Path to skip ahead.
+            </p>
           </Panel>
         )}
       </motion.div>
@@ -217,25 +223,14 @@ export default function Onboarding() {
             Next <ArrowRight className="h-4 w-4" />
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                completeOnboarding();
-                router.push('/');
-              }}
-            >
-              Skip calibration
-            </Button>
-            <Button
-              onClick={() => {
-                completeOnboarding();
-                router.push('/study?mode=calibration');
-              }}
-            >
-              <Compass className="h-4 w-4" /> Take the calibration quiz
-            </Button>
-          </div>
+          <Button
+            onClick={() => {
+              completeOnboarding();
+              router.push('/');
+            }}
+          >
+            <Play className="h-4 w-4" /> Start learning
+          </Button>
         )}
       </div>
     </div>

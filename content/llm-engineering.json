@@ -7,6 +7,87 @@
   "description": "Tokens, context windows, prompting, RAG, tool use, evaluation and the security model of LLM applications.",
   "modules": [
     {
+      "id": "llm-engineering-big-picture",
+      "name": "The Big Picture",
+      "description": "What LLM Engineering is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "llm-engineering-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["llm.basics"],
+          "prompt": "What is a large language model (LLM)?",
+          "answer": "A very large neural network (a transformer) trained on vast amounts of text to predict the next piece of text. That simple objective, at enough scale, produces models that can answer questions, write code, summarise and reason.",
+          "explanation": "Claude, GPT, Gemini and Llama are LLMs. They generate plausible text, which is usually but not always correct — they can state false things confidently.",
+          "resources": [
+            { "title": "Wikipedia — Large language model", "url": "https://en.wikipedia.org/wiki/Large_language_model", "kind": "article" },
+            { "title": "Anthropic — Intro to Claude", "url": "https://platform.claude.com/docs/en/intro", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-engineering-intro-tokens",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["llm.basics"],
+          "prompt": "What are tokens, and why do they matter?",
+          "answer": "Tokens are the chunks of text a model reads and writes — often whole words or parts of words, roughly ¾ of an English word on average. Models are limited, priced and measured in tokens.",
+          "explanation": "Costs are per input and output token, and every model has a maximum number of tokens it can consider at once (its context window). Code, numbers and non-English text often use more tokens per word.",
+          "resources": [
+            { "title": "OpenAI — Tokenizer", "url": "https://platform.openai.com/tokenizer", "kind": "tool" },
+            { "title": "Wikipedia — Large language model", "url": "https://en.wikipedia.org/wiki/Large_language_model", "kind": "article" }
+          ]
+        },
+        {
+          "id": "llm-engineering-intro-prompt",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["llm.basics"],
+          "prompt": "What is a prompt?",
+          "answer": "The input text you give a model — instructions, context, examples and the question. In chat models it is split into a system prompt (overall behaviour and rules) and user and assistant messages.",
+          "explanation": "Clear, specific prompts with relevant context and examples get much better results than short vague ones. Treat prompts like code: version them and test changes.",
+          "resources": [
+            { "title": "Anthropic — Prompt engineering overview", "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "llm-engineering-intro-context-window",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["llm.basics"],
+          "prompt": "What is a context window?",
+          "answer": "The maximum amount of text (in tokens) a model can take into account in one request — the prompt, any documents, the conversation so far and its own reply. Anything outside it is invisible to the model.",
+          "explanation": "LLMs have no memory between requests; an app \"remembers\" a conversation by sending the history again each time, which is why long chats get slower and more expensive.",
+          "resources": [
+            { "title": "Wikipedia — Large language model", "url": "https://en.wikipedia.org/wiki/Large_language_model", "kind": "article" }
+          ]
+        },
+        {
+          "id": "llm-engineering-intro-hallucination",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["llm.basics"],
+          "prompt": "What is a hallucination?",
+          "answer": "When a model produces confident, fluent output that is false or made up — an invented citation, a non-existent API function, a wrong fact.",
+          "explanation": "Hallucinations follow from how LLMs work: they generate likely text, not verified facts. Mitigations include giving the model trusted source material (retrieval), asking it to cite sources, and checking outputs automatically.",
+          "resources": [
+            { "title": "Wikipedia — Hallucination (artificial intelligence)", "url": "https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "llm-engineering-intro-api",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["llm.basics"],
+          "prompt": "How do applications typically use an LLM?",
+          "answer": "By calling a provider's API over HTTPS with a model name, messages and settings, and receiving generated text back — often streamed token by token. Features such as tool use and structured output let the model call your functions or return JSON.",
+          "explanation": "Most LLM applications are ordinary software around those calls: preparing context, validating outputs, handling errors and costs, and evaluating quality.",
+          "resources": [
+            { "title": "Anthropic — Messages API", "url": "https://platform.claude.com/docs/en/api/messages", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "llm-basics",
       "name": "Working with Models",
       "description": "Tokens, sampling, context and cost — the mechanics behind every API call.",
@@ -70,7 +151,7 @@
         {
           "id": "llm-rag",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["llm.rag", "ai.retrieval"],
           "prompt": "What are the stages of a RAG pipeline, and where does it usually go wrong?",
           "answer": "Chunk documents → embed and index → retrieve top-k for a query → assemble the prompt → generate. Most failures are retrieval failures: bad chunking, embeddings that miss the intent, or no reranking.",
@@ -83,7 +164,7 @@
         {
           "id": "llm-tool-use",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["llm.tools", "llm.agents"],
           "prompt": "How does tool use (function calling) work?",
           "answer": "You supply tool definitions with JSON schemas. The model may respond with a tool-use request instead of text; your code executes the tool and returns the result as a new message; the model continues with that result in context.",
@@ -146,7 +227,6 @@
           "prompt": "What are system, user and assistant messages for in a chat-model API?",
           "answer": "The system prompt sets durable instructions — role, rules, output format, tone, what tools exist. User messages carry the request and any supplied data; assistant messages are the model's previous turns, which you resend each time because the API itself is stateless.",
           "explanation": "Because the whole conversation is resent each call, history grows cost and latency — trim or summarise it. Put stable instructions first and keep them fixed, which also lets providers cache that prefix. Do not rely on the system prompt to keep secrets from the user: assume anything in context can be extracted.",
-          "prerequisites": ["llm-prompt-structure"],
           "resources": [
             { "title": "OpenAI Cookbook — Techniques to improve reliability", "url": "https://cookbook.openai.com/articles/techniques_to_improve_reliability", "kind": "docs" }
           ]
@@ -159,7 +239,7 @@
           "prompt": "How do you get reliable machine-readable output from an LLM?",
           "answer": "Use the provider's structured-output or tool-calling feature with a JSON Schema, which constrains generation to valid JSON of that shape. Then validate the result in code anyway (Pydantic, Zod) and handle failures with a retry that includes the validation error.",
           "explanation": "Asking politely for JSON in prose works most of the time, which is the problem — the failures arrive in production. Keep schemas simple, give fields clear names and descriptions, and include an explicit way for the model to report \"cannot answer\" rather than inventing values.",
-          "prerequisites": ["llm-tool-use", "ts-assertion-vs-guard"],
+          "prerequisites": ["ts-assertion-vs-guard"],
           "resources": [
             { "title": "JSON Schema — Getting started", "url": "https://json-schema.org/learn/getting-started-step-by-step", "kind": "docs" }
           ]
@@ -228,7 +308,7 @@
           "prompt": "What is an LLM agent, and what makes one reliable?",
           "answer": "A loop in which the model chooses tools to call, your code executes them and returns results, and the model continues until it decides the task is done. Reliability comes from few, well-designed tools with clear errors, tight scopes and permissions, step and budget limits, human approval for irreversible actions, and evals of full trajectories.",
           "explanation": "Every extra step compounds the chance of error, so prefer deterministic workflows with LLM calls at specific points when the path is known, and reserve open-ended agents for tasks that genuinely need planning. Log every tool call for debugging and audit.",
-          "prerequisites": ["llm-tool-use", "llm-prompt-injection"],
+          "prerequisites": ["llm-tool-use"],
           "resources": [
             { "title": "Anthropic — Building effective agents", "url": "https://www.anthropic.com/engineering/building-effective-agents", "kind": "article" }
           ]
@@ -287,7 +367,7 @@
           "prompt": "A customer-support bot must not give legal advice, leak other customers' data, or say anything abusive. Where do you enforce that?",
           "answer": "In layers around the model: least-privilege data access (the bot can only query the current customer's records — enforced in code, not the prompt), input and output classifiers or moderation, scoped instructions, deterministic checks on outputs (PII detection, allow-listed actions), and escalation to a human.",
           "explanation": "Instructions reduce bad behaviour but cannot guarantee it; only controls outside the model can. Log and review flagged conversations, and red-team with adversarial prompts before launch and continuously after.",
-          "prerequisites": ["llm-prompt-injection", "sec-access-models"],
+          "prerequisites": ["sec-access-models"],
           "resources": [
             { "title": "OWASP Top 10 for LLM Applications", "url": "https://genai.owasp.org/llm-top-10/", "kind": "docs" }
           ]
@@ -341,7 +421,7 @@
           "prompt": "How do you choose which model to use for a feature?",
           "answer": "Build a representative eval set first, then test candidate models against it on quality, latency, cost, context length, and required features (tool use, structured output, vision). Weigh deployment constraints: data residency, privacy terms, self-hosting needs. Keep the model behind an abstraction so it can be swapped as better options appear.",
           "explanation": "Public leaderboards are a starting point, not an answer — your task and data decide. Different steps of one pipeline can use different models: a small fast one for routing and extraction, a larger one for hard reasoning.",
-          "prerequisites": ["llm-eval-metrics", "llm-cost-latency"],
+          "prerequisites": ["llm-cost-latency"],
           "resources": [
             { "title": "Hugging Face — Open LLM evaluation resources", "url": "https://huggingface.co/docs/leaderboards/index", "kind": "docs" }
           ]

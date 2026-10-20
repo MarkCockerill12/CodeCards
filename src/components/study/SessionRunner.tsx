@@ -12,38 +12,41 @@ import { GRADES, GRADE_COLOR, GRADE_HINT, GRADE_LABEL, previewIntervals } from '
 import { emptyReview } from '@/lib/scheduler';
 import { remedialFor, type PrereqGraph } from '@/lib/prereq';
 import { CHECKPOINT_PASS } from '@/lib/session';
+import { TIER_NAME, tierKey, tierProgress, type Tier } from '@/lib/tiers';
 import { play } from '@/lib/sound';
 import { formatDuration } from '@/lib/utils';
 import { SessionSummaryView } from './SessionSummaryView';
 
 interface Props {
   queue: Card[];
+  /** Every card in scope, in authored order — used to detect tiers cleared this session. */
+  cards: Card[];
   byId: Map<string, Card>;
   graph: PrereqGraph;
   mode: SessionMode;
   topicIds: string[];
+  topicNames: Map<string, string>;
   title: string;
-  moduleId?: string;
-  moduleName?: string;
+  tier?: Tier;
 }
 
 export function SessionRunner({
   queue,
+  cards: scope,
   byId,
   graph,
   mode,
   topicIds,
+  topicNames,
   title,
-  moduleId,
-  moduleName,
+  tier,
 }: Props) {
   const settings = useStore((s) => s.settings);
   const reviews = useStore((s) => s.reviews);
   const reviewCard = useStore((s) => s.reviewCard);
-  const seedCalibration = useStore((s) => s.seedCalibration);
-  const finishCalibration = useStore((s) => s.finishCalibration);
   const finishSession = useStore((s) => s.finishSession);
-  const passCheckpoint = useStore((s) => s.passCheckpoint);
+  const clearTier = useStore((s) => s.clearTier);
+  const passTierTest = useStore((s) => s.passTierTest);
   const flagCard = useStore((s) => s.flagCard);
   const flipAnimation = useStore((s) => s.equipped.flipAnimation);
   const rewardOpen = useStore((s) => s.rewardQueue.length > 0);
@@ -56,6 +59,7 @@ export function SessionRunner({
   const [results, setResults] = useState<SessionCardResult[]>([]);
   const [combo, setCombo] = useState(0);
   const [done, setDone] = useState(false);
+  const [testPassed, setTestPassed] = useState<boolean>();
   const [elapsed, setElapsed] = useState(0);
 
   const startedAt = useRef(Date.now());
@@ -103,17 +107,27 @@ export function SessionRunner({
         mode,
       };
       finishSession(summary);
-      if (mode === 'calibration') finishCalibration();
-      if (mode === 'checkpoint' && moduleId) {
+      const label = (topicId: string, t: Tier) => `${topicNames.get(topicId) ?? topicId} · ${TIER_NAME[t]}`;
+      if (mode === 'checkpoint' && tier) {
         const correct = finalResults.filter((r) => r.grade !== 'again').length;
-        if (finalResults.length > 0 && correct / finalResults.length >= CHECKPOINT_PASS) {
-          passCheckpoint(moduleId);
+        const passed = finalResults.length > 0 && correct / finalResults.length >= CHECKPOINT_PASS;
+        setTestPassed(passed);
+        if (passed) passTierTest(tierKey(topicIds[0], tier), label(topicIds[0], tier));
+      }
+      // Pay out every tier this session finished clearing by study. Read the store
+      // directly: the grades above have landed there but not yet in this render.
+      const { reviews: latest, testedOutTiers, clearedTiers } = useStore.getState();
+      for (const [topicId, tiers] of tierProgress(scope, latest, testedOutTiers)) {
+        for (const t of tiers) {
+          if (t.cleared && !clearedTiers.includes(tierKey(topicId, t.tier))) {
+            clearTier(tierKey(topicId, t.tier), label(topicId, t.tier));
+          }
         }
       }
       play('complete');
       setDone(true);
     },
-    [finishCalibration, finishSession, mode, moduleId, passCheckpoint, topicIds],
+    [clearTier, finishSession, mode, passTierTest, scope, tier, topicIds, topicNames],
   );
 
   const answer = useCallback(
@@ -122,25 +136,20 @@ export function SessionRunner({
       const ms = Date.now() - cardShownAt.current;
       play(`grade-${g}` as const);
 
-      let gained = 0;
-      if (mode === 'calibration' && g === 'easy') {
-        // An instant "easy" during calibration means: do not drag me through this.
-        seedCalibration(card.id, 5);
-        gained = 6;
-      } else {
-        gained = reviewCard(card, g, ms, { allowRewards: mode !== 'calibration' }).xp;
-      }
+      const gained = reviewCard(card, g, ms).xp;
 
       const result: SessionCardResult = { cardId: card.id, grade: g, ms, xp: gained };
       const nextResults = [...results, result];
       setResults(nextResults);
       setCombo((n) => (g === 'again' ? 0 : n + 1));
 
-      // Remedial injection: a failed card pulls its unmastered foundations in behind it.
+      // Remedial injection: a failed card pulls its unmastered foundations in behind it —
+      // never anything from a higher tier than the card itself, and never during a test.
       let nextCards = cards;
-      if (g === 'again' && mode !== 'calibration') {
+      if (g === 'again' && mode !== 'checkpoint') {
         const remedial = remedialFor(card.id, graph, reviews, 2)
           .filter((id) => !injected.current.has(id) && byId.has(id))
+          .filter((id) => byId.get(id)!.difficulty <= card.difficulty)
           .filter((id) => !cards.slice(position + 1).some((c) => c.id === id));
         if (remedial.length > 0) {
           remedial.forEach((id) => injected.current.add(id));
@@ -168,7 +177,6 @@ export function SessionRunner({
       results,
       reviewCard,
       reviews,
-      seedCalibration,
     ],
   );
 
@@ -215,9 +223,9 @@ export function SessionRunner({
         byId={byId}
         startedAt={startedAt.current}
         mode={mode}
-        moduleId={moduleId}
-        moduleName={moduleName}
         topicIds={topicIds}
+        tier={tier}
+        testPassed={testPassed}
       />
     );
   }

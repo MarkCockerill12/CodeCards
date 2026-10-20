@@ -1,15 +1,20 @@
 import type { Card, ReviewState, SessionMode, TagStat } from './types';
 import { isDue, maturity } from './scheduler';
-import { readiness } from './prereq';
+import { introductionOrder, isRecalled, isUnlocked, tierOf, tierProgress, type Tier } from './tiers';
 import { shuffle } from './utils';
 import { weakTagNames } from './weakness';
 
 export interface QueueOptions {
+  /** Every card in scope, in authored order. */
   cards: Card[];
   reviews: Record<string, ReviewState>;
   mode: SessionMode;
   limit: number;
   newLimit: number;
+  /** `tierKey`s the learner has tested out of. */
+  testedOut?: readonly string[];
+  /** For `tier` and `checkpoint` sessions: the tier being studied or tested. */
+  tier?: Tier;
   tagStats?: Record<string, TagStat>;
   now?: number;
 }
@@ -18,35 +23,47 @@ export interface QueueOptions {
  * Builds the card order for a session.
  *
  * Priority: due reviews first (they are the ones actually decaying), then a capped
- * intake of new cards ordered by difficulty and prerequisite readiness, then weak-tag
- * top-ups if the queue is still short. Nothing here mutates state.
+ * intake of new cards from each topic's current tier, in authored order, then cards
+ * already seen but not yet recalled, then the reviews coming due soonest. New cards
+ * are never used as padding, and nothing above a topic's unlocked tiers is ever shown.
+ * Nothing here mutates state.
  */
 export function buildQueue(opts: QueueOptions): Card[] {
-  const { cards, reviews, mode, limit, newLimit, tagStats = {}, now = Date.now() } = opts;
+  const {
+    cards,
+    reviews,
+    mode,
+    limit,
+    newLimit,
+    testedOut = [],
+    tier,
+    tagStats = {},
+    now = Date.now(),
+  } = opts;
 
-  if (mode === 'calibration') return calibrationSet(cards, limit);
-  if (mode === 'checkpoint') return shuffle(cards).slice(0, limit);
+  const progress = tierProgress(cards, reviews, testedOut);
 
-  const due = cards
+  if (mode === 'checkpoint') {
+    // A tier test samples the whole tier, seen or not — that is how you test out of it.
+    return shuffle(cards.filter((c) => tierOf(c) === tier && isUnlocked(c, progress))).slice(0, limit);
+  }
+
+  const scope = mode === 'tier' ? cards.filter((c) => tierOf(c) === tier) : cards;
+  const seen = (c: Card) => Boolean(reviews[c.id] && reviews[c.id].reps > 0);
+
+  const due = scope
     .filter((c) => isDue(reviews[c.id], now))
     .sort((a, b) => (reviews[a.id]?.due ?? 0) - (reviews[b.id]?.due ?? 0));
 
-  const available = new Set(cards.map((c) => c.id));
-  const fresh = cards
-    .filter((c) => !reviews[c.id] || reviews[c.id].reps === 0)
-    .sort((a, b) => {
-      const readyDelta = readiness(b, reviews, available) - readiness(a, reviews, available);
-      if (Math.abs(readyDelta) > 0.001) return readyDelta;
-      return a.difficulty - b.difficulty;
-    });
+  const fresh = introductionOrder(progress, reviews, mode === 'tier' ? tier : undefined);
 
   if (mode === 'weak') {
     const weak = new Set(weakTagNames(tagStats));
-    const targeted = cards.filter((c) => c.tags.some((t) => weak.has(t)));
+    const targeted = (c: Card) => c.tags.some((t) => weak.has(t));
     const ordered = [
-      ...targeted.filter((c) => isDue(reviews[c.id], now)),
-      ...targeted.filter((c) => !isDue(reviews[c.id], now) && reviews[c.id]),
-      ...targeted.filter((c) => !reviews[c.id]),
+      ...due.filter(targeted),
+      ...scope.filter((c) => targeted(c) && seen(c) && !isDue(reviews[c.id], now)),
+      ...fresh.filter(targeted),
     ];
     return dedupe(ordered).slice(0, limit);
   }
@@ -55,21 +72,15 @@ export function buildQueue(opts: QueueOptions): Card[] {
   const room = Math.max(0, limit - queue.length);
   queue.push(...fresh.slice(0, Math.min(newLimit, room)));
 
+  // Still short? Revisit what has been seen: the misses first — getting those back is
+  // what clears a tier — then weak tags, then whatever comes due soonest.
   if (queue.length < limit) {
     const weakSet = new Set(weakTagNames(tagStats));
     const inQueue = new Set(queue.map((c) => c.id));
-    const topUp = cards
-      .filter((c) => !inQueue.has(c.id) && reviews[c.id] && c.tags.some((t) => weakSet.has(t)))
-      .sort((a, b) => (reviews[a.id]?.due ?? 0) - (reviews[b.id]?.due ?? 0));
-    queue.push(...topUp.slice(0, limit - queue.length));
-  }
-
-  // Still short? Pad with the least-recently-seen cards so a session is never empty.
-  if (queue.length < limit) {
-    const inQueue = new Set(queue.map((c) => c.id));
-    const rest = cards
-      .filter((c) => !inQueue.has(c.id))
-      .sort((a, b) => (reviews[a.id]?.due ?? Infinity) - (reviews[b.id]?.due ?? Infinity));
+    const rank = (c: Card) => (!isRecalled(reviews[c.id]) ? 0 : c.tags.some((t) => weakSet.has(t)) ? 1 : 2);
+    const rest = scope
+      .filter((c) => !inQueue.has(c.id) && seen(c))
+      .sort((a, b) => rank(a) - rank(b) || reviews[a.id].due - reviews[b.id].due);
     queue.push(...rest.slice(0, limit - queue.length));
   }
 
@@ -81,48 +92,7 @@ function dedupe(cards: Card[]): Card[] {
   return cards.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 }
 
-/**
- * The calibration quiz: a spread across every difficulty band and, where possible,
- * every selected topic — so the first session already knows roughly where you sit.
- */
-export function calibrationSet(cards: Card[], size = 15): Card[] {
-  const byDifficulty = new Map<number, Card[]>();
-  for (const card of cards) {
-    const list = byDifficulty.get(card.difficulty) ?? [];
-    list.push(card);
-    byDifficulty.set(card.difficulty, list);
-  }
-
-  const perBand = Math.max(1, Math.floor(size / 5));
-  const picked: Card[] = [];
-  const topicsUsed = new Map<string, number>();
-
-  for (const difficulty of [1, 2, 3, 4, 5]) {
-    const pool = shuffle(byDifficulty.get(difficulty) ?? []).sort((a, b) => {
-      const ua = topicsUsed.get(a.topicId ?? '') ?? 0;
-      const ub = topicsUsed.get(b.topicId ?? '') ?? 0;
-      return ua - ub;
-    });
-    for (const card of pool.slice(0, perBand)) {
-      picked.push(card);
-      topicsUsed.set(card.topicId ?? '', (topicsUsed.get(card.topicId ?? '') ?? 0) + 1);
-    }
-  }
-
-  if (picked.length < size) {
-    const chosen = new Set(picked.map((c) => c.id));
-    picked.push(...shuffle(cards.filter((c) => !chosen.has(c.id))).slice(0, size - picked.length));
-  }
-
-  return picked.slice(0, size).sort((a, b) => a.difficulty - b.difficulty);
-}
-
-/** A module counts as complete once every card in it has left the "new" state. */
-export function moduleComplete(cards: Card[], reviews: Record<string, ReviewState>): boolean {
-  return cards.length > 0 && cards.every((c) => maturity(reviews[c.id]) !== 'new');
-}
-
-/** Fraction of a module's cards that are at least "young". Drives the path node rings. */
+/** Fraction of a set of cards that are at least "young", weighted. Drives the mastery rings. */
 export function moduleMastery(cards: Card[], reviews: Record<string, ReviewState>): number {
   if (cards.length === 0) return 0;
   const scored = cards.reduce((sum, c) => {
@@ -140,5 +110,6 @@ export function newCount(cards: Card[], reviews: Record<string, ReviewState>): n
   return cards.filter((c) => !reviews[c.id] || reviews[c.id].reps === 0).length;
 }
 
+/** A tier test: up to this many cards drawn from the tier, passed at CHECKPOINT_PASS. */
 export const CHECKPOINT_SIZE = 20;
 export const CHECKPOINT_PASS = 0.85;

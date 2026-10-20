@@ -7,6 +7,80 @@
   "description": "Document, key-value, wide-column, graph, search and time-series stores — what each is for and what each gives up.",
   "modules": [
     {
+      "id": "nosql-big-picture",
+      "name": "The Big Picture",
+      "description": "What NoSQL & Data Stores is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "nosql-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["nosql.basics"],
+          "prompt": "What does \"NoSQL\" mean?",
+          "answer": "An umbrella term for databases that do not use the relational table model — typically key-value, document, wide-column and graph databases. Many trade some of SQL's guarantees and query power for flexible schemas or easy horizontal scaling.",
+          "explanation": "The name is better read as \"not only SQL\": many NoSQL databases now offer SQL-like query languages and transactions, and relational databases now store JSON. Choose by access pattern, not by fashion.",
+          "resources": [
+            { "title": "Wikipedia — NoSQL", "url": "https://en.wikipedia.org/wiki/NoSQL", "kind": "article" },
+            { "title": "MongoDB — What is NoSQL?", "url": "https://www.mongodb.com/resources/basics/databases/nosql-explained", "kind": "article" }
+          ]
+        },
+        {
+          "id": "nosql-intro-families",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["nosql.basics"],
+          "prompt": "Name the four main NoSQL families with an example of each.",
+          "answer": "Key-value (Redis, DynamoDB): look up a value by its key. Document (MongoDB, Couchbase): store JSON-like documents. Wide-column (Cassandra, HBase): rows with flexible columns spread across many machines. Graph (Neo4j): nodes and relationships.",
+          "explanation": "Each family is optimised for a different shape of data and query. A cache or session store is key-value; a product catalogue with varied attributes suits documents; a social network suits a graph.",
+          "resources": [
+            { "title": "Wikipedia — NoSQL", "url": "https://en.wikipedia.org/wiki/NoSQL", "kind": "article" }
+          ]
+        },
+        {
+          "id": "nosql-intro-vs-sql",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["nosql.basics"],
+          "prompt": "Relational (SQL) vs NoSQL databases",
+          "answer": "Relational databases enforce a schema and excel at joins and transactions; NoSQL databases favour flexible data shapes and scaling out, usually around a known access pattern.",
+          "columns": {
+            "left": { "title": "Relational", "points": ["Fixed schema, enforced by the database", "Powerful ad-hoc queries and joins", "Strong transactions (ACID)", "Default choice for most applications"] },
+            "right": { "title": "NoSQL", "points": ["Flexible or no schema", "Queries designed around access patterns", "Often weaker or limited transactions", "Massive scale, caching, specialised data"] }
+          },
+          "explanation": "A sensible default: start with a relational database such as PostgreSQL, and add a NoSQL store when a specific need (a cache, huge write volume, graph queries) justifies it.",
+          "resources": [
+            { "title": "Wikipedia — Relational database", "url": "https://en.wikipedia.org/wiki/Relational_database", "kind": "article" },
+            { "title": "Wikipedia — NoSQL", "url": "https://en.wikipedia.org/wiki/NoSQL", "kind": "article" }
+          ]
+        },
+        {
+          "id": "nosql-intro-document",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["nosql.basics"],
+          "prompt": "What is a document database?",
+          "answer": "A database that stores each record as a self-contained document (JSON or BSON) that can nest objects and arrays, with documents grouped into collections. MongoDB is the best-known example.",
+          "explanation": "Documents map naturally onto objects in code and let records in one collection have different fields. The catch is data that relates across documents: without joins you either embed (duplicate) data or look it up in extra queries.",
+          "resources": [
+            { "title": "Wikipedia — Document-oriented database", "url": "https://en.wikipedia.org/wiki/Document-oriented_database", "kind": "article" }
+          ]
+        },
+        {
+          "id": "nosql-intro-key-value",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["nosql.basics"],
+          "prompt": "What is a key-value store, and what is Redis commonly used for?",
+          "answer": "The simplest database model: store a value under a key, fetch it back by that key. Redis is an in-memory key-value store used for caching, sessions, rate limiting, leaderboards and queues.",
+          "explanation": "Because Redis keeps data in RAM it answers in well under a millisecond, but anything not persisted can be lost on restart — treat it as a fast layer in front of a durable database, not a replacement for one.",
+          "resources": [
+            { "title": "Wikipedia — Key–value database", "url": "https://en.wikipedia.org/wiki/Key–value_database", "kind": "article" },
+            { "title": "Redis docs — Introduction", "url": "https://redis.io/docs/latest/get-started/", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "nosql-families",
       "name": "Store Families",
       "description": "The five main NoSQL shapes and the workloads they were built for.",

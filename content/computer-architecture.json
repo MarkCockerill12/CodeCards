@@ -7,6 +7,76 @@
   "description": "How hardware runs your code: instruction sets, pipelines, branch prediction, out-of-order and speculative execution, SIMD, coherence, storage and the performance laws.",
   "modules": [
     {
+      "id": "computer-architecture-big-picture",
+      "name": "The Big Picture",
+      "description": "What Computer Architecture is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "computer-architecture-intro-parts",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["architecture.basics"],
+          "prompt": "What are the main parts of a computer?",
+          "answer": "The CPU (processor) executes instructions; memory (RAM) holds the programs and data in use; storage (SSD/disk) keeps data permanently; input/output devices (keyboard, screen, network card) connect it to the world — all linked by buses on the motherboard.",
+          "explanation": "This \"stored-program\" design, where instructions and data live in the same memory, is called the von Neumann architecture and describes almost every computer since the 1940s.",
+          "resources": [
+            { "title": "Wikipedia — Von Neumann architecture", "url": "https://en.wikipedia.org/wiki/Von_Neumann_architecture", "kind": "article" },
+            { "title": "Wikipedia — Computer hardware", "url": "https://en.wikipedia.org/wiki/Computer_hardware", "kind": "article" }
+          ]
+        },
+        {
+          "id": "computer-architecture-intro-cpu",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["architecture.basics"],
+          "prompt": "What does a CPU do?",
+          "answer": "It repeatedly fetches an instruction from memory, decodes it and executes it — simple operations such as add two numbers, compare, load or store a value, or jump to another instruction — billions of times per second.",
+          "explanation": "Everything a computer does, from games to spreadsheets, is built out of these tiny steps. A modern CPU contains several cores, each able to run its own stream of instructions.",
+          "resources": [
+            { "title": "Wikipedia — Central processing unit", "url": "https://en.wikipedia.org/wiki/Central_processing_unit", "kind": "article" }
+          ]
+        },
+        {
+          "id": "computer-architecture-intro-clock-cores",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["architecture.basics"],
+          "prompt": "What do a CPU's clock speed and core count mean?",
+          "answer": "Clock speed (in GHz) is how many cycles per second a core runs — 3 GHz is three billion. Core count is how many independent processors are on the chip, so how many instruction streams can run truly in parallel.",
+          "explanation": "Neither number alone predicts speed: work done per cycle varies greatly between designs, and extra cores only help software written to use them.",
+          "resources": [
+            { "title": "Wikipedia — Clock rate", "url": "https://en.wikipedia.org/wiki/Clock_rate", "kind": "article" },
+            { "title": "Wikipedia — Multi-core processor", "url": "https://en.wikipedia.org/wiki/Multi-core_processor", "kind": "article" }
+          ]
+        },
+        {
+          "id": "computer-architecture-intro-isa",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["architecture.basics"],
+          "prompt": "What is an instruction set architecture (ISA), and what are x86 and ARM?",
+          "answer": "The ISA is the set of machine instructions a CPU understands — the contract between hardware and software. x86-64 (Intel, AMD) dominates desktops and servers; ARM dominates phones and now also runs Apple Silicon Macs and many cloud servers.",
+          "explanation": "Native programs are compiled for one ISA, which is why software needs separate builds for x86-64 and ARM64. RISC-V is an open, royalty-free ISA growing in embedded devices.",
+          "resources": [
+            { "title": "Wikipedia — Instruction set architecture", "url": "https://en.wikipedia.org/wiki/Instruction_set_architecture", "kind": "article" },
+            { "title": "Wikipedia — ARM architecture family", "url": "https://en.wikipedia.org/wiki/ARM_architecture_family", "kind": "article" }
+          ]
+        },
+        {
+          "id": "computer-architecture-intro-gpu",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["architecture.basics"],
+          "prompt": "What is a GPU, and how does it differ from a CPU?",
+          "answer": "A graphics processing unit: a chip with thousands of small cores built to do the same simple operation on huge amounts of data at once. CPUs have a few powerful cores that are good at varied, branching work.",
+          "explanation": "GPUs were made for rendering pixels, but the same massive parallelism makes them ideal for machine learning, which is why AI training runs on GPUs.",
+          "resources": [
+            { "title": "Wikipedia — Graphics processing unit", "url": "https://en.wikipedia.org/wiki/Graphics_processing_unit", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "arch-cpu",
       "name": "How a CPU Executes Code",
       "description": "Logic gates, the fetch–decode–execute cycle, instruction sets, pipelining, branch prediction, out-of-order and speculative execution.",
@@ -116,7 +186,6 @@
           "prompt": "Why can a 3 GHz CPU outperform a 4 GHz one?",
           "answer": "Execution time = instructions × cycles per instruction ÷ clock rate. Clock speed is only one factor: instructions per cycle (IPC) depends on pipeline width, branch prediction, cache sizes and memory latency, and differs greatly between microarchitectures.",
           "explanation": "Clock speeds stopped rising in the mid-2000s because power and heat grow steeply with frequency (the end of Dennard scaling), so performance gains came from more cores, wider cores and bigger caches instead. For software, that means gains now come from parallelism and cache-friendly code rather than waiting for faster chips.",
-          "prerequisites": ["arch-out-of-order"],
           "resources": [
             { "title": "Computer Systems: A Programmer's Perspective (Bryant & O'Hallaron)", "url": "https://csapp.cs.cmu.edu/", "kind": "book" }
           ]

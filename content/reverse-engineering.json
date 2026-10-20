@@ -7,6 +7,79 @@
   "description": "Understanding software without its source: executable formats, reading x86-64 assembly, disassemblers, decompilers and debuggers, and the tricks binaries use to resist analysis.",
   "modules": [
     {
+      "id": "reverse-engineering-big-picture",
+      "name": "The Big Picture",
+      "description": "What Reverse Engineering is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "reverse-engineering-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["re.basics"],
+          "prompt": "What is reverse engineering in software?",
+          "answer": "Working out how a program functions without its source code — by examining its compiled binary, observing its behaviour and reconstructing its logic.",
+          "explanation": "It is used for malware analysis, finding security vulnerabilities, interoperability with undocumented formats and protocols, and recovering lost knowledge about legacy software. Legality depends on jurisdiction and licence terms.",
+          "resources": [
+            { "title": "Wikipedia — Reverse engineering", "url": "https://en.wikipedia.org/wiki/Reverse_engineering", "kind": "article" }
+          ]
+        },
+        {
+          "id": "reverse-engineering-intro-binary",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["re.basics"],
+          "prompt": "What is in a compiled executable?",
+          "answer": "Machine code for a specific CPU, data (strings, constants), and metadata the operating system needs to load it: which libraries and functions it imports, where its sections go in memory and where execution starts. Windows uses the PE format; Linux uses ELF; macOS uses Mach-O.",
+          "explanation": "Compilation throws away comments, most names and high-level structure, which is why reverse engineers must rebuild meaning from the instructions themselves.",
+          "resources": [
+            { "title": "Wikipedia — Executable", "url": "https://en.wikipedia.org/wiki/Executable", "kind": "article" },
+            { "title": "Wikipedia — Executable and Linkable Format", "url": "https://en.wikipedia.org/wiki/Executable_and_Linkable_Format", "kind": "article" }
+          ]
+        },
+        {
+          "id": "reverse-engineering-intro-disasm-decomp",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["re.basics"],
+          "prompt": "Disassembler vs decompiler",
+          "answer": "A disassembler turns machine code into assembly language; a decompiler goes further and tries to rebuild C-like source code.",
+          "columns": {
+            "left": { "title": "Disassembler", "points": ["Output: assembly instructions", "Exact and faithful", "Low-level and verbose", "objdump, IDA, Ghidra listing view"] },
+            "right": { "title": "Decompiler", "points": ["Output: approximate C-like code", "A best guess — can be wrong", "Much faster to read", "Ghidra, IDA Hex-Rays, Binary Ninja"] }
+          },
+          "explanation": "Decompiler output is a reading aid, not ground truth: when it looks wrong or surprising, check the assembly it came from.",
+          "resources": [
+            { "title": "Wikipedia — Disassembler", "url": "https://en.wikipedia.org/wiki/Disassembler", "kind": "article" },
+            { "title": "Wikipedia — Decompiler", "url": "https://en.wikipedia.org/wiki/Decompiler", "kind": "article" }
+          ]
+        },
+        {
+          "id": "reverse-engineering-intro-assembly",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["re.basics"],
+          "prompt": "What is assembly language?",
+          "answer": "A human-readable text form of a CPU's machine instructions, one line per instruction, such as `mov eax, 1` or `call printf`. Each architecture (x86-64, ARM) has its own.",
+          "explanation": "Reading assembly is the core skill of reverse engineering. You do not need to write it fluently, but you must recognise patterns: function prologues, loops, comparisons and calls.",
+          "resources": [
+            { "title": "Wikipedia — Assembly language", "url": "https://en.wikipedia.org/wiki/Assembly_language", "kind": "article" }
+          ]
+        },
+        {
+          "id": "reverse-engineering-intro-tools",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["re.basics"],
+          "prompt": "What are the main reverse engineering tools?",
+          "answer": "Disassemblers/decompilers (Ghidra — free from the NSA, IDA Pro, Binary Ninja), debuggers to step through code as it runs (x64dbg, WinDbg, GDB), and utilities such as `strings`, hex editors and PE/ELF viewers.",
+          "explanation": "Ghidra is the usual starting point: it is free, supports many architectures and includes a good decompiler.",
+          "resources": [
+            { "title": "Ghidra", "url": "https://ghidra-sre.org/", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "re-foundations",
       "name": "Binaries & First Steps",
       "description": "What is inside an executable file and how to triage an unknown one before opening a disassembler.",
@@ -75,7 +148,7 @@
         {
           "id": "re-pe-vs-elf",
           "type": "compare",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["re.formats"],
           "prompt": "PE vs ELF executable formats",
           "answer": "PE (Portable Executable) is the Windows format for `.exe` and `.dll` files and starts with the bytes `MZ`. ELF is the format on Linux and most Unix-like systems and starts with `\\x7fELF`. Both describe how to map code and data into memory and which libraries to load.",

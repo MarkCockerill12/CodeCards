@@ -1,0 +1,635 @@
+{
+  "id": "programming-foundations",
+  "name": "Programming Foundations",
+  "icon": "🧭",
+  "category": "Start Here",
+  "color": "#10B981",
+  "description": "Start here: what programming is, the building blocks every language shares, what each major language is for, and the everyday developer toolbox.",
+  "modules": [
+    {
+      "id": "pf-what-is-programming",
+      "name": "What Programming Is",
+      "description": "Programs, languages, source code, and how code turns into something a computer runs.",
+      "cards": [
+        {
+          "id": "pf-program",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is a computer program?",
+          "answer": "A precise set of instructions that tells a computer how to perform a task — written by people in a programming language, then translated into the simple operations the processor can actually execute.",
+          "explanation": "A web browser, a game and a calculator app are all programs. Computers do exactly what the instructions say, nothing more: they never guess what you meant, which is why precision matters so much in programming.",
+          "resources": [
+            { "title": "Wikipedia — Computer program", "url": "https://en.wikipedia.org/wiki/Computer_program", "kind": "article" },
+            { "title": "Khan Academy — Intro to programming", "url": "https://www.khanacademy.org/computing/computer-programming/programming/intro-to-programming/v/programming-intro", "kind": "video" }
+          ]
+        },
+        {
+          "id": "pf-language",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is a programming language?",
+          "answer": "A formal language with strict rules for writing instructions a computer can carry out. Python, JavaScript, Java, C and Go are programming languages; each has its own syntax and strengths, but all can express the same basic ideas.",
+          "explanation": "Natural languages tolerate ambiguity; programming languages cannot. Learning your first language is mostly learning to think in precise steps — the second language is far easier because the concepts carry over.",
+          "resources": [
+            { "title": "Wikipedia — Programming language", "url": "https://en.wikipedia.org/wiki/Programming_language", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-source-code",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is source code?",
+          "answer": "The human-readable text of a program as a programmer writes it, stored in plain text files such as `app.py` or `main.go`. Tools turn source code into something the computer can run.",
+          "explanation": "\"Open source\" means this source code is published for anyone to read, use and modify. Source code is usually kept in version control so every change is recorded.",
+          "resources": [
+            { "title": "Wikipedia — Source code", "url": "https://en.wikipedia.org/wiki/Source_code", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-syntax-semantics",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "Syntax vs semantics",
+          "answer": "Syntax is the grammar of a language — which arrangements of symbols are valid; semantics is the meaning — what valid code actually does when it runs.",
+          "columns": {
+            "left": { "title": "Syntax", "points": ["The rules for writing code correctly", "Missing bracket → syntax error", "Checked before or as the code is read", "Like spelling and grammar"] },
+            "right": { "title": "Semantics", "points": ["What the code means and does", "Wrong formula → wrong result", "Only visible when the code runs", "Like what a sentence means"] }
+          },
+          "explanation": "A program can be perfectly valid syntactically and still do the wrong thing. Tools catch syntax errors instantly; semantic mistakes need tests and careful thought.",
+          "resources": [
+            { "title": "Wikipedia — Syntax (programming languages)", "url": "https://en.wikipedia.org/wiki/Syntax_(programming_languages)", "kind": "article" },
+            { "title": "Wikipedia — Semantics (computer science)", "url": "https://en.wikipedia.org/wiki/Semantics_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-translation",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "How does code a person writes end up running on a computer?",
+          "answer": "It is translated into machine instructions, in one of two broad ways: a compiler translates the whole program ahead of time into an executable (C, Go, Rust), or an interpreter reads and runs the program directly (Python, JavaScript). Many languages combine both.",
+          "explanation": "CPUs only understand their own machine code — sequences of very simple binary instructions. Every language, however friendly, ends up as machine code through some chain of compilers and interpreters.",
+          "resources": [
+            { "title": "Wikipedia — Compiler", "url": "https://en.wikipedia.org/wiki/Compiler", "kind": "article" },
+            { "title": "Wikipedia — Interpreter (computing)", "url": "https://en.wikipedia.org/wiki/Interpreter_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-high-low",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "High-level vs low-level languages",
+          "answer": "High-level languages hide hardware details and read closer to human language; low-level languages map closely onto what the CPU does and give fine control.",
+          "columns": {
+            "left": { "title": "High-level", "points": ["Python, JavaScript, Java, C#", "Automatic memory management", "Faster to write, easier to read", "Portable across machines"] },
+            "right": { "title": "Low-level", "points": ["Assembly, and to a degree C", "Manual control of memory and hardware", "More work, more room for mistakes", "Maximum speed and control"] }
+          },
+          "explanation": "It is a spectrum rather than two boxes: C is \"high-level\" compared with assembly but \"low-level\" compared with Python. Most application code today is written in high-level languages.",
+          "prerequisites": ["pf-language"],
+          "resources": [
+            { "title": "Wikipedia — High-level programming language", "url": "https://en.wikipedia.org/wiki/High-level_programming_language", "kind": "article" },
+            { "title": "Wikipedia — Low-level programming language", "url": "https://en.wikipedia.org/wiki/Low-level_programming_language", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-bug",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are a bug and debugging?",
+          "answer": "A bug is a mistake in a program that makes it behave wrongly or crash. Debugging is the process of finding the cause and fixing it — reading error messages, adding print statements or using a debugger to step through the code.",
+          "explanation": "Professional programmers spend a large share of their time debugging. The core skill is forming a hypothesis (\"the list is empty here\"), checking it, and narrowing down until the cause is obvious.",
+          "resources": [
+            { "title": "Wikipedia — Software bug", "url": "https://en.wikipedia.org/wiki/Software_bug", "kind": "article" },
+            { "title": "Wikipedia — Debugging", "url": "https://en.wikipedia.org/wiki/Debugging", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-error-kinds",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are syntax errors, runtime errors and logic errors?",
+          "answer": "A syntax error breaks the language's grammar and stops the code running at all. A runtime error happens while the program runs — dividing by zero, opening a missing file — and usually crashes it. A logic error runs without complaint but gives the wrong result.",
+          "explanation": "Logic errors are the hardest because nothing tells you they exist; tests that check results are the main defence. Error messages for the other two usually name the line — read them carefully, top to bottom.",
+          "resources": [
+            { "title": "Wikipedia — Software bug", "url": "https://en.wikipedia.org/wiki/Software_bug", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-paradigm",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is a programming paradigm?",
+          "answer": "A style or approach to structuring programs. Procedural code is a sequence of steps and functions; object-oriented code organises data and behaviour into objects; functional code builds programs from pure functions; declarative code describes the result wanted (SQL, HTML).",
+          "explanation": "Most modern languages are multi-paradigm — Python, JavaScript and Kotlin let you mix styles — so the paradigm is often a choice per problem rather than per language.",
+          "resources": [
+            { "title": "Wikipedia — Programming paradigm", "url": "https://en.wikipedia.org/wiki/Programming_paradigm", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pf-building-blocks",
+      "name": "Building Blocks",
+      "description": "Variables, types, conditions, loops and functions — the concepts every language shares.",
+      "cards": [
+        {
+          "id": "pf-variable",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is a variable?",
+          "code": "name = \"Ada\"\nage = 36\nage = age + 1   # now 37",
+          "lang": "python",
+          "answer": "A name that refers to a value stored in memory, so the program can use and change that value later. `age = 30` creates a variable called `age` holding 30.",
+          "explanation": "Good variable names describe what the value means (`total_price`, not `x`). In most languages `=` means \"assign\", not \"equals\" — it puts the value on the right into the name on the left.",
+          "resources": [
+            { "title": "Wikipedia — Variable (computer science)", "url": "https://en.wikipedia.org/wiki/Variable_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-types",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are the basic data types?",
+          "answer": "Integers (whole numbers: `42`), floating-point numbers (decimals: `3.14`), strings (text: `\"hello\"`), booleans (`true` / `false`), and a \"nothing\" value (`null`, `None`, `nil`). Collections such as lists and dictionaries group many values.",
+          "explanation": "The type of a value decides what you can do with it: you can add two numbers, join two strings, or test a boolean. Mixing types incorrectly — like adding text to a number — is one of the most common beginner errors.",
+          "prerequisites": ["pf-variable"],
+          "resources": [
+            { "title": "Wikipedia — Data type", "url": "https://en.wikipedia.org/wiki/Data_type", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-operators",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are operators, and what is the difference between `=` and `==`?",
+          "answer": "Operators combine values: arithmetic (`+ - * / %`), comparison (`== != < > <= >=`) and logical (`and`/`or`/`not`, or `&& || !`). `=` assigns a value to a variable; `==` asks whether two values are equal and gives true or false.",
+          "explanation": "Confusing `=` with `==` is a classic bug. `%` (modulo) gives the remainder of a division — `7 % 3` is 1 — and is handy for things like checking whether a number is even.",
+          "resources": [
+            { "title": "Wikipedia — Operator (computer programming)", "url": "https://en.wikipedia.org/wiki/Operator_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-conditionals",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What does an `if` statement do?",
+          "code": "if temperature > 30:\n    print(\"Hot\")\nelif temperature > 15:\n    print(\"Mild\")\nelse:\n    print(\"Cold\")",
+          "lang": "python",
+          "answer": "It runs a block of code only when a condition is true, optionally with `else` (and `elif`/`else if`) branches for other cases. This is how programs make decisions.",
+          "explanation": "Conditions are boolean expressions such as `age >= 18`. Keep them readable: give complex conditions a well-named variable or function (`if is_eligible(user):`).",
+          "resources": [
+            { "title": "Wikipedia — Conditional (computer programming)", "url": "https://en.wikipedia.org/wiki/Conditional_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-loops",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are loops, and what is the difference between `for` and `while`?",
+          "code": "for fruit in [\"apple\", \"pear\"]:\n    print(fruit)\n\ncount = 3\nwhile count > 0:\n    print(count)\n    count = count - 1",
+          "lang": "python",
+          "answer": "Loops repeat a block of code. A `for` loop goes through each item of a collection (or a range of numbers); a `while` loop keeps going as long as a condition stays true.",
+          "explanation": "Use `for` when you know what you are iterating over, `while` when you only know when to stop. A `while` loop whose condition never becomes false runs forever — an infinite loop.",
+          "resources": [
+            { "title": "Wikipedia — Control flow", "url": "https://en.wikipedia.org/wiki/Control_flow", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-functions",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is a function?",
+          "code": "def area(width, height):\n    return width * height\n\nprint(area(3, 4))  # 12",
+          "lang": "python",
+          "answer": "A named, reusable block of code that performs one task. It can take inputs (parameters) and give back a result (return value). You define it once and call it as many times as needed.",
+          "explanation": "Functions are the main tool for organising code: they avoid repetition, give a name to an idea, and can be tested on their own. A good function does one thing and its name says what.",
+          "prerequisites": ["pf-variable"],
+          "resources": [
+            { "title": "Wikipedia — Function (computer programming)", "url": "https://en.wikipedia.org/wiki/Function_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-params-args",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "Parameters vs arguments",
+          "answer": "Parameters are the named inputs in a function's definition; arguments are the actual values passed in when the function is called.",
+          "columns": {
+            "left": { "title": "Parameter", "points": ["Part of the definition", "`def greet(name):` — `name`", "A placeholder", "Fixed when the function is written"] },
+            "right": { "title": "Argument", "points": ["Part of the call", "`greet(\"Ada\")` — `\"Ada\"`", "A concrete value", "Different on every call"] }
+          },
+          "explanation": "People often use the words interchangeably, but the distinction helps when reading documentation and error messages such as \"missing 1 required positional argument\".",
+          "prerequisites": ["pf-functions"],
+          "resources": [
+            { "title": "Wikipedia — Parameter (computer programming)", "url": "https://en.wikipedia.org/wiki/Parameter_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-collections",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are lists and dictionaries for?",
+          "code": "scores = [90, 72, 85]\nprint(scores[0])        # 90\n\nages = {\"Ada\": 36, \"Alan\": 41}\nprint(ages[\"Alan\"])     # 41",
+          "lang": "python",
+          "answer": "A list (array) holds an ordered sequence of values reached by position: `scores[0]`. A dictionary (map, object) holds key → value pairs reached by key: `ages[\"Ada\"]`. Lists answer \"the n-th item\"; dictionaries answer \"the item for this key\".",
+          "explanation": "Almost every program uses both. Positions usually start at 0, so the first item of a list is index 0 and the last is at length − 1.",
+          "resources": [
+            { "title": "Wikipedia — List (abstract data type)", "url": "https://en.wikipedia.org/wiki/List_(abstract_data_type)", "kind": "article" },
+            { "title": "Wikipedia — Associative array", "url": "https://en.wikipedia.org/wiki/Associative_array", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-io",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is input and output (I/O)?",
+          "answer": "How a program exchanges data with the outside world: input comes in (keyboard, files, network requests, sensors) and output goes out (text on screen, files, network responses, graphics).",
+          "explanation": "I/O is usually the slowest thing a program does — reading a disk or network is thousands of times slower than computing in memory — which is why so much engineering goes into doing it efficiently.",
+          "resources": [
+            { "title": "Wikipedia — Input/output", "url": "https://en.wikipedia.org/wiki/Input/output", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-comments",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are comments in code?",
+          "answer": "Notes in the source code that the computer ignores, written for human readers — `# like this` in Python and shell, `// like this` in C-family languages and JavaScript.",
+          "explanation": "The best comments explain why something is done, not what the code does (the code already says that). Commenting out code to disable it temporarily is common while debugging, but should not be left in.",
+          "resources": [
+            { "title": "Wikipedia — Comment (computer programming)", "url": "https://en.wikipedia.org/wiki/Comment_(computer_programming)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-scope",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["foundations.basics"],
+          "prompt": "What is variable scope?",
+          "answer": "The region of a program where a variable can be used. A variable created inside a function is local to it and disappears when the function returns; a global variable is visible throughout the file or program.",
+          "explanation": "Preferring local variables and passing values through parameters keeps functions independent and predictable. Many bugs come from code unexpectedly changing a shared global.",
+          "prerequisites": ["pf-functions"],
+          "resources": [
+            { "title": "Wikipedia — Scope (computer science)", "url": "https://en.wikipedia.org/wiki/Scope_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-exceptions",
+          "type": "flip",
+          "difficulty": 2,
+          "tags": ["foundations.basics"],
+          "prompt": "What is an exception, and what does error handling do?",
+          "answer": "An exception is an error signalled while a program runs — a missing file, invalid input, a lost network connection. Error handling (`try`/`except`, `try`/`catch`) lets the program respond — retry, show a message, use a default — instead of crashing.",
+          "explanation": "Only catch errors you can actually handle; silently swallowing every exception hides bugs. Some languages, such as Go and Rust, return errors as ordinary values instead of throwing exceptions.",
+          "resources": [
+            { "title": "Wikipedia — Exception handling", "url": "https://en.wikipedia.org/wiki/Exception_handling", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pf-language-landscape",
+      "name": "The Language Landscape",
+      "description": "What each major language is for, and the big differences between them.",
+      "cards": [
+        {
+          "id": "pf-lang-python",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Python mainly used for?",
+          "answer": "Data science and machine learning, scripting and automation, web back ends and teaching. It is prized for readable, concise code and a huge library ecosystem.",
+          "explanation": "Python is often recommended as a first language because its syntax gets out of the way. It is slower than compiled languages, but fast libraries written in C do the heavy lifting.",
+          "resources": [
+            { "title": "Wikipedia — Python (programming language)", "url": "https://en.wikipedia.org/wiki/Python_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-javascript",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is JavaScript mainly used for?",
+          "answer": "Making web pages interactive — it is the only language every browser runs natively — and, through Node.js, building servers, tools and desktop apps too.",
+          "explanation": "If something happens in a web page when you click, type or scroll, JavaScript is almost certainly behind it. It is one of the most widely used languages in the world.",
+          "resources": [
+            { "title": "Wikipedia — JavaScript", "url": "https://en.wikipedia.org/wiki/JavaScript", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-typescript",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is TypeScript mainly used for?",
+          "answer": "Large JavaScript applications, front end and back end: it is JavaScript with static types, which catch mistakes before the code runs and power better editor tooling.",
+          "explanation": "TypeScript compiles to plain JavaScript, so it runs anywhere JavaScript does. Most large modern web projects use it.",
+          "resources": [
+            { "title": "Wikipedia — TypeScript", "url": "https://en.wikipedia.org/wiki/TypeScript", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-java",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Java mainly used for?",
+          "answer": "Large enterprise back-end systems, banking and finance, big-data tools and (historically) Android apps. It runs on the Java Virtual Machine, so compiled programs run on any operating system.",
+          "explanation": "Java is known for stability, strong tooling and backwards compatibility, which is why huge long-lived business systems are built with it.",
+          "resources": [
+            { "title": "Wikipedia — Java (programming language)", "url": "https://en.wikipedia.org/wiki/Java_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-c",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is C mainly used for?",
+          "answer": "Operating systems, embedded devices and microcontrollers, drivers and other low-level software where direct control of memory and hardware matters.",
+          "explanation": "Created in the early 1970s, C remains the foundation of computing: the Linux kernel, many databases and the interpreters of other languages are written in it.",
+          "resources": [
+            { "title": "Wikipedia — C (programming language)", "url": "https://en.wikipedia.org/wiki/C_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-cpp",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is C++ mainly used for?",
+          "answer": "Performance-critical software: game engines, web browsers, trading systems, graphics, simulations and embedded systems.",
+          "explanation": "C++ adds classes, templates and automatic resource management to C while keeping its speed. It is powerful but large and complex to master.",
+          "resources": [
+            { "title": "Wikipedia — C++", "url": "https://en.wikipedia.org/wiki/C%2B%2B", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-csharp",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is C# mainly used for?",
+          "answer": "Back-end web services and business applications on .NET, Windows desktop apps, and games built with the Unity engine.",
+          "explanation": "C# is Microsoft's flagship language; with modern .NET it runs on Windows, Linux and macOS.",
+          "resources": [
+            { "title": "Wikipedia — C# (programming language)", "url": "https://en.wikipedia.org/wiki/C_Sharp_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-go",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Go mainly used for?",
+          "answer": "Cloud infrastructure, network services, APIs and command-line tools. Docker and Kubernetes are written in Go.",
+          "explanation": "Go was designed at Google to be simple, compile quickly and make concurrent programming easy, which suits servers that handle many connections at once.",
+          "resources": [
+            { "title": "Wikipedia — Go (programming language)", "url": "https://en.wikipedia.org/wiki/Go_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-rust",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Rust mainly used for?",
+          "answer": "Systems programming that must be both fast and safe: command-line tools, browsers, operating-system components, embedded devices, WebAssembly and infrastructure.",
+          "explanation": "Rust's compiler guarantees memory safety without a garbage collector, preventing whole classes of bugs and security holes common in C and C++.",
+          "resources": [
+            { "title": "Wikipedia — Rust (programming language)", "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-kotlin",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Kotlin mainly used for?",
+          "answer": "Android apps — it is Google's preferred Android language — and server-side code on the JVM, where it works seamlessly alongside Java.",
+          "explanation": "Kotlin is a more concise, null-safe alternative to Java that runs on the same platform and uses the same libraries.",
+          "resources": [
+            { "title": "Wikipedia — Kotlin (programming language)", "url": "https://en.wikipedia.org/wiki/Kotlin_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-swift",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Swift mainly used for?",
+          "answer": "Apps for Apple platforms — iPhone, iPad, Mac, Apple Watch — where it replaced Objective-C as Apple's main language.",
+          "explanation": "Apple released Swift in 2014. It is modern, fast and safety-focused, and is also usable on Linux and the server, though Apple platforms remain its home.",
+          "resources": [
+            { "title": "Wikipedia — Swift (programming language)", "url": "https://en.wikipedia.org/wiki/Swift_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-php",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is PHP mainly used for?",
+          "answer": "Server-side web development: generating web pages and APIs. WordPress, Laravel and Wikipedia's MediaWiki are built on it.",
+          "explanation": "PHP powers a very large share of websites thanks to WordPress, and modern PHP 8 is far faster and better designed than its early reputation suggests.",
+          "resources": [
+            { "title": "Wikipedia — PHP", "url": "https://en.wikipedia.org/wiki/PHP", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-sql",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is SQL mainly used for?",
+          "answer": "Querying and managing data in relational databases — selecting, inserting, updating and deleting rows in tables.",
+          "explanation": "SQL is a declarative language: you describe the data you want and the database decides how to fetch it. Almost every application that stores data talks SQL somewhere.",
+          "resources": [
+            { "title": "Wikipedia — SQL", "url": "https://en.wikipedia.org/wiki/SQL", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-lang-bash",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is Bash (shell scripting) mainly used for?",
+          "answer": "Automating tasks on Linux and macOS: running and chaining command-line tools, managing files, setting up servers and glueing build steps together.",
+          "explanation": "A shell script is a list of commands you could type by hand, saved so it runs the same way every time. PowerShell plays a similar role on Windows.",
+          "resources": [
+            { "title": "Wikipedia — Bash (Unix shell)", "url": "https://en.wikipedia.org/wiki/Bash_(Unix_shell)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-html-css",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "Are HTML and CSS programming languages?",
+          "answer": "Not in the usual sense. HTML is a markup language that describes a web page's structure and content; CSS is a style-sheet language that describes how it looks. Neither has the variables, logic and loops of a general-purpose language — that job falls to JavaScript.",
+          "explanation": "They are still essential skills for anyone building for the web, and they are usually the first things a web developer learns.",
+          "resources": [
+            { "title": "Wikipedia — HTML", "url": "https://en.wikipedia.org/wiki/HTML", "kind": "article" },
+            { "title": "Wikipedia — CSS", "url": "https://en.wikipedia.org/wiki/CSS", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-first-language",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "Which language should a beginner learn first?",
+          "answer": "One that matches what you want to build, with a gentle learning curve: Python for general programming, data and automation; JavaScript for websites. The concepts — variables, conditions, loops, functions — transfer to every other language.",
+          "explanation": "Picking \"the perfect first language\" matters much less than sticking with one long enough to build real things. Learning a second language is far quicker than the first.",
+          "resources": [
+            { "title": "Python — Beginner's guide", "url": "https://wiki.python.org/moin/BeginnersGuide", "kind": "article" },
+            { "title": "MDN — Learn web development", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "pf-static-dynamic",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["foundations.basics"],
+          "prompt": "Statically typed vs dynamically typed languages",
+          "answer": "In statically typed languages variable types are known and checked before the program runs; in dynamically typed languages types are attached to values and checked while it runs.",
+          "columns": {
+            "left": { "title": "Static typing", "points": ["Java, C#, C, C++, Go, Rust, TypeScript", "Type mistakes caught at compile time", "More upfront annotations (often inferred)", "Better tooling for large codebases"] },
+            "right": { "title": "Dynamic typing", "points": ["Python, JavaScript, Ruby, PHP", "Type mistakes found when the line runs", "Less ceremony, quicker to start", "Flexible, relies more on tests"] }
+          },
+          "explanation": "The gap has narrowed: dynamic languages added optional type hints (Python, TypeScript for JavaScript) and static languages added type inference (`var`, `:=`, `let`).",
+          "resources": [
+            { "title": "Wikipedia — Type system", "url": "https://en.wikipedia.org/wiki/Type_system", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-gc-manual",
+          "type": "compare",
+          "difficulty": 2,
+          "tags": ["foundations.basics"],
+          "prompt": "Garbage-collected vs manually managed memory",
+          "answer": "With garbage collection the language runtime frees memory a program no longer uses; with manual management the programmer must free it explicitly.",
+          "columns": {
+            "left": { "title": "Garbage collected", "points": ["Java, C#, Go, Python, JavaScript", "No freeing by hand", "Fewer memory bugs", "Some runtime overhead"] },
+            "right": { "title": "Manual / ownership", "points": ["C (manual), C++ (RAII), Rust (ownership)", "Programmer or compiler decides when to free", "Predictable performance, no GC pauses", "Mistakes can crash or create security holes (C)"] }
+          },
+          "explanation": "Rust sits in between: no garbage collector, but its compiler enforces ownership rules so memory is freed automatically and safely.",
+          "resources": [
+            { "title": "Wikipedia — Garbage collection (computer science)", "url": "https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)", "kind": "article" },
+            { "title": "Wikipedia — Manual memory management", "url": "https://en.wikipedia.org/wiki/Manual_memory_management", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pf-toolbox",
+      "name": "The Developer's Toolbox",
+      "description": "Editors, the terminal, libraries, packages and how to get unstuck.",
+      "cards": [
+        {
+          "id": "pf-editor-ide",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "Code editor vs IDE",
+          "answer": "A code editor is a lightweight text editor with programming helpers; an IDE (integrated development environment) bundles editing with building, debugging, testing and refactoring tools for a language.",
+          "columns": {
+            "left": { "title": "Code editor", "points": ["VS Code, Sublime Text, Vim, Neovim", "Fast, general-purpose", "Extended with plugins", "Good for many languages at once"] },
+            "right": { "title": "IDE", "points": ["IntelliJ IDEA, PyCharm, Visual Studio, Android Studio", "Heavier, language-focused", "Deep refactoring and debugging built in", "Great for large projects in one language"] }
+          },
+          "explanation": "The line has blurred: VS Code with extensions behaves much like an IDE. Use whichever helps you most; features like autocomplete, go-to-definition and an integrated debugger matter more than the brand.",
+          "resources": [
+            { "title": "Wikipedia — Integrated development environment", "url": "https://en.wikipedia.org/wiki/Integrated_development_environment", "kind": "article" },
+            { "title": "Visual Studio Code — Docs", "url": "https://code.visualstudio.com/docs", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "pf-terminal",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is the terminal (command line)?",
+          "answer": "A text interface where you type commands for the computer to run — navigate folders, run programs, install packages, use Git — instead of clicking in a graphical interface. The program interpreting the commands is the shell (Bash, zsh, PowerShell).",
+          "explanation": "Most developer tools are command-line first, so basic terminal skills pay off immediately. Commands can be saved as scripts, which makes repetitive work repeatable.",
+          "resources": [
+            { "title": "Wikipedia — Command-line interface", "url": "https://en.wikipedia.org/wiki/Command-line_interface", "kind": "article" },
+            { "title": "MDN — Command line crash course", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Command_line", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "pf-library-framework",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "Library vs framework",
+          "answer": "A library is code you call when you need it; a framework calls your code — it provides the structure of the application and you fill in the parts.",
+          "columns": {
+            "left": { "title": "Library", "points": ["You are in control", "You call it: `requests.get(url)`", "Easy to swap or use a little of", "NumPy, Lodash, requests"] },
+            "right": { "title": "Framework", "points": ["It is in control (\"inversion of control\")", "It calls you: your handler for a route", "Shapes the whole application", "Django, Spring, Angular, Rails"] }
+          },
+          "explanation": "The rule of thumb is \"you call a library; a framework calls you\". Frameworks save a lot of work by deciding structure for you, at the cost of doing things their way.",
+          "resources": [
+            { "title": "Wikipedia — Library (computing)", "url": "https://en.wikipedia.org/wiki/Library_(computing)", "kind": "article" },
+            { "title": "Wikipedia — Software framework", "url": "https://en.wikipedia.org/wiki/Software_framework", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-package-manager",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What are dependencies and a package manager?",
+          "answer": "Dependencies are third-party libraries your project uses. A package manager downloads them from a registry, installs the right versions and keeps track of them: pip/uv (Python), npm (JavaScript), Maven/Gradle (Java), Cargo (Rust), NuGet (.NET).",
+          "explanation": "Reusing well-maintained packages saves enormous effort, but every dependency is code you trust without writing — keep them few, popular and up to date.",
+          "resources": [
+            { "title": "Wikipedia — Package manager", "url": "https://en.wikipedia.org/wiki/Package_manager", "kind": "article" }
+          ]
+        },
+        {
+          "id": "pf-open-source",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "What is open-source software?",
+          "answer": "Software whose source code is published under a licence that lets anyone use, study, modify and share it. Linux, Python, Git, VS Code's core and most programming languages are open source.",
+          "explanation": "Most modern software is built on open-source components. Contributing to open-source projects is also a common way to learn and to show your work.",
+          "resources": [
+            { "title": "Wikipedia — Open-source software", "url": "https://en.wikipedia.org/wiki/Open-source_software", "kind": "article" },
+            { "title": "Open Source Initiative — The Open Source Definition", "url": "https://opensource.org/osd", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "pf-getting-unstuck",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["foundations.basics"],
+          "prompt": "When your code does not work, what should you do first?",
+          "answer": "Read the error message fully — it usually names the problem and the line. Then reproduce the problem in the smallest case, check your assumptions by printing values, and search the exact error text or the official documentation.",
+          "explanation": "Explaining the problem out loud (\"rubber duck debugging\") often reveals the answer. When using AI assistants or forum answers, understand and test the fix rather than pasting it blindly.",
+          "resources": [
+            { "title": "Wikipedia — Rubber duck debugging", "url": "https://en.wikipedia.org/wiki/Rubber_duck_debugging", "kind": "article" },
+            { "title": "Wikipedia — Debugging", "url": "https://en.wikipedia.org/wiki/Debugging", "kind": "article" }
+          ]
+        }
+      ]
+    }
+  ]
+}

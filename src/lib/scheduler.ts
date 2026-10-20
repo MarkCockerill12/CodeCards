@@ -112,26 +112,6 @@ export function previewIntervals(state: ReviewState, now = Date.now()): Record<G
   return out;
 }
 
-/**
- * Seeds a card as "already known" — used by the calibration quiz so experts are not
- * force-marched through fundamentals they answered instantly.
- */
-export function seedKnown(cardId: string, days: number, now = Date.now()): ReviewState {
-  const base = emptyReview(cardId, now);
-  return {
-    ...base,
-    stability: Math.max(days, 1),
-    difficulty: 5,
-    scheduledDays: days,
-    elapsedDays: 0,
-    reps: 1,
-    state: State.Review,
-    due: now + days * 86_400_000,
-    lastReview: now,
-    history: [{ at: now, grade: 'easy', ms: 0 }],
-  };
-}
-
 export function isDue(state: ReviewState | undefined, now = Date.now()): boolean {
   if (!state) return false;
   return state.due <= now;

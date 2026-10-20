@@ -7,6 +7,87 @@
   "description": "TCP/IP, DNS, TLS, HTTP versions, load balancing and diagnosing what the network is really doing.",
   "modules": [
     {
+      "id": "networking-big-picture",
+      "name": "The Big Picture",
+      "description": "What Networking is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "networking-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["networking.basics"],
+          "prompt": "What is a computer network?",
+          "answer": "Two or more devices connected so they can exchange data, using agreed rules called protocols. A LAN (local area network) covers a home or office; a WAN spans larger distances; the internet is a global network of networks.",
+          "explanation": "Every networked program — a browser, a game, a database client — relies on a stack of protocols, each handling one job, from sending raw bits up to understanding web pages.",
+          "resources": [
+            { "title": "Wikipedia — Computer network", "url": "https://en.wikipedia.org/wiki/Computer_network", "kind": "article" }
+          ]
+        },
+        {
+          "id": "networking-intro-ip",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["networking.basics"],
+          "prompt": "What is an IP address?",
+          "answer": "A number that identifies a device on a network so data can be routed to it. IPv4 addresses look like `192.168.1.10` (about 4.3 billion possible); IPv6 addresses are much longer, such as `2001:db8::1`, because IPv4 ran out.",
+          "explanation": "Your home devices usually share one public IPv4 address through your router (NAT), each having a private address such as `192.168.x.x` inside the home network.",
+          "resources": [
+            { "title": "Wikipedia — IP address", "url": "https://en.wikipedia.org/wiki/IP_address", "kind": "article" },
+            { "title": "Cloudflare — What is my IP address?", "url": "https://www.cloudflare.com/learning/dns/glossary/what-is-my-ip-address/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "networking-intro-port",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["networking.basics"],
+          "prompt": "What is a port?",
+          "answer": "A number from 0 to 65535 that identifies which program on a machine should receive network traffic. The IP address picks the machine; the port picks the service — web servers listen on 443 (HTTPS) and 80 (HTTP), SSH on 22.",
+          "explanation": "Like an apartment number in a building's street address. Firewalls work largely by allowing or blocking specific ports.",
+          "resources": [
+            { "title": "Wikipedia — Port (computer networking)", "url": "https://en.wikipedia.org/wiki/Port_(computer_networking)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "networking-intro-packet",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["networking.basics"],
+          "prompt": "What is a packet?",
+          "answer": "A small chunk of data sent across a network, carrying headers (source and destination addresses, and more) plus a piece of the payload. Large messages are split into many packets and reassembled at the other end.",
+          "explanation": "Packets of one message can take different routes and arrive out of order or not at all; protocols such as TCP put them back in order and resend lost ones.",
+          "resources": [
+            { "title": "Wikipedia — Network packet", "url": "https://en.wikipedia.org/wiki/Network_packet", "kind": "article" }
+          ]
+        },
+        {
+          "id": "networking-intro-protocols",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["networking.basics"],
+          "prompt": "What are TCP, UDP and HTTP, in one line each?",
+          "answer": "TCP: reliable, ordered delivery of a stream of bytes between two programs. UDP: fast, connectionless datagrams with no delivery guarantee. HTTP: the application protocol for web requests, traditionally carried over TCP.",
+          "explanation": "They live at different layers: IP moves packets between machines, TCP/UDP carry data between programs, and HTTP defines what web clients and servers say to each other.",
+          "resources": [
+            { "title": "Wikipedia — Internet protocol suite", "url": "https://en.wikipedia.org/wiki/Internet_protocol_suite", "kind": "article" }
+          ]
+        },
+        {
+          "id": "networking-intro-router-switch",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["networking.basics"],
+          "prompt": "What do a router and a switch do?",
+          "answer": "A switch connects devices within one local network and forwards traffic between them by hardware (MAC) address. A router connects different networks — such as your home network and the internet — and forwards packets by IP address.",
+          "explanation": "A home \"router\" box usually combines a router, a switch, a Wi-Fi access point, a firewall and a DHCP server that hands out local IP addresses.",
+          "resources": [
+            { "title": "Wikipedia — Router (computing)", "url": "https://en.wikipedia.org/wiki/Router_(computing)", "kind": "article" },
+            { "title": "Wikipedia — Network switch", "url": "https://en.wikipedia.org/wiki/Network_switch", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "net-transport",
       "name": "Transport & Addressing",
       "description": "The layers, TCP vs UDP, and how a name becomes a connection.",
@@ -67,7 +148,7 @@
         {
           "id": "net-cidr",
           "type": "predict-output",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["networking.ip", "networking.subnets"],
           "prompt": "How many usable host addresses are in a /24, and what is the range for 192.168.1.0/24?",
           "answer": "254 usable hosts (256 minus network and broadcast): 192.168.1.1 through 192.168.1.254.",
@@ -311,7 +392,7 @@
           "prompt": "What load-balancing algorithms are common, and when does each fit?",
           "answer": "Round robin (equal servers, similar requests), weighted round robin (mixed capacity), least connections or least outstanding requests (variable request cost), and consistent hashing on a key (stickiness for caches or sessions). Power-of-two-choices — pick two at random, use the less loaded — is simple and very effective.",
           "explanation": "Health checks matter as much as the algorithm: remove failing backends quickly and bring them back gradually. Sticky sessions are a crutch that complicate scaling; keep application servers stateless instead.",
-          "prerequisites": ["net-lb-l4-l7", "sd-consistent-hashing"],
+          "prerequisites": ["sd-consistent-hashing"],
           "resources": [
             { "title": "Envoy docs — Load balancing", "url": "https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers", "kind": "article" }
           ]

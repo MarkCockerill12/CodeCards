@@ -7,6 +7,87 @@
   "description": "The maths under programming: logic, sets and functions, counting, logarithms, modular arithmetic, probability, proofs and invariants, graph theory and computability.",
   "modules": [
     {
+      "id": "discrete-math-big-picture",
+      "name": "The Big Picture",
+      "description": "What Discrete Maths for Programmers is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "discrete-math-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["math.basics"],
+          "prompt": "What is discrete maths, and why does it matter to programmers?",
+          "answer": "The maths of separate, countable things rather than continuous quantities: logic, sets, counting (combinatorics), graphs, number theory and probability. It is the mathematical foundation of algorithms, databases, cryptography and program correctness.",
+          "explanation": "You use it constantly without naming it: boolean conditions are logic, SQL is set theory, complexity analysis is counting, and RSA is number theory.",
+          "resources": [
+            { "title": "Wikipedia — Discrete mathematics", "url": "https://en.wikipedia.org/wiki/Discrete_mathematics", "kind": "article" },
+            { "title": "MIT OCW — Mathematics for Computer Science", "url": "https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/", "kind": "book" }
+          ]
+        },
+        {
+          "id": "discrete-math-intro-logic",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["math.basics"],
+          "prompt": "What do AND, OR and NOT do, and what is a truth table?",
+          "answer": "They combine true/false values: AND is true only if both inputs are true; OR is true if at least one is; NOT flips a value. A truth table lists the output for every combination of inputs.",
+          "explanation": "Every `if` condition is boolean logic, and digital circuits are built from the same operations as logic gates. De Morgan's laws — NOT (A AND B) = (NOT A) OR (NOT B) — are the most useful rule for simplifying conditions.",
+          "resources": [
+            { "title": "Wikipedia — Boolean algebra", "url": "https://en.wikipedia.org/wiki/Boolean_algebra", "kind": "article" },
+            { "title": "Wikipedia — Truth table", "url": "https://en.wikipedia.org/wiki/Truth_table", "kind": "article" }
+          ]
+        },
+        {
+          "id": "discrete-math-intro-sets",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["math.basics"],
+          "prompt": "What is a set, and what are union, intersection and difference?",
+          "answer": "A set is an unordered collection of distinct items. Union (A ∪ B) is everything in either; intersection (A ∩ B) is what is in both; difference (A − B) is what is in A but not B.",
+          "explanation": "Programming languages have set types (`set` in Python, `Set` in JavaScript) that make \"remove duplicates\" or \"which users are in both groups?\" one-liners. SQL's `UNION`, `INTERSECT` and `EXCEPT` are the same operations on rows.",
+          "resources": [
+            { "title": "Wikipedia — Set (mathematics)", "url": "https://en.wikipedia.org/wiki/Set_(mathematics)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "discrete-math-intro-modular",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["math.basics"],
+          "prompt": "What is modular arithmetic?",
+          "answer": "\"Clock arithmetic\": numbers wrap around after reaching a modulus. 14 mod 12 = 2, just as 14:00 is 2 o'clock. In code it is the remainder operator, `%`.",
+          "explanation": "It appears everywhere in programming: checking even/odd (`n % 2`), cycling through array positions, hashing keys into buckets, and in cryptography, where RSA and Diffie–Hellman are built on it.",
+          "resources": [
+            { "title": "Wikipedia — Modular arithmetic", "url": "https://en.wikipedia.org/wiki/Modular_arithmetic", "kind": "article" }
+          ]
+        },
+        {
+          "id": "discrete-math-intro-log",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["math.basics"],
+          "prompt": "What does log₂(n) tell you, and why does it keep appearing in computing?",
+          "answer": "How many times you can halve n before reaching 1 — equivalently, how many bits you need to count up to n. log₂(1,024) = 10 and log₂(1,000,000) ≈ 20.",
+          "explanation": "Any process that halves the problem each step takes O(log n) steps: binary search, balanced trees, and tournament brackets. That is why logarithmic algorithms stay fast even on enormous inputs.",
+          "resources": [
+            { "title": "Wikipedia — Logarithm", "url": "https://en.wikipedia.org/wiki/Logarithm", "kind": "article" }
+          ]
+        },
+        {
+          "id": "discrete-math-intro-proof",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["math.basics"],
+          "prompt": "What is proof by induction, in one sentence?",
+          "answer": "Prove a statement for the first case (the base case), then prove that if it holds for any case n it also holds for n + 1 — together these show it holds for every case.",
+          "explanation": "Induction is the mathematical twin of recursion: the base case stops the chain and the inductive step carries the truth forward. It is how you reason that a loop or recursive function is correct for every input size.",
+          "resources": [
+            { "title": "Wikipedia — Mathematical induction", "url": "https://en.wikipedia.org/wiki/Mathematical_induction", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "dm-logic-counting",
       "name": "Logic, Sets & Counting",
       "description": "Boolean logic and De Morgan's laws, sets and functions, permutations and combinations, logarithms, pigeonhole and modular arithmetic.",

@@ -7,6 +7,95 @@
   "description": "Complexity, sorting, searching, graph traversal, dynamic programming and the patterns behind most interview questions.",
   "modules": [
     {
+      "id": "algorithms-big-picture",
+      "name": "The Big Picture",
+      "description": "What Algorithms is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "algorithms-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["algo.basics"],
+          "prompt": "What is an algorithm?",
+          "answer": "A finite, precisely defined sequence of steps that turns an input into the desired output — for example, the steps to sort a list, find a route on a map, or check whether a word is in a dictionary.",
+          "explanation": "A recipe is the everyday analogy, but an algorithm must be unambiguous enough for a machine to follow and must always finish. Programs are algorithms written in a particular language; the same algorithm can be written in any language.",
+          "resources": [
+            { "title": "Wikipedia — Algorithm", "url": "https://en.wikipedia.org/wiki/Algorithm", "kind": "article" },
+            { "title": "Khan Academy — Intro to algorithms", "url": "https://www.khanacademy.org/computing/computer-science/algorithms", "kind": "video" }
+          ]
+        },
+        {
+          "id": "algorithms-intro-big-o",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["algo.basics"],
+          "prompt": "What does Big-O notation describe?",
+          "answer": "How an algorithm's running time (or memory use) grows as the input size n grows, ignoring constant factors. O(n) means \"doubling the input roughly doubles the work\"; O(n²) means \"doubling the input roughly quadruples it\".",
+          "explanation": "Big-O lets you compare approaches before writing them: on a million items an O(n log n) sort does about 20 million steps while an O(n²) sort does a trillion. It usually describes the worst case unless stated otherwise.",
+          "resources": [
+            { "title": "Wikipedia — Big O notation", "url": "https://en.wikipedia.org/wiki/Big_O_notation", "kind": "article" },
+            { "title": "Khan Academy — Asymptotic notation", "url": "https://www.khanacademy.org/computing/computer-science/algorithms/asymptotic-notation/a/asymptotic-notation", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algorithms-intro-classes",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["algo.basics"],
+          "prompt": "Rank the common complexity classes from fastest to slowest, with an example of each.",
+          "answer": "O(1) array index · O(log n) binary search · O(n) scanning a list · O(n log n) good sorting · O(n²) comparing every pair · O(2ⁿ) trying every subset · O(n!) trying every ordering.",
+          "explanation": "Up to O(n log n) scales comfortably to millions of items. O(n²) is fine for thousands but painful for millions. Exponential and factorial algorithms are only usable for tiny inputs, which is why problems like the travelling salesman are considered hard.",
+          "resources": [
+            { "title": "Big-O Cheat Sheet", "url": "https://www.bigocheatsheet.com/", "kind": "tool" },
+            { "title": "Wikipedia — Time complexity", "url": "https://en.wikipedia.org/wiki/Time_complexity", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algorithms-intro-search",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["algo.basics"],
+          "prompt": "Linear search vs binary search",
+          "answer": "Linear search checks items one by one and works on any list; binary search repeatedly halves a sorted list and is dramatically faster.",
+          "columns": {
+            "left": { "title": "Linear search", "points": ["Works on unsorted data", "O(n): up to n checks", "1,000,000 items → up to 1,000,000 checks", "Simplest possible approach"] },
+            "right": { "title": "Binary search", "points": ["Requires sorted data", "O(log n): halves each step", "1,000,000 items → about 20 checks", "Basis of database indexes and lookups"] }
+          },
+          "explanation": "Binary search is the classic example of why data organisation matters: paying once to sort lets every later search be logarithmic. The same idea underlies B-tree indexes in databases.",
+          "resources": [
+            { "title": "Wikipedia — Binary search algorithm", "url": "https://en.wikipedia.org/wiki/Binary_search", "kind": "article" },
+            { "title": "Wikipedia — Linear search", "url": "https://en.wikipedia.org/wiki/Linear_search", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algorithms-intro-recursion",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["algo.basics"],
+          "prompt": "What is recursion?",
+          "code": "def factorial(n):\n    if n == 0:          # base case\n        return 1\n    return n * factorial(n - 1)  # smaller problem",
+          "lang": "python",
+          "answer": "A function solving a problem by calling itself on a smaller version of the same problem, until it reaches a base case simple enough to answer directly.",
+          "explanation": "Factorial is the textbook example: `fact(n) = n * fact(n - 1)`, with `fact(0) = 1` as the base case. Without a base case the calls never stop and the program crashes with a stack overflow. Trees and divide-and-conquer algorithms are naturally recursive.",
+          "resources": [
+            { "title": "Wikipedia — Recursion (computer science)", "url": "https://en.wikipedia.org/wiki/Recursion_(computer_science)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "algorithms-intro-strategies",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["algo.basics"],
+          "prompt": "Name the main algorithm design strategies.",
+          "answer": "Brute force (try everything), divide and conquer (split, solve the halves, combine — merge sort), greedy (take the best-looking step each time — Dijkstra), dynamic programming (solve overlapping sub-problems once and reuse the answers) and backtracking (build a solution step by step, undoing dead ends — Sudoku solvers).",
+          "explanation": "Recognising which strategy fits a problem is most of the skill in algorithm design. Brute force is always the starting point: it gives a correct baseline to test faster approaches against.",
+          "resources": [
+            { "title": "Wikipedia — Algorithmic paradigm", "url": "https://en.wikipedia.org/wiki/Algorithmic_paradigm", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "algo-complexity",
       "name": "Complexity & Analysis",
       "description": "Big-O, amortised cost and how to reason about an algorithm before writing it.",
@@ -200,7 +289,7 @@
         {
           "id": "algo-dp-requirements",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["algo.dp"],
           "prompt": "What two properties must a problem have for dynamic programming to apply?",
           "answer": "Optimal substructure (an optimal solution is built from optimal solutions to subproblems) and overlapping subproblems (the same subproblems recur).",
@@ -426,7 +515,7 @@
           "prompt": "How do you detect a cycle in a directed graph versus an undirected one?",
           "answer": "Directed: DFS with three colours (unvisited, on the current path, finished) — reaching a node that is still on the path means a back edge, hence a cycle. Or Kahn's algorithm leaving nodes unprocessed. Undirected: DFS finding a visited node that is not the parent, or union-find reporting two endpoints already connected.",
           "explanation": "For linked lists, Floyd's tortoise-and-hare finds a cycle in O(1) space: move one pointer one step and another two steps — they meet if and only if there is a cycle.",
-          "prerequisites": ["algo-bfs-vs-dfs", "algo-topological-sort"],
+          "prerequisites": ["algo-bfs-vs-dfs"],
           "resources": [
             { "title": "CP-Algorithms — Checking a graph for acyclicity", "url": "https://cp-algorithms.com/graph/finding-cycle.html", "kind": "article" }
           ]

@@ -7,6 +7,92 @@
   "description": "Floating point, integer overflow, endianness, Unicode and time zones — the representation bugs that ship to production.",
   "modules": [
     {
+      "id": "numeric-representation-big-picture",
+      "name": "The Big Picture",
+      "description": "What Numbers, Text & Time is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "numeric-representation-intro-binary",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["num.basics"],
+          "prompt": "What is binary, and why do computers use it?",
+          "answer": "Base 2: numbers written with only the digits 0 and 1, each position worth double the one to its right (1, 2, 4, 8 …). Computers use it because electronic circuits reliably distinguish two states — on/off, high/low voltage.",
+          "explanation": "1011 in binary is 8 + 0 + 2 + 1 = 11. Everything a computer stores — numbers, text, images, programs — is ultimately encoded as patterns of bits.",
+          "resources": [
+            { "title": "Wikipedia — Binary number", "url": "https://en.wikipedia.org/wiki/Binary_number", "kind": "article" }
+          ]
+        },
+        {
+          "id": "numeric-representation-intro-bits-bytes",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["num.basics"],
+          "prompt": "What are bits and bytes, and how big is a kilobyte?",
+          "answer": "A bit is a single binary digit (0 or 1). A byte is 8 bits and can hold 256 different values (0–255). A kilobyte is 1,000 bytes; a kibibyte (KiB) is 1,024 bytes — the same split applies to MB/MiB, GB/GiB.",
+          "explanation": "Network speeds are quoted in bits per second (Mbps) and file sizes in bytes, so a 100 Mbps connection downloads about 12.5 megabytes per second.",
+          "resources": [
+            { "title": "Wikipedia — Byte", "url": "https://en.wikipedia.org/wiki/Byte", "kind": "article" },
+            { "title": "Wikipedia — Binary prefix", "url": "https://en.wikipedia.org/wiki/Binary_prefix", "kind": "article" }
+          ]
+        },
+        {
+          "id": "numeric-representation-intro-hex",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["num.basics"],
+          "prompt": "What is hexadecimal, and why do programmers use it?",
+          "answer": "Base 16, using digits 0–9 and A–F (A = 10 … F = 15). Each hex digit maps to exactly 4 bits, so one byte is always two hex digits: `0xFF` = 255 = 11111111.",
+          "explanation": "Hex is a compact, human-friendly way to write binary data: colours (`#FF8800`), memory addresses, hashes and byte dumps. The `0x` prefix marks a hex literal in most languages.",
+          "resources": [
+            { "title": "Wikipedia — Hexadecimal", "url": "https://en.wikipedia.org/wiki/Hexadecimal", "kind": "article" }
+          ]
+        },
+        {
+          "id": "numeric-representation-intro-int-float",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["num.basics"],
+          "prompt": "Integers vs floating-point numbers",
+          "answer": "Integers store whole numbers exactly; floating-point numbers store fractions and huge ranges approximately.",
+          "columns": {
+            "left": { "title": "Integer", "points": ["Whole numbers only", "Exact", "Fixed range (e.g. 32 or 64 bits) — can overflow", "Counting, indexing, money in cents"] },
+            "right": { "title": "Floating point", "points": ["Fractions, very large and small values", "Approximate — 0.1 + 0.2 ≠ 0.3 exactly", "Huge range, limited precision", "Measurements, graphics, science"] }
+          },
+          "explanation": "Floats are binary fractions, so most decimal fractions cannot be stored exactly. Never use floats for money; use integers of the smallest unit or a decimal type.",
+          "resources": [
+            { "title": "Wikipedia — Integer (computer science)", "url": "https://en.wikipedia.org/wiki/Integer_(computer_science)", "kind": "article" },
+            { "title": "Wikipedia — Floating-point arithmetic", "url": "https://en.wikipedia.org/wiki/Floating-point_arithmetic", "kind": "article" }
+          ]
+        },
+        {
+          "id": "numeric-representation-intro-encoding",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["num.basics"],
+          "prompt": "What is character encoding, and what are ASCII, Unicode and UTF-8?",
+          "answer": "An encoding maps characters to numbers (and those numbers to bytes). ASCII covers 128 English characters. Unicode assigns a number (code point) to every character in every writing system, plus emoji. UTF-8 is the dominant way to store Unicode as bytes: 1 byte for ASCII, up to 4 for other characters.",
+          "explanation": "Garbled text such as \"cafÃ©\" means bytes were decoded with the wrong encoding. Use UTF-8 everywhere — files, databases, HTTP — and the problem mostly disappears.",
+          "resources": [
+            { "title": "Wikipedia — Character encoding", "url": "https://en.wikipedia.org/wiki/Character_encoding", "kind": "article" },
+            { "title": "Wikipedia — UTF-8", "url": "https://en.wikipedia.org/wiki/UTF-8", "kind": "article" }
+          ]
+        },
+        {
+          "id": "numeric-representation-intro-overflow",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["num.basics"],
+          "prompt": "What is integer overflow?",
+          "answer": "What happens when a calculation exceeds the largest value an integer type can hold. Fixed-size integers typically wrap around — adding 1 to the maximum 8-bit value 255 gives 0.",
+          "explanation": "Overflow has caused real disasters (the Ariane 5 rocket) and security holes. Python integers grow without limit, but most languages use fixed sizes; Rust panics on overflow in debug builds, and C leaves signed overflow undefined.",
+          "resources": [
+            { "title": "Wikipedia — Integer overflow", "url": "https://en.wikipedia.org/wiki/Integer_overflow", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "num-numbers",
       "name": "Numbers & Bits",
       "description": "IEEE-754, two's complement, overflow and bitwise fundamentals.",
@@ -191,7 +277,6 @@
           "lang": "python",
           "answer": "8 14 6 -13 48 3",
           "explanation": "`&` keeps bits set in both, `|` bits set in either, `^` bits set in exactly one, `~x` flips every bit (which in two's complement equals −x − 1), `<<` multiplies by powers of two and `>>` floor-divides by them. Bit flags — permissions, feature sets — combine with `|` and test with `&`.",
-          "prerequisites": ["num-twos-complement"],
           "resources": [
             { "title": "Python docs — Bitwise operations on integer types", "url": "https://docs.python.org/3/library/stdtypes.html#bitwise-operations-on-integer-types", "kind": "docs" }
           ],
@@ -301,7 +386,6 @@
           "prompt": "What is Unix time, and what is the year-2038 problem?",
           "answer": "Seconds elapsed since 1970-01-01T00:00:00Z, ignoring leap seconds. Stored in a signed 32-bit integer, it overflows on 2038-01-19 at 03:14:07 UTC and wraps to December 1901.",
           "explanation": "Modern 64-bit systems use a 64-bit `time_t`, but 32-bit embedded devices, file formats, database columns and protocols still carry 32-bit timestamps. Watch the unit too: JavaScript and Java use milliseconds, Unix APIs seconds — mixing them puts dates in 1970 or the far future.",
-          "prerequisites": ["time-utc-storage"],
           "resources": [
             { "title": "Wikipedia — Year 2038 problem", "url": "https://en.wikipedia.org/wiki/Year_2038_problem", "kind": "article" }
           ]
@@ -314,7 +398,6 @@
           "prompt": "Why should you measure durations with a monotonic clock rather than the wall clock?",
           "answer": "The wall clock can jump backwards or forwards — NTP corrections, manual changes, leap-second handling — so `end - start` can come out negative or wildly wrong. A monotonic clock only moves forward at a steady rate, which is what elapsed time needs.",
           "explanation": "Use `time.monotonic()` / `perf_counter()` in Python, `performance.now()` in browsers, `System.nanoTime()` in Java, `time.Since` in Go (which uses the monotonic reading `time.Now` carries), and `Stopwatch` in .NET. Wall-clock time is for timestamps shown to humans or stored, never for timeouts and benchmarks.",
-          "prerequisites": ["time-dst-bug"],
           "resources": [
             { "title": "Python docs — time.monotonic", "url": "https://docs.python.org/3/library/time.html#time.monotonic", "kind": "docs" }
           ]

@@ -1,4 +1,5 @@
 import type { Card, ContentIndex, Module, Topic, TopicSummary } from './types';
+import { TIER_NAME } from './tiers';
 
 /**
  * Content loader.
@@ -99,10 +100,5 @@ export const CARD_TYPE_LABEL: Record<Card['type'], string> = {
   scenario: 'Scenario',
 };
 
-export const DIFFICULTY_LABEL: Record<number, string> = {
-  1: 'Intro',
-  2: 'Easy',
-  3: 'Core',
-  4: 'Hard',
-  5: 'Brutal',
-};
+/** A card's difficulty is its tier, so it is labelled with the tier name. */
+export const DIFFICULTY_LABEL: Record<number, string> = TIER_NAME;

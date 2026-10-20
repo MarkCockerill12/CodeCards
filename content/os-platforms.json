@@ -7,6 +7,76 @@
   "description": "Windows, macOS, Android, iOS and the ARM vs x86 divide — what differs where, and why it matters to your code.",
   "modules": [
     {
+      "id": "os-platforms-big-picture",
+      "name": "The Big Picture",
+      "description": "What Platforms & Architectures is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "os-platforms-intro-desktop",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["platforms.basics"],
+          "prompt": "What are the three main desktop operating systems, and how do they differ?",
+          "answer": "Windows (Microsoft) — most common on PCs, strongest for games and business software. macOS (Apple) — runs only on Mac hardware, Unix-based, popular with developers and creative work. Linux — free and open source, runs on almost anything, dominant on servers.",
+          "explanation": "macOS and Linux are both Unix-like, so their terminals and tools are similar; Windows has its own lineage, though WSL now runs a real Linux environment inside it.",
+          "resources": [
+            { "title": "Wikipedia — Operating system", "url": "https://en.wikipedia.org/wiki/Operating_system", "kind": "article" },
+            { "title": "Wikipedia — Usage share of operating systems", "url": "https://en.wikipedia.org/wiki/Usage_share_of_operating_systems", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-platforms-intro-mobile",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["platforms.basics"],
+          "prompt": "What are the two dominant mobile platforms, and which languages build apps for them?",
+          "answer": "Android (Google) — apps written in Kotlin (or Java). iOS (Apple) — apps written in Swift (or Objective-C). Cross-platform frameworks such as Flutter (Dart), React Native (JavaScript) and Kotlin Multiplatform target both from one codebase.",
+          "explanation": "Android has the larger global market share; iOS is especially strong in the US and earns developers more revenue. Apps are distributed mainly through Google Play and the App Store.",
+          "resources": [
+            { "title": "Android Developers", "url": "https://developer.android.com/", "kind": "docs" },
+            { "title": "Apple Developer — Swift", "url": "https://developer.apple.com/swift/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "os-platforms-intro-unix-like",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["platforms.basics"],
+          "prompt": "What does \"Unix-like\" mean?",
+          "answer": "An operating system that behaves like the original Unix from Bell Labs: a hierarchical file system starting at `/`, everything-is-a-file, small composable command-line tools and a standard API (POSIX). Linux, macOS, the BSDs and Android are all Unix-like.",
+          "explanation": "Skills transfer across Unix-like systems: the shell, `ls`, `grep`, file permissions and pipes work almost the same everywhere — which is why developers on Macs and Linux servers share so many habits.",
+          "resources": [
+            { "title": "Wikipedia — Unix-like", "url": "https://en.wikipedia.org/wiki/Unix-like", "kind": "article" },
+            { "title": "Wikipedia — POSIX", "url": "https://en.wikipedia.org/wiki/POSIX", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-platforms-intro-server",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["platforms.basics"],
+          "prompt": "What operating systems do servers and the cloud mostly run?",
+          "answer": "Overwhelmingly Linux — distributions such as Ubuntu, Debian, Red Hat Enterprise Linux and Amazon Linux — plus Windows Server for Microsoft-centric workloads. Containers and Kubernetes are built on Linux kernel features.",
+          "explanation": "This is a big reason developers learn Linux even if they use Windows or macOS day to day: the code they write usually ends up running on a Linux machine.",
+          "resources": [
+            { "title": "Wikipedia — Linux", "url": "https://en.wikipedia.org/wiki/Linux", "kind": "article" }
+          ]
+        },
+        {
+          "id": "os-platforms-intro-cpu-arch",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["platforms.basics"],
+          "prompt": "Why might the same app need different builds for different machines?",
+          "answer": "Native programs are compiled for one combination of operating system (Windows, macOS, Linux) and CPU architecture (x86-64 or ARM64). A Windows x86-64 executable will not run on an ARM64 Mac without translation.",
+          "explanation": "Languages that run on a virtual machine (Java, C#) or interpreter (Python, JavaScript) avoid most of this — the runtime is built per platform and your code runs on it unchanged.",
+          "resources": [
+            { "title": "Wikipedia — Cross-platform software", "url": "https://en.wikipedia.org/wiki/Cross-platform_software", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "plat-desktop",
       "name": "Desktop & Architecture",
       "description": "Windows and macOS internals, and the instruction sets underneath.",
@@ -30,7 +100,7 @@
         {
           "id": "plat-windows-vs-unix",
           "type": "compare",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["windows", "unix", "cross-platform"],
           "prompt": "Practical differences between Windows and Unix-like systems for developers",
           "answer": "Path separators and case sensitivity, line endings, process creation, file locking and permissions models all differ.",

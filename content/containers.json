@@ -7,6 +7,80 @@
   "description": "How containers actually work, writing good images, and the Kubernetes objects you cannot avoid.",
   "modules": [
     {
+      "id": "containers-big-picture",
+      "name": "The Big Picture",
+      "description": "What Containers & Kubernetes is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "containers-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["containers.basics"],
+          "prompt": "What is a container?",
+          "answer": "A lightweight, isolated package containing an application and everything it needs to run — code, runtime, libraries, configuration — that runs the same way on any machine with a container runtime.",
+          "explanation": "Containers solve \"it works on my machine\": the environment travels with the app. They share the host's operating-system kernel, which makes them start in seconds and use far less memory than virtual machines.",
+          "resources": [
+            { "title": "Docker — What is a container?", "url": "https://www.docker.com/resources/what-container/", "kind": "article" },
+            { "title": "Wikipedia — Containerization (computing)", "url": "https://en.wikipedia.org/wiki/Containerization_(computing)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "containers-intro-vs-vm",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["containers.basics"],
+          "prompt": "Containers vs virtual machines",
+          "answer": "A virtual machine emulates a whole computer with its own operating system; a container isolates just an application, sharing the host's kernel.",
+          "columns": {
+            "left": { "title": "Container", "points": ["Shares the host kernel", "Starts in seconds, megabytes in size", "Process-level isolation", "Package and ship applications"] },
+            "right": { "title": "Virtual machine", "points": ["Runs a full guest OS", "Starts in minutes, gigabytes in size", "Strong hardware-level isolation", "Run different OSes, strong separation"] }
+          },
+          "explanation": "They are often combined: cloud providers run your containers inside VMs, getting containers' efficiency with VMs' stronger isolation between customers.",
+          "resources": [
+            { "title": "Wikipedia — Virtual machine", "url": "https://en.wikipedia.org/wiki/Virtual_machine", "kind": "article" },
+            { "title": "Wikipedia — OS-level virtualization", "url": "https://en.wikipedia.org/wiki/OS-level_virtualization", "kind": "article" }
+          ]
+        },
+        {
+          "id": "containers-intro-image",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["containers.basics"],
+          "prompt": "What is the difference between an image and a container?",
+          "answer": "An image is the read-only template — a packaged filesystem plus start-up instructions, built from a `Dockerfile`. A container is a running (or stopped) instance of an image. One image can run as many containers.",
+          "explanation": "Like a class and its objects. Images are stored and shared in registries such as Docker Hub, GitHub Container Registry or a cloud provider's registry.",
+          "resources": [
+            { "title": "Docker docs — What is an image?", "url": "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "containers-intro-docker",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["containers.basics"],
+          "prompt": "What do `docker build`, `docker run` and `docker ps` do?",
+          "answer": "`docker build -t myapp .` builds an image from the Dockerfile in the current directory. `docker run -p 8080:80 myapp` starts a container from it, mapping a host port to the container's port. `docker ps` lists running containers.",
+          "explanation": "Docker popularised containers in 2013; the formats are now open standards (OCI), so images built with Docker also run under Podman, containerd and Kubernetes.",
+          "resources": [
+            { "title": "Docker docs — Get started", "url": "https://docs.docker.com/get-started/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "containers-intro-kubernetes",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["containers.basics"],
+          "prompt": "What is Kubernetes?",
+          "answer": "An open-source system for running containers across a cluster of machines: it schedules containers onto nodes, restarts them when they crash, scales them up and down, rolls out new versions and routes traffic to them.",
+          "explanation": "Kubernetes (\"K8s\") came out of Google in 2014 and is now the standard platform for running containers at scale. For a small app it is often overkill; simpler platforms run containers without the operational burden.",
+          "resources": [
+            { "title": "Kubernetes docs — Overview", "url": "https://kubernetes.io/docs/concepts/overview/", "kind": "docs" },
+            { "title": "Wikipedia — Kubernetes", "url": "https://en.wikipedia.org/wiki/Kubernetes", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "ctr-docker",
       "name": "Containers & Images",
       "description": "Namespaces, cgroups, layers and building images that are small, fast and safe.",
@@ -70,7 +144,7 @@
         {
           "id": "ctr-stateless",
           "type": "scenario",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["containers.design", "architecture"],
           "prompt": "Why should a container be stateless and treat its filesystem as ephemeral?",
           "answer": "Because containers are recreated constantly — deploys, scaling, node failures, evictions. Anything written to the container filesystem disappears. State belongs in a database, an object store or a mounted volume.",
@@ -89,7 +163,7 @@
         {
           "id": "k8s-objects",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["kubernetes.objects"],
           "prompt": "What do Pod, ReplicaSet, Deployment, Service and Ingress each do?",
           "answer": "A Pod is one or more co-scheduled containers sharing a network namespace. A ReplicaSet keeps N pod copies running. A Deployment manages ReplicaSets to give rolling updates and rollback. A Service gives a stable virtual IP and load balances to pods. An Ingress routes external HTTP traffic to Services.",
@@ -130,12 +204,11 @@
         {
           "id": "k8s-requests-limits",
           "type": "scenario",
-          "difficulty": 5,
+          "difficulty": 3,
           "tags": ["kubernetes.resources", "performance"],
           "prompt": "What is the difference between resource requests and limits, and what goes wrong with each?",
           "answer": "Requests are what the scheduler reserves; limits are the hard ceiling. Exceeding a memory limit gets the container OOM-killed; exceeding a CPU limit gets it throttled, not killed.",
           "explanation": "CPU limits cause surprising latency: a bursty app is throttled every 100 ms period even when the node is idle. Common guidance is to set memory requests equal to limits and be cautious with CPU limits. No requests at all means BestEffort QoS — first to be evicted.",
-          "prerequisites": ["k8s-probes"],
           "resources": [
             { "title": "Kubernetes — Resource management for pods", "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/", "kind": "docs" }
           ]
@@ -237,7 +310,7 @@
           "prompt": "A scanner reports 200 CVEs in your production image. What do you do first?",
           "answer": "Shrink the attack surface — a minimal or distroless base removes most OS packages and their CVEs at once — then rebuild regularly on patched bases. Prioritise what remains by exploitability and reachability (known-exploited, network-facing, actually loaded) rather than by count.",
           "explanation": "Scan in CI and in the registry continuously, since new CVEs appear for images that have not changed. Fail builds on fixable critical issues, not on every finding, or the gate gets disabled. Rebuilding weekly is often the single most effective control.",
-          "prerequisites": ["ctr-image-hardening", "sec-vuln-management"],
+          "prerequisites": ["sec-vuln-management"],
           "resources": [
             { "title": "Docker docs — Docker Scout", "url": "https://docs.docker.com/scout/", "kind": "docs" }
           ]
@@ -356,7 +429,7 @@
           "prompt": "A pod is stuck in `CrashLoopBackOff`. How do you investigate?",
           "answer": "`kubectl describe pod` for events, exit codes and the reason (OOMKilled, failed probe, image pull error); `kubectl logs <pod> --previous` for the crashed container's last output; then `kubectl debug` or `exec` into a running copy to inspect config, environment and connectivity.",
           "explanation": "Common causes: missing config or secrets, the app exiting immediately (wrong command), a liveness probe killing a slow-starting app (use a startup probe), OOM from a tight memory limit, or a dependency that is unreachable. Events usually point the way within a minute.",
-          "prerequisites": ["k8s-probes", "mem-oom-killer"],
+          "prerequisites": ["mem-oom-killer"],
           "resources": [
             { "title": "Kubernetes docs — Debug running pods", "url": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/", "kind": "docs" }
           ]

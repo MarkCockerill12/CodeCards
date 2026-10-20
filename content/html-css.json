@@ -7,6 +7,91 @@
   "description": "Semantics, the box model, flexbox and grid, specificity, stacking contexts and accessible markup.",
   "modules": [
     {
+      "id": "html-css-big-picture",
+      "name": "The Big Picture",
+      "description": "What HTML & CSS is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "html-css-intro-html",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["html.basics"],
+          "prompt": "What is HTML?",
+          "answer": "HyperText Markup Language: the language that describes the structure and content of a web page — headings, paragraphs, links, images, forms — using elements written as tags, such as `<p>…</p>`.",
+          "explanation": "HTML is a markup language, not a programming language: it describes what content *is*, not how to compute anything. Browsers parse it into a tree of elements called the DOM.",
+          "resources": [
+            { "title": "MDN — HTML basics", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Your_first_website/Creating_the_content", "kind": "docs" },
+            { "title": "Wikipedia — HTML", "url": "https://en.wikipedia.org/wiki/HTML", "kind": "article" }
+          ]
+        },
+        {
+          "id": "html-css-intro-css",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["html.basics"],
+          "prompt": "What is CSS?",
+          "code": "p {\n  color: navy;\n  font-size: 1.125rem;\n}",
+          "lang": "css",
+          "answer": "Cascading Style Sheets: the language that controls how HTML looks — colours, fonts, spacing, layout and animation — through rules that pick elements with selectors and set properties on them.",
+          "explanation": "Keeping structure (HTML) and presentation (CSS) separate means one stylesheet can restyle a whole site, and the same HTML can look right on phones, desktops and printers.",
+          "resources": [
+            { "title": "MDN — CSS basics", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Your_first_website/Styling_the_content", "kind": "docs" },
+            { "title": "Wikipedia — CSS", "url": "https://en.wikipedia.org/wiki/CSS", "kind": "article" }
+          ]
+        },
+        {
+          "id": "html-css-intro-element",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["html.basics"],
+          "prompt": "What are an HTML element, a tag and an attribute?",
+          "answer": "An element is a piece of content wrapped in an opening and closing tag, such as `<a href=\"/about\">About</a>`. Tags are the `<a>` and `</a>` markers; attributes (`href=\"/about\"`) add extra information to the opening tag.",
+          "explanation": "Some elements are empty and have no closing tag (`<img>`, `<br>`, `<input>`). Elements nest inside each other to form the page's tree structure.",
+          "resources": [
+            { "title": "MDN — Basic HTML syntax", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Basic_HTML_syntax", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-css-intro-skeleton",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["html.basics"],
+          "prompt": "What is the basic skeleton of an HTML document?",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>My page</title>\n  </head>\n  <body>\n    <h1>Hello</h1>\n  </body>\n</html>",
+          "lang": "html",
+          "answer": "`<!DOCTYPE html>` then an `<html>` element containing a `<head>` (metadata: title, character set, stylesheets) and a `<body>` (the visible content).",
+          "explanation": "The `<meta name=\"viewport\">` tag in the head is what makes a page behave properly on phones; leave it out and mobile browsers render a shrunken desktop layout.",
+          "resources": [
+            { "title": "MDN — Webpage metadata", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Webpage_metadata", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-css-intro-box-model",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["html.basics"],
+          "prompt": "What is the CSS box model?",
+          "answer": "Every element is a rectangular box made of content, then padding (space inside the border), then border, then margin (space outside, separating it from neighbours).",
+          "explanation": "Setting `box-sizing: border-box` makes `width` include padding and border, which is far easier to reason about; most modern stylesheets apply it to every element.",
+          "resources": [
+            { "title": "MDN — The box model", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Box_model", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "html-css-intro-trio",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["html.basics"],
+          "prompt": "How do HTML, CSS and JavaScript divide the work in a web page?",
+          "answer": "HTML provides the structure and content, CSS the presentation and layout, and JavaScript the behaviour — reacting to the user, fetching data and changing the page.",
+          "explanation": "A useful test: with CSS and JavaScript switched off, a well-built page should still be readable and usable, just plain. That separation is also what makes pages accessible to screen readers.",
+          "resources": [
+            { "title": "MDN — Getting started with the web", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "hc-html",
       "name": "Semantic HTML & Accessibility",
       "description": "Markup that means something — to browsers, to search engines and to assistive technology.",
@@ -98,7 +183,7 @@
         {
           "id": "css-flex-vs-grid",
           "type": "compare",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["css.layout"],
           "prompt": "Flexbox vs Grid",
           "answer": "Flexbox lays out along one axis and sizes from content; Grid defines two-dimensional rows and columns from the container.",
@@ -153,12 +238,11 @@
         {
           "id": "css-selectors",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["css.selectors"],
           "prompt": "What do these selectors match: `.card p`, `.card > p`, `h2 + p`, `a:hover`, `li:nth-child(2n)`, `p::first-line` and `input[type=\"email\"]`?",
           "answer": "Descendant (`.card p`: any p inside .card), child (`.card > p`: direct children only), adjacent sibling (`h2 + p`: the p immediately after an h2), pseudo-class (`a:hover`: a state), structural pseudo-class (`li:nth-child(2n)`: even items), pseudo-element (`p::first-line`: part of an element), and attribute selector (`input[type=\"email\"]`).",
           "explanation": "Pseudo-classes select elements in a state; pseudo-elements style a part of an element or generated content (`::before`). Modern additions — `:is()`, `:where()` (zero specificity), `:has()` and `:focus-visible` — replace much of what used to require extra classes or JavaScript.",
-          "prerequisites": ["html-semantics"],
           "resources": [
             { "title": "MDN — CSS selectors", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors", "kind": "docs" }
           ]
@@ -194,7 +278,6 @@
           "prompt": "What do `relative`, `absolute`, `fixed` and `sticky` positioning do?",
           "answer": "`relative` offsets an element from its normal spot and makes it the containing block for absolute children. `absolute` removes it from flow, positioned against the nearest positioned ancestor. `fixed` positions against the viewport. `sticky` scrolls normally until a threshold, then sticks within its container.",
           "explanation": "The classic surprise: an `absolute` child positions against the page because no ancestor is positioned — add `position: relative` to the intended parent. `sticky` silently fails when an ancestor has `overflow: hidden`. A `transform` on an ancestor turns `fixed` into positioning relative to that ancestor.",
-          "prerequisites": ["css-stacking-context"],
           "resources": [
             { "title": "MDN — position", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/position", "kind": "docs" }
           ]
@@ -207,7 +290,6 @@
           "prompt": "When should you use `rem`, `em`, `%`, `px`, `vw`/`vh` and `ch`?",
           "answer": "`rem` (relative to the root font size) for font sizes and spacing so everything scales with the user's font setting; `em` for things that should scale with the local font size; `%` relative to the parent; `px` for hairlines and borders; `vw`/`vh`/`dvh` for viewport-relative sizing; `ch` for readable line lengths (`max-width: 65ch`).",
           "explanation": "Font sizes in `px` ignore the user's browser font preference — an accessibility failure. `100vh` on mobile includes space behind browser UI; use `100dvh`. `clamp(1rem, 2.5vw, 1.5rem)` combines them into fluid, bounded type.",
-          "prerequisites": ["css-cascade-modern"],
           "resources": [
             { "title": "MDN — CSS values and units", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Values_and_units", "kind": "docs" }
           ]
@@ -230,7 +312,7 @@
         {
           "id": "css-centering",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["css.layout", "css.flexbox"],
           "prompt": "What is the simplest way to centre an element horizontally and vertically?",
           "answer": "Make the parent a grid or flex container: `display: grid; place-items: center;` or `display: flex; justify-content: center; align-items: center;`. For horizontal centring of a block with a width, `margin-inline: auto` also works.",
@@ -338,7 +420,6 @@
           "prompt": "Why use the native `<dialog>` element for modals?",
           "answer": "`dialog.showModal()` renders it in the top layer (above everything, no z-index fights), makes the rest of the page inert, traps focus inside, closes on Escape, and restores focus to the opener when closed. Styling the backdrop uses `::backdrop`.",
           "explanation": "Hand-built modal divs routinely miss focus trapping, Escape handling, inert background and focus restoration — each an accessibility failure. `<dialog>` gets them right by default, as does the `popover` attribute for non-modal overlays.",
-          "prerequisites": ["css-stacking-context"],
           "resources": [
             { "title": "MDN — <dialog>", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog", "kind": "docs" }
           ]
@@ -364,7 +445,6 @@
           "prompt": "How do you write `alt` text for a product photo, a decorative divider, and an icon-only \"delete\" button?",
           "answer": "Product photo: describe what matters in context (\"Red leather satchel with brass buckle\"). Decorative divider: `alt=\"\"` so it is skipped. Icon-only button: give the *button* an accessible name (`aria-label=\"Delete\"` or visually hidden text) and hide the icon itself from assistive technology.",
           "explanation": "Alt text conveys the image's purpose, not its pixels, and should not start with \"image of\". Omitting `alt` entirely is worse than empty, because screen readers then read the filename.",
-          "prerequisites": ["a11y-wcag-contrast"],
           "resources": [
             { "title": "W3C WAI — Images tutorial", "url": "https://www.w3.org/WAI/tutorials/images/", "kind": "docs" }
           ]

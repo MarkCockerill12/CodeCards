@@ -7,6 +7,91 @@
   "description": "Coercion, closures, the event loop, prototypes and the modern language features that replaced the old workarounds.",
   "modules": [
     {
+      "id": "javascript-big-picture",
+      "name": "The Big Picture",
+      "description": "What JavaScript is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "javascript-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.basics"],
+          "prompt": "What is JavaScript, and where does it run?",
+          "answer": "The programming language of the web: every browser runs it to make pages interactive. It also runs outside the browser on servers and tools via runtimes such as Node.js, Deno and Bun.",
+          "explanation": "HTML describes a page's content, CSS its appearance, and JavaScript its behaviour — responding to clicks, fetching data, updating the page. Node.js (2009) took the same language to the server, which is why one language can now cover front end, back end and build tooling.",
+          "resources": [
+            { "title": "MDN — JavaScript", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript", "kind": "docs" },
+            { "title": "Wikipedia — JavaScript", "url": "https://en.wikipedia.org/wiki/JavaScript", "kind": "article" }
+          ]
+        },
+        {
+          "id": "javascript-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.basics"],
+          "prompt": "Where did JavaScript come from, and what is ECMAScript?",
+          "answer": "Brendan Eich created it at Netscape in 1995, famously in about ten days. ECMAScript is the official standard for the language, maintained by Ecma's TC39 committee; JavaScript is the name everyone uses for implementations of it.",
+          "explanation": "Despite the name, JavaScript is unrelated to Java — the name was a marketing decision. New features arrive in yearly ECMAScript editions (ES2015 brought `let`, `const`, classes, arrow functions and modules; later editions added async/await and more).",
+          "resources": [
+            { "title": "Wikipedia — JavaScript", "url": "https://en.wikipedia.org/wiki/JavaScript", "kind": "article" },
+            { "title": "Wikipedia — ECMAScript", "url": "https://en.wikipedia.org/wiki/ECMAScript", "kind": "article" }
+          ]
+        },
+        {
+          "id": "javascript-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.basics"],
+          "prompt": "How is JavaScript executed?",
+          "answer": "By a JavaScript engine — V8 (Chrome, Node.js), SpiderMonkey (Firefox) or JavaScriptCore (Safari). The engine parses the source and uses just-in-time (JIT) compilation to turn hot code into fast machine code while it runs.",
+          "explanation": "You never compile JavaScript yourself: you ship source text and the engine handles the rest. JavaScript is single-threaded per page or process; it stays responsive by handling events and asynchronous work through an event loop rather than by blocking.",
+          "resources": [
+            { "title": "Node.js — Introduction", "url": "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs", "kind": "docs" },
+            { "title": "Wikipedia — JavaScript engine", "url": "https://en.wikipedia.org/wiki/JavaScript_engine", "kind": "article" }
+          ]
+        },
+        {
+          "id": "javascript-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.basics"],
+          "prompt": "What does a minimal JavaScript program look like?",
+          "code": "console.log(\"Hello, world!\");",
+          "lang": "javascript",
+          "answer": "One statement that logs to the console. In a browser it appears in the developer tools console; under Node.js (`node hello.js`) it prints to the terminal.",
+          "explanation": "`console.log` is the universal \"print\". Statements are usually ended with semicolons (optional in most cases, thanks to automatic semicolon insertion), and blocks use braces `{ }` rather than indentation.",
+          "resources": [
+            { "title": "MDN — console.log()", "url": "https://developer.mozilla.org/en-US/docs/Web/API/console/log_static", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "javascript-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.basics"],
+          "prompt": "What kind of language is JavaScript: typing, memory and paradigms?",
+          "answer": "Dynamically and weakly typed: variables have no fixed type and values are converted implicitly (`\"5\" * 2` is `10`). Memory is garbage collected. It mixes functional style (first-class functions, closures) with prototype-based objects; `class` syntax sits on top of prototypes.",
+          "explanation": "Weak typing is the source of the famous quirks (`[] + {}`, `==` coercions), which is why style guides insist on `===`. TypeScript exists largely to add static types on top of JavaScript for bigger codebases.",
+          "resources": [
+            { "title": "MDN — JavaScript data types and data structures", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "javascript-intro-ecosystem",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["js.basics"],
+          "prompt": "What are npm and `package.json`?",
+          "answer": "npm is JavaScript's package registry and the command-line tool that installs from it. `package.json` describes a project: its name, scripts (`npm run build`) and dependencies. A lock file (`package-lock.json`) pins the exact versions installed.",
+          "explanation": "The npm registry is the largest package registry in the world. Alternatives such as pnpm, Yarn and Bun use the same registry and `package.json` format. Installed packages land in a project-local `node_modules` folder, never globally by default.",
+          "resources": [
+            { "title": "npm Docs — About npm", "url": "https://docs.npmjs.com/about-npm", "kind": "docs" },
+            { "title": "npm Docs — package.json", "url": "https://docs.npmjs.com/cli/configuring-npm/package-json", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "js-semantics",
       "name": "Semantics & Coercion",
       "description": "Types, equality, scoping and the behaviours JavaScript is famous for.",
@@ -45,7 +130,7 @@
         {
           "id": "js-this-binding",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["js.this", "js.functions"],
           "prompt": "What determines the value of `this` in a JavaScript function?",
           "answer": "The call site, in this precedence: `new` binding → explicit `call`/`apply`/`bind` → method call (the object before the dot) → default (undefined in strict mode, globalThis otherwise). Arrow functions ignore all of it and inherit `this` lexically.",
@@ -99,7 +184,7 @@
         {
           "id": "js-optional-chaining",
           "type": "cloze",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["js.syntax"],
           "prompt": "`a?.b` returns undefined instead of throwing when `a` is null or ___.",
           "answer": "undefined",
@@ -140,7 +225,6 @@
           "lang": "javascript",
           "answer": "`await` inside the loop serialises the requests. Start them all first and await together: `await Promise.all(urls.map(u => fetch(u)))`.",
           "explanation": "Sequential await is correct when each request depends on the previous one, and wasteful otherwise. Use `Promise.all` for fail-fast parallelism, `Promise.allSettled` when partial failure is acceptable, and a concurrency limiter when the target has rate limits.",
-          "prerequisites": ["js-microtask-order"],
           "resources": [
             { "title": "MDN — Promise.all", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all", "kind": "docs" }
           ]
@@ -312,7 +396,6 @@
             "right": { "title": "let / const", "points": ["Block scope", "Temporal dead zone before the declaration", "Redeclaration is a SyntaxError", "`const` binding cannot be reassigned"] }
           },
           "explanation": "Default to `const`, use `let` when you genuinely reassign, and never `var` in new code. `const arr = []; arr.push(1)` is legal — freeze with `Object.freeze` (shallowly) if you need immutability.",
-          "prerequisites": ["js-hoisting-tdz"],
           "resources": [
             { "title": "MDN — let", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let", "kind": "docs" }
           ]

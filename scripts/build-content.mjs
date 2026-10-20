@@ -4,7 +4,9 @@
  *   content/*.json  --(zod validate)--> --(shiki highlight)--> public/content/**
  *
  * Fails loudly on: schema violations, duplicate card ids, unresolvable prerequisite
- * ids, and unknown languages. Content is code; it goes through a compiler.
+ * ids, prerequisite cycles, a same-topic prerequisite in a higher tier than the card
+ * needing it, a topic without a Basics tier, and unknown languages. Content is code;
+ * it goes through a compiler.
  */
 import { readdir, readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -19,6 +21,7 @@ const OUT_DIR = path.join(root, 'public', 'content');
 
 /** Category display order on the topic picker. */
 const CATEGORY_ORDER = [
+  'Start Here',
   'Languages',
   'Computer Science',
   'Data & Databases',
@@ -62,6 +65,9 @@ const LANG_ALIASES = {
   tf: 'hcl',
   ps: 'powershell',
 };
+
+/** Every topic must open with at least this many tier-1 cards. */
+const MIN_BASICS = 5;
 
 const fail = (msg) => {
   console.error(`\x1b[31mcontent error\x1b[0m ${msg}`);
@@ -151,6 +157,24 @@ async function main() {
     fail(`prerequisite cycle: ${cycle.join(' -> ')}`);
   }
 
+  // A card's difficulty is its tier, and tiers unlock in order — so a prerequisite in the
+  // same topic must never sit in a later tier than the card that needs it. Every topic
+  // must also open with Basics: what it is and what it is for.
+  for (const topic of topics) {
+    const tierOf = new Map(topic.modules.flatMap((m) => m.cards.map((c) => [c.id, c.difficulty])));
+    const basics = [...tierOf.values()].filter((d) => d === 1).length;
+    if (basics < MIN_BASICS) fail(`${topic.id}: needs at least ${MIN_BASICS} Basics (tier 1) cards, has ${basics}`);
+    for (const mod of topic.modules) {
+      for (const card of mod.cards) {
+        for (const pre of card.prerequisites ?? []) {
+          if (tierOf.has(pre) && tierOf.get(pre) > card.difficulty) {
+            fail(`${card.id} (tier ${card.difficulty}) requires ${pre} from a later tier (${tierOf.get(pre)})`);
+          }
+        }
+      }
+    }
+  }
+
   if (process.exitCode === 1) {
     console.error('\nbuild aborted — fix the errors above.');
     return;
@@ -225,9 +249,13 @@ async function main() {
   );
 
   const byType = {};
+  const byTier = [0, 0, 0, 0, 0];
   for (const topic of topics)
     for (const mod of topic.modules)
-      for (const card of mod.cards) byType[card.type] = (byType[card.type] ?? 0) + 1;
+      for (const card of mod.cards) {
+        byType[card.type] = (byType[card.type] ?? 0) + 1;
+        byTier[card.difficulty - 1] += 1;
+      }
 
   console.log(
     `\x1b[32mcontent ok\x1b[0m ${topics.length} topics · ${index.totalCards} cards · ` +
@@ -238,6 +266,12 @@ async function main() {
       Object.entries(byType)
         .sort((a, b) => b[1] - a[1])
         .map(([t, n]) => `${t}:${n}`)
+        .join('  '),
+  );
+  console.log(
+    '  ' +
+      ['basics', 'fundamentals', 'intermediate', 'advanced', 'expert']
+        .map((name, i) => `${name}:${byTier[i]}`)
         .join('  '),
   );
 }

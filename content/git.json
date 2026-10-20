@@ -7,6 +7,90 @@
   "description": "The object model, branching, merge vs rebase, recovery from mistakes and collaborating through pull requests.",
   "modules": [
     {
+      "id": "git-big-picture",
+      "name": "The Big Picture",
+      "description": "What Git & GitHub is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "git-intro-vcs",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.basics"],
+          "prompt": "What is version control, and what is Git?",
+          "answer": "Version control records every change to a set of files over time, so you can see who changed what and why, go back to earlier versions and work in parallel without overwriting each other. Git is by far the most widely used version control system.",
+          "explanation": "Git was created by Linus Torvalds in 2005 to manage Linux kernel development. It is distributed: every clone has the full history, so most operations work offline.",
+          "resources": [
+            { "title": "Pro Git — About version control", "url": "https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control", "kind": "book" },
+            { "title": "Wikipedia — Git", "url": "https://en.wikipedia.org/wiki/Git", "kind": "article" }
+          ]
+        },
+        {
+          "id": "git-intro-git-github",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["git.basics"],
+          "prompt": "Git vs GitHub",
+          "answer": "Git is the version control tool that runs on your machine; GitHub is a website and company that hosts Git repositories and adds collaboration features around them.",
+          "columns": {
+            "left": { "title": "Git", "points": ["Open-source command-line tool", "Tracks history locally", "Works without the internet", "Commits, branches, merges"] },
+            "right": { "title": "GitHub", "points": ["Hosting service owned by Microsoft", "Stores a shared copy (remote)", "Pull requests, issues, Actions CI", "Alternatives: GitLab, Bitbucket"] }
+          },
+          "explanation": "You can use Git without GitHub at all; GitHub is one popular place to keep the shared copy that a team pushes to and pulls from.",
+          "resources": [
+            { "title": "GitHub Docs — About GitHub and Git", "url": "https://docs.github.com/en/get-started/start-your-journey/about-github-and-git", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "git-intro-commit",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.basics"],
+          "prompt": "What is a commit?",
+          "answer": "A saved snapshot of the project at a point in time, with a message describing the change, an author, a timestamp and a link to the previous commit. The chain of commits is the project's history.",
+          "explanation": "Good commits are small and focused with a clear message explaining *why* — they make history useful for review, debugging and reverting.",
+          "resources": [
+            { "title": "Pro Git — Recording changes to the repository", "url": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-intro-daily",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.basics"],
+          "prompt": "What is the everyday Git workflow, command by command?",
+          "answer": "`git status` to see what changed, `git add <file>` to stage changes, `git commit -m \"message\"` to save a snapshot, `git pull` to get others' changes, and `git push` to share yours.",
+          "explanation": "`git log` shows history and `git diff` shows unstaged changes. Running `git status` before and after each step is the habit that prevents most beginner mistakes.",
+          "resources": [
+            { "title": "Pro Git — Git basics", "url": "https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-intro-branch",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.basics"],
+          "prompt": "What is a branch?",
+          "answer": "An independent line of development: a movable pointer to a commit, letting you work on a feature or fix without affecting the main branch until you merge it back.",
+          "explanation": "Branches in Git are cheap — creating one takes milliseconds — so the norm is one short-lived branch per change, merged through a pull request.",
+          "resources": [
+            { "title": "Pro Git — Branches in a nutshell", "url": "https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell", "kind": "book" }
+          ]
+        },
+        {
+          "id": "git-intro-pull-request",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["git.basics"],
+          "prompt": "What is a pull request?",
+          "answer": "A request on a hosting platform (GitHub, GitLab calls it a merge request) to merge one branch into another, giving teammates a place to review the changes, discuss them and see CI results before they land.",
+          "explanation": "Pull requests are where code review happens. Small, focused pull requests get reviewed faster and more thoroughly than large ones.",
+          "resources": [
+            { "title": "GitHub Docs — About pull requests", "url": "https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "git-model",
       "name": "The Object Model",
       "description": "What git actually stores, and why that makes the commands make sense.",
@@ -38,7 +122,7 @@
         {
           "id": "git-merge-vs-rebase",
           "type": "compare",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["git.branching", "git.workflow"],
           "prompt": "Merge vs rebase",
           "answer": "Merge records that two lines of work joined, creating a merge commit. Rebase replays your commits on top of the new base, producing a linear history with new commit hashes.",
@@ -55,7 +139,7 @@
         {
           "id": "git-reset-modes",
           "type": "predict-output",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["git.commands", "git.recovery"],
           "prompt": "What is the difference between these three commands?",
           "code": "git reset --soft  HEAD~1\ngit reset --mixed HEAD~1   # default\ngit reset --hard  HEAD~1",
@@ -171,7 +255,6 @@
             "right": { "title": "pull", "points": ["fetch + merge (or rebase)", "Changes your current branch", "Can create merge commits or conflicts", "Configure `pull.rebase` or `pull.ff`"] }
           },
           "explanation": "Fetching first lets you inspect what changed (`git log HEAD..origin/main`) before integrating. Setting `pull.rebase=true` (or `pull.ff=only`) avoids a stream of pointless \"Merge branch main\" commits on feature branches.",
-          "prerequisites": ["git-merge-vs-rebase"],
           "resources": [
             { "title": "Git docs — git-fetch", "url": "https://git-scm.com/docs/git-fetch", "kind": "docs" }
           ]
@@ -179,7 +262,7 @@
         {
           "id": "git-stash",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["git.workflow"],
           "prompt": "What does `git stash` do, and what are its pitfalls?",
           "answer": "It shelves uncommitted changes (staged and unstaged) onto a stack and resets the working tree, so you can switch context; `git stash pop` reapplies the latest and drops it, `apply` keeps it. `-u` includes untracked files.",
@@ -222,7 +305,6 @@
           "prompt": "How should you resolve a merge conflict well?",
           "answer": "Read both sides and understand the intent of each change (`git log --merge` and `git diff` help), edit to the correct combined result rather than picking a side blindly, remove the markers, run the tests, then `git add` and continue. Enable `merge.conflictStyle=zdiff3` to see the common ancestor.",
           "explanation": "Seeing the base version shows what each side actually changed, which makes most conflicts obvious. `git rerere` remembers resolutions for repeated rebases. Frequent integration keeps conflicts small — the real fix is shorter-lived branches.",
-          "prerequisites": ["git-branching-strategies"],
           "resources": [
             { "title": "Pro Git — Advanced merging", "url": "https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging", "kind": "book" }
           ]
@@ -239,7 +321,6 @@
             "right": { "title": "Annotated", "points": ["`git tag -a v1.0 -m \"...\"`", "A real object with metadata", "Can be GPG/SSH signed (`-s`)", "The right choice for releases"] }
           },
           "explanation": "Use annotated (and ideally signed) tags for releases — `git describe` and many release tools consider only annotated tags by default. Tags are not pushed with a normal `git push`; use `git push origin v1.2.0` or `--follow-tags`. Never move a published release tag.",
-          "prerequisites": ["git-objects"],
           "resources": [
             { "title": "Pro Git — Tagging", "url": "https://git-scm.com/book/en/v2/Git-Basics-Tagging", "kind": "book" }
           ]
@@ -252,7 +333,6 @@
           "prompt": "Git says \"You are in 'detached HEAD' state\". What does that mean, and how do you avoid losing work?",
           "answer": "HEAD points directly at a commit instead of at a branch — typically after checking out a tag or a specific hash. You can look around and even commit, but new commits belong to no branch and become unreachable when you switch away. Create a branch to keep them: `git switch -c my-fix`.",
           "explanation": "If you already switched away, `git reflog` still lists the orphaned commits for about 90 days, so the work is recoverable. Detached HEAD is also the normal state inside a bisect and in many CI checkouts.",
-          "prerequisites": ["git-reflog-recovery"],
           "resources": [
             { "title": "Git docs — git-checkout#_detached_head", "url": "https://git-scm.com/docs/git-checkout#_detached_head", "kind": "docs" }
           ]
@@ -260,7 +340,7 @@
         {
           "id": "git-switch-restore",
           "type": "flip",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["git.commands"],
           "prompt": "Why were `git switch` and `git restore` added when `git checkout` already existed?",
           "answer": "`checkout` did two unrelated jobs — changing branches and overwriting files — so a typo could silently discard work. `switch` only changes branches (`-c` creates one); `restore` only restores file contents (`--staged` unstages, `--source=<rev>` takes a file from another commit).",
@@ -325,7 +405,6 @@
           "prompt": "Your repository takes 20 minutes to clone because someone committed video assets and build artefacts. What do you do?",
           "answer": "Stop the bleeding: add the paths to `.gitignore` and move large binaries to Git LFS or external artefact storage. The history still contains the blobs, so rewrite it with `git filter-repo` (coordinating a re-clone for everyone) if clone size matters — or use partial and shallow clones as a stop-gap.",
           "explanation": "Git stores every version of every file forever, and binary files do not delta-compress well. Build outputs never belong in git; large source assets belong in LFS from the start. `git count-objects -vH` and `git-sizer` show where the size comes from.",
-          "prerequisites": ["git-objects"],
           "resources": [
             { "title": "Git LFS", "url": "https://git-lfs.com/", "kind": "docs" }
           ]

@@ -7,6 +7,93 @@
   "description": "Structural typing, narrowing, generics and the type-level tools that make large codebases tractable.",
   "modules": [
     {
+      "id": "typescript-big-picture",
+      "name": "The Big Picture",
+      "description": "What TypeScript is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "typescript-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ts.basics"],
+          "prompt": "What is TypeScript, and why do teams use it?",
+          "answer": "JavaScript with static types added. You annotate (or let the compiler infer) the types of values, and the TypeScript compiler reports mistakes — a typo'd property, a missing argument, a possible `undefined` — before the code ever runs.",
+          "explanation": "Every valid JavaScript program is (almost always) valid TypeScript, so it can be adopted gradually. The payoff grows with codebase size: editors can autocomplete and refactor safely because they know what every value is.",
+          "resources": [
+            { "title": "TypeScript Handbook — TypeScript for the new programmer", "url": "https://www.typescriptlang.org/docs/handbook/typescript-from-scratch.html", "kind": "docs" },
+            { "title": "Wikipedia — TypeScript", "url": "https://en.wikipedia.org/wiki/TypeScript", "kind": "article" }
+          ]
+        },
+        {
+          "id": "typescript-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ts.basics"],
+          "prompt": "Who makes TypeScript, and when did it appear?",
+          "answer": "Microsoft, first released in 2012. Its lead architect is Anders Hejlsberg, who also designed C# (and Turbo Pascal and Delphi before that).",
+          "explanation": "TypeScript is open source and tracks JavaScript closely: it adopts new ECMAScript features as they are standardised rather than inventing its own runtime features, so its main contribution is the type system layered on top.",
+          "resources": [
+            { "title": "Wikipedia — TypeScript", "url": "https://en.wikipedia.org/wiki/TypeScript", "kind": "article" },
+            { "title": "TypeScript — Documentation", "url": "https://www.typescriptlang.org/docs/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "typescript-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ts.basics"],
+          "prompt": "How does TypeScript code run, given that browsers and Node.js run JavaScript?",
+          "answer": "It is compiled (transpiled) to plain JavaScript — by `tsc`, or by fast tools such as esbuild or swc — and the JavaScript is what runs. The types are erased: none of them exist at run time.",
+          "explanation": "Type erasure means TypeScript cannot check data arriving at run time (JSON from an API, user input); you validate that with a library such as Zod. Recent Node.js versions can run `.ts` files directly by stripping the type annotations, but no type checking happens on that path.",
+          "resources": [
+            { "title": "TypeScript Handbook — The basics", "url": "https://www.typescriptlang.org/docs/handbook/2/basic-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "typescript-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ts.basics"],
+          "prompt": "What does a minimal TypeScript program look like?",
+          "code": "const greeting: string = \"Hello, world!\";\nconsole.log(greeting);",
+          "lang": "typescript",
+          "answer": "JavaScript plus an optional type annotation. `: string` declares the variable's type; the compiler would reject assigning a number to it.",
+          "explanation": "You rarely need to annotate everything: TypeScript infers types from values, so `const greeting = \"Hello\"` is already known to be a string. Annotations are most useful on function parameters and public APIs.",
+          "resources": [
+            { "title": "TypeScript Handbook — Everyday types", "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "typescript-intro-vs-js",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["ts.basics"],
+          "prompt": "TypeScript vs JavaScript",
+          "answer": "TypeScript adds a compile-time type checker and a build step; JavaScript runs directly. At run time they are the same language.",
+          "columns": {
+            "left": { "title": "TypeScript", "points": ["Static types, checked before running", "Needs a compile / strip step", "Errors caught in the editor", "Types erased at run time"] },
+            "right": { "title": "JavaScript", "points": ["Dynamic types, checked while running", "Runs as written", "Errors found when the line executes", "What browsers and Node.js execute"] }
+          },
+          "explanation": "Small scripts gain little from TypeScript; large, long-lived codebases with many contributors gain a lot. Many libraries ship type definitions so even JavaScript projects get autocomplete from them.",
+          "resources": [
+            { "title": "TypeScript Handbook — TypeScript for JavaScript programmers", "url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "typescript-intro-config",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["ts.basics"],
+          "prompt": "What is `tsconfig.json`, and what does `\"strict\": true` do?",
+          "answer": "`tsconfig.json` marks a TypeScript project and holds its compiler options. `strict` switches on the full set of strict checks — most importantly `strictNullChecks` and `noImplicitAny` — and is the recommended default for new code.",
+          "explanation": "Without strict null checks every type silently includes `null` and `undefined`, which hides the most common run-time crash in JavaScript. Turning strict mode on later in a large codebase is painful, so start with it on.",
+          "resources": [
+            { "title": "TSConfig reference — strict", "url": "https://www.typescriptlang.org/tsconfig/#strict", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "ts-foundations",
       "name": "Type System Foundations",
       "description": "What TypeScript actually checks, and the mental model behind its answers.",

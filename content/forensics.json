@@ -7,6 +7,74 @@
   "description": "Collecting and examining digital evidence: preserving it properly, recovering data from disks, reading operating-system artefacts, and analysing memory, network captures and logs.",
   "modules": [
     {
+      "id": "forensics-big-picture",
+      "name": "The Big Picture",
+      "description": "What Digital Forensics is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "forensics-intro-evidence",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["forensics.basics"],
+          "prompt": "What counts as digital evidence?",
+          "answer": "Any data that can help establish what happened: disk images, files and deleted-file remnants, memory captures, logs (system, application, firewall), network captures, browser history, emails and cloud audit trails.",
+          "explanation": "Digital evidence is fragile and easy to alter just by looking at it — booting a machine or opening a file changes timestamps — so forensic work starts by preserving it before analysing it.",
+          "resources": [
+            { "title": "Wikipedia — Digital forensics", "url": "https://en.wikipedia.org/wiki/Digital_forensics", "kind": "article" },
+            { "title": "NIST SP 800-86 — Integrating forensic techniques into incident response", "url": "https://csrc.nist.gov/pubs/sp/800/86/final", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "forensics-intro-chain-of-custody",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["forensics.basics"],
+          "prompt": "What is chain of custody?",
+          "answer": "A documented record of who collected each piece of evidence, when, how, and everyone who handled it afterwards, so that it can be shown not to have been tampered with.",
+          "explanation": "Without an unbroken chain of custody, evidence can be challenged or thrown out in legal proceedings — and even in internal investigations it undermines confidence in the findings.",
+          "resources": [
+            { "title": "Wikipedia — Chain of custody", "url": "https://en.wikipedia.org/wiki/Chain_of_custody", "kind": "article" }
+          ]
+        },
+        {
+          "id": "forensics-intro-image",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["forensics.basics"],
+          "prompt": "What is a forensic image, and why analyse a copy?",
+          "answer": "A bit-for-bit copy of a storage device — including unused space and deleted data — verified with cryptographic hashes. Investigators analyse the image, never the original, so the original evidence stays unchanged.",
+          "explanation": "Hashing the original and the copy and comparing the values proves the copy is exact. Write blockers are used during acquisition so the source disk cannot be modified by accident.",
+          "resources": [
+            { "title": "Wikipedia — Disk image", "url": "https://en.wikipedia.org/wiki/Disk_image", "kind": "article" }
+          ]
+        },
+        {
+          "id": "forensics-intro-volatility",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["forensics.basics"],
+          "prompt": "What is the order of volatility?",
+          "answer": "Collect the most short-lived evidence first: CPU registers and cache, then RAM (running processes, network connections, encryption keys), then temporary files, then disk, then remote logs and backups.",
+          "explanation": "Pulling the plug destroys everything in memory, which may hold the most valuable evidence — such as malware that never touches the disk. RFC 3227 is the classic guidance.",
+          "resources": [
+            { "title": "RFC 3227 — Guidelines for evidence collection and archiving", "url": "https://www.rfc-editor.org/rfc/rfc3227", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "forensics-intro-timeline",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["forensics.basics"],
+          "prompt": "Why are timelines central to a forensic investigation?",
+          "answer": "Ordering events from many sources — file timestamps, logs, browser history, registry entries — reconstructs what happened and in what sequence: initial access, actions taken, data touched.",
+          "explanation": "Clocks differ between systems and time zones, so investigators normalise everything to UTC and note clock skew before trusting a sequence of events.",
+          "resources": [
+            { "title": "SANS — Digital forensics and incident response", "url": "https://www.sans.org/digital-forensics-incident-response/", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "for-process",
       "name": "Process & Evidence Handling",
       "description": "What forensics is for, in what order to collect evidence, and how to keep it trustworthy.",
@@ -399,7 +467,7 @@
           "prompt": "What makes a forensic report credible?",
           "answer": "It separates facts from interpretation, cites the evidence for every finding, describes the method in enough detail for another examiner to reproduce the result, gives times in a stated time zone, and states its limitations and what could not be determined.",
           "explanation": "\"The file was created at 14:02 UTC by the account svc_backup\" is a fact; \"the attacker created the file\" is an inference and should be labelled as one. Readers are often non-technical decision-makers or lawyers, so lead with a plain summary and keep the detail in appendices.",
-          "prerequisites": ["for-chain-of-custody", "for-timeline"],
+          "prerequisites": ["for-chain-of-custody"],
           "resources": [
             { "title": "NIST SP 800-86 — Guide to integrating forensic techniques into incident response", "url": "https://csrc.nist.gov/pubs/sp/800/86/final", "kind": "docs" }
           ]

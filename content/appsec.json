@@ -7,6 +7,87 @@
   "description": "OWASP Top 10, secure SDLC, dependency and supply-chain risk, and the tooling that finds bugs before attackers do.",
   "modules": [
     {
+      "id": "appsec-big-picture",
+      "name": "The Big Picture",
+      "description": "What Application Security is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "appsec-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["appsec.basics"],
+          "prompt": "What is application security (AppSec)?",
+          "answer": "Making the software itself secure: designing, writing, testing and maintaining applications so that attackers cannot misuse them to steal data or take control — as opposed to securing the network or machines around them.",
+          "explanation": "Most breaches of web applications exploit bugs in the application's own code or its dependencies, so security has to be part of how software is built, not bolted on afterwards.",
+          "resources": [
+            { "title": "Wikipedia — Application security", "url": "https://en.wikipedia.org/wiki/Application_security", "kind": "article" },
+            { "title": "OWASP — About", "url": "https://owasp.org/about/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "appsec-intro-owasp",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["appsec.basics"],
+          "prompt": "What is OWASP, and what is the OWASP Top 10?",
+          "answer": "OWASP (Open Worldwide Application Security Project) is a non-profit community producing free security guidance and tools. Its Top 10 is a regularly updated list of the most critical web application security risks — a common starting checklist.",
+          "explanation": "The Top 10 is an awareness document, not a complete standard; OWASP's ASVS (Application Security Verification Standard) is the detailed checklist for verifying an application.",
+          "resources": [
+            { "title": "OWASP Top 10", "url": "https://owasp.org/www-project-top-ten/", "kind": "spec" }
+          ]
+        },
+        {
+          "id": "appsec-intro-input",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["appsec.basics"],
+          "prompt": "Why is \"never trust user input\" the first rule of application security?",
+          "answer": "Anything that comes from outside — form fields, URLs, headers, cookies, uploaded files, API payloads — can be crafted by an attacker. If the application treats that data as code or as trusted, it can be made to do things it should not.",
+          "explanation": "Injection attacks (SQL injection, cross-site scripting, command injection) all come from mixing untrusted data into something that gets interpreted. The defence is validating input and keeping data separate from code — for example with parameterised queries.",
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Input validation", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "appsec-intro-sqli",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["appsec.basics"],
+          "prompt": "What is SQL injection, in one sentence, and how do you prevent it?",
+          "answer": "An attack where user input is pasted into a SQL query string and changes the query's meaning — `' OR 1=1 --` in a login form can bypass the password check. Prevent it with parameterised queries (prepared statements), never string concatenation.",
+          "explanation": "Parameterised queries send the SQL and the data separately, so the database never interprets data as SQL. Every mainstream database library supports them.",
+          "resources": [
+            { "title": "OWASP Cheat Sheet — SQL injection prevention", "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "appsec-intro-secrets",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["appsec.basics"],
+          "prompt": "Why must secrets never be committed to source code?",
+          "answer": "Passwords, API keys and private keys in a repository are visible to everyone with access and stay in its history forever — bots scan public repositories for leaked keys within minutes.",
+          "explanation": "Keep secrets in environment variables or a secrets manager, add secret scanning to CI, and if one does leak, rotate it immediately: deleting the commit is not enough.",
+          "resources": [
+            { "title": "OWASP Cheat Sheet — Secrets management", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html", "kind": "docs" },
+            { "title": "GitHub Docs — About secret scanning", "url": "https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "appsec-intro-shift-left",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["appsec.basics"],
+          "prompt": "What does \"shift left\" mean in security?",
+          "answer": "Moving security work earlier in the development process — threat modelling during design, secure coding guidance, automated scanning in the editor and CI — instead of only testing once the software is finished.",
+          "explanation": "A design flaw found on a whiteboard costs minutes to fix; the same flaw found in production costs an incident. Automated tools (SAST, dependency scanning) in CI catch common mistakes on every change.",
+          "resources": [
+            { "title": "Wikipedia — Shift-left testing", "url": "https://en.wikipedia.org/wiki/Shift-left_testing", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "as-owasp",
       "name": "OWASP Top 10 in Practice",
       "description": "The categories that account for most real-world web vulnerabilities.",
@@ -116,7 +197,6 @@
           "prompt": "What should you check before adding a dependency?",
           "answer": "Maintenance activity and maintainer count, open critical issues, transitive dependency count, licence compatibility, install-script behaviour, download provenance — and whether ten lines of your own code would do the job.",
           "explanation": "Every dependency is code you ship, an update treadmill and an attack surface. `left-pad` and `event-stream` were both small packages. The rule of thumb: the smaller the utility, the higher the bar for pulling it in.",
-          "prerequisites": ["as-supply-chain"],
           "resources": [
             { "title": "OpenSSF Scorecard", "url": "https://github.com/ossf/scorecard", "kind": "tool" }
           ]
@@ -261,7 +341,7 @@
         {
           "id": "as-asvs",
           "type": "flip",
-          "difficulty": 2,
+          "difficulty": 3,
           "tags": ["appsec.standards"],
           "prompt": "What is OWASP ASVS, and how does it differ from the Top 10?",
           "answer": "The Application Security Verification Standard is a detailed list of testable security requirements — authentication, session management, access control, validation, cryptography, logging and more — organised into three levels by assurance needed. The Top 10 is an awareness list of risk categories.",

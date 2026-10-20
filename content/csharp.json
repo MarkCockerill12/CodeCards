@@ -7,6 +7,91 @@
   "description": "Value vs reference types, async/await, LINQ, disposal and the .NET runtime behaviours behind them.",
   "modules": [
     {
+      "id": "csharp-big-picture",
+      "name": "The Big Picture",
+      "description": "What C# is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "csharp-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["csharp.basics"],
+          "prompt": "What is C#, and what is it mainly used for?",
+          "answer": "A general-purpose, statically typed, object-oriented language from Microsoft that runs on .NET. It is used for web back ends (ASP.NET Core), Windows desktop apps, cloud services, and games — it is the scripting language of the Unity engine.",
+          "explanation": "Modern .NET is open source and cross-platform: C# programs run on Windows, Linux and macOS. The language evolves quickly, regularly borrowing good ideas from functional languages (pattern matching, records, LINQ).",
+          "resources": [
+            { "title": "Microsoft Learn — A tour of C#", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/tour-of-csharp/", "kind": "docs" },
+            { "title": "Wikipedia — C# (programming language)", "url": "https://en.wikipedia.org/wiki/C_Sharp_(programming_language)", "kind": "article" }
+          ]
+        },
+        {
+          "id": "csharp-intro-origins",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["csharp.basics"],
+          "prompt": "Who designed C#, and when?",
+          "answer": "Anders Hejlsberg's team at Microsoft, released with the .NET Framework in 2002 (announced in 2000). Hejlsberg later also led the design of TypeScript.",
+          "explanation": "C# began as Microsoft's answer to Java and the two still look alike. The original .NET Framework was Windows-only; the cross-platform rewrite (.NET Core, now just \".NET\") arrived in 2016.",
+          "resources": [
+            { "title": "Wikipedia — C# (programming language)", "url": "https://en.wikipedia.org/wiki/C_Sharp_(programming_language)", "kind": "article" },
+            { "title": "Wikipedia — .NET", "url": "https://en.wikipedia.org/wiki/.NET", "kind": "article" }
+          ]
+        },
+        {
+          "id": "csharp-intro-run",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["csharp.basics"],
+          "prompt": "How does C# code run?",
+          "answer": "The C# compiler turns source into Intermediate Language (IL) packaged in assemblies (`.dll`). At run time the .NET runtime (the CLR) JIT-compiles the IL to native machine code. `dotnet run` builds and runs a project in one step.",
+          "explanation": "This is the same split as Java's bytecode and JVM. .NET can also compile ahead of time to a native executable (Native AOT) for fast start-up and small deployments.",
+          "resources": [
+            { "title": "Microsoft Learn — Introduction to .NET", "url": "https://learn.microsoft.com/en-us/dotnet/core/introduction", "kind": "docs" },
+            { "title": "Wikipedia — Common Language Runtime", "url": "https://en.wikipedia.org/wiki/Common_Language_Runtime", "kind": "article" }
+          ]
+        },
+        {
+          "id": "csharp-intro-hello",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["csharp.basics"],
+          "prompt": "What does a minimal modern C# program look like?",
+          "code": "Console.WriteLine(\"Hello, world!\");",
+          "lang": "csharp",
+          "answer": "One line, using top-level statements (C# 9 and later): the compiler generates the `Main` method for you.",
+          "explanation": "Older code wraps this in `class Program { static void Main(string[] args) { ... } }`, which is still valid. `Console.WriteLine` writes a line to standard output; statements end with semicolons.",
+          "resources": [
+            { "title": "Microsoft Learn — Top-level statements", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/top-level-statements", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "csharp-intro-traits",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["csharp.basics"],
+          "prompt": "What kind of language is C#: typing, memory and paradigms?",
+          "answer": "Statically and strongly typed, with local type inference (`var`). Memory is garbage collected. It is primarily object-oriented, with strong functional features: lambdas, LINQ queries, pattern matching and immutable records. `async`/`await` (which C# popularised) is built in.",
+          "explanation": "C# distinguishes value types (`struct`, stored inline) from reference types (`class`, stored on the heap) — a distinction that matters for performance and for how assignment copies data.",
+          "resources": [
+            { "title": "Microsoft Learn — The C# type system", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "csharp-intro-ecosystem",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["csharp.basics"],
+          "prompt": "What are the `dotnet` CLI and NuGet?",
+          "answer": "`dotnet` is the command-line tool for creating, building, testing and running .NET projects (`dotnet new`, `dotnet build`, `dotnet test`). NuGet is .NET's package manager and registry; `dotnet add package` installs from it.",
+          "explanation": "Projects are described by `.csproj` files, which list target framework and package references. IDEs (Visual Studio, Rider, VS Code with C# Dev Kit) drive the same `dotnet` tooling underneath.",
+          "resources": [
+            { "title": "Microsoft Learn — .NET CLI overview", "url": "https://learn.microsoft.com/en-us/dotnet/core/tools/", "kind": "docs" },
+            { "title": "Microsoft Learn — What is NuGet?", "url": "https://learn.microsoft.com/en-us/nuget/what-is-nuget", "kind": "docs" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "cs-types",
       "name": "Types, Memory & Disposal",
       "description": "Structs, classes, boxing, nullable reference types and deterministic cleanup.",
@@ -105,7 +190,6 @@
           "prompt": "Why is `async void` dangerous?",
           "answer": "There is no Task to await or observe, so the caller cannot know when it finishes, and an exception is thrown on the synchronization context — typically crashing the process instead of surfacing as a faulted task.",
           "explanation": "The single legitimate use is an event handler, whose signature demands `void`. Everywhere else return `Task` (or `ValueTask` for hot paths that usually complete synchronously) so failures and completion are observable.",
-          "prerequisites": ["cs-async-deadlock"],
           "resources": [
             { "title": "Microsoft Learn — Async return types", "url": "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/async-return-types", "kind": "docs" }
           ]

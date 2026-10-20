@@ -7,6 +7,88 @@
   "description": "The shell, permissions, processes, text pipelines and the scripting discipline that keeps automation safe.",
   "modules": [
     {
+      "id": "linux-big-picture",
+      "name": "The Big Picture",
+      "description": "What Linux & Bash is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "linux-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["linux.basics"],
+          "prompt": "What is Linux, and what is a distribution?",
+          "answer": "Linux is a free, open-source, Unix-like operating system kernel created by Linus Torvalds in 1991. A distribution (\"distro\") such as Ubuntu, Debian, Fedora or Arch packages the kernel with tools, libraries, a package manager and often a desktop into a complete OS.",
+          "explanation": "Linux runs most of the world's servers, all of the top supercomputers, Android phones and countless embedded devices. Distros differ mainly in release cadence, package format and defaults.",
+          "resources": [
+            { "title": "Wikipedia — Linux", "url": "https://en.wikipedia.org/wiki/Linux", "kind": "article" },
+            { "title": "Wikipedia — Linux distribution", "url": "https://en.wikipedia.org/wiki/Linux_distribution", "kind": "article" }
+          ]
+        },
+        {
+          "id": "linux-intro-shell",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["linux.basics"],
+          "prompt": "What are the terminal, the shell and Bash?",
+          "answer": "The terminal is the window you type into; the shell is the program that reads your commands and runs them; Bash is the most common shell on Linux (zsh is the default on macOS).",
+          "explanation": "A shell is also a programming language: commands can be combined with pipes, variables, loops and conditions, and saved as scripts to automate repetitive work.",
+          "resources": [
+            { "title": "Wikipedia — Bash (Unix shell)", "url": "https://en.wikipedia.org/wiki/Bash_(Unix_shell)", "kind": "article" },
+            { "title": "GNU Bash manual", "url": "https://www.gnu.org/software/bash/manual/bash.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "linux-intro-nav",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["linux.basics"],
+          "prompt": "Which commands move around and inspect the file system?",
+          "answer": "`pwd` prints the current directory, `ls` lists files (`ls -la` for details and hidden files), `cd dir` changes directory (`cd ..` goes up, `cd ~` goes home), `cat file` prints a file and `less file` pages through it.",
+          "explanation": "Paths starting with `/` are absolute (from the root); others are relative to where you are. Tab completion saves typing and avoids typos — press Tab after a few letters.",
+          "resources": [
+            { "title": "Ubuntu — The Linux command line for beginners", "url": "https://ubuntu.com/tutorials/command-line-for-beginners", "kind": "article" }
+          ]
+        },
+        {
+          "id": "linux-intro-files",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["linux.basics"],
+          "prompt": "Which commands create, copy, move and delete files?",
+          "answer": "`touch file` creates an empty file, `mkdir dir` a directory, `cp a b` copies, `mv a b` moves or renames, `rm file` deletes (and `rm -r dir` deletes a directory and its contents).",
+          "explanation": "There is no recycle bin on the command line: `rm` is permanent, and `rm -rf` with the wrong path is a classic catastrophe. Double-check paths, especially ones built from variables.",
+          "resources": [
+            { "title": "GNU Coreutils manual", "url": "https://www.gnu.org/software/coreutils/manual/coreutils.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "linux-intro-help",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["linux.basics"],
+          "prompt": "How do you find out what a command does and how to use it?",
+          "answer": "`man command` opens its manual page; most commands also print a summary with `--help`. `tldr command` (a separate tool) shows short practical examples.",
+          "explanation": "Man pages are organised into sections — `man 1 ls` for commands, `man 5 passwd` for file formats. Press `/` to search inside a man page and `q` to quit.",
+          "resources": [
+            { "title": "man7.org — man(1)", "url": "https://man7.org/linux/man-pages/man1/man.1.html", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "linux-intro-packages",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["linux.basics"],
+          "prompt": "How do you install software on Linux?",
+          "answer": "With the distribution's package manager, which downloads software from trusted repositories and handles dependencies: `apt` on Debian/Ubuntu (`sudo apt install git`), `dnf` on Fedora/RHEL, `pacman` on Arch.",
+          "explanation": "`sudo` runs the command as the administrator (root), which installing system-wide software requires. Prefer the package manager over downloading installers from websites — it keeps everything updatable in one place.",
+          "resources": [
+            { "title": "Debian — APT HOWTO", "url": "https://www.debian.org/doc/manuals/debian-reference/ch02.en.html", "kind": "docs" },
+            { "title": "Wikipedia — Package manager", "url": "https://en.wikipedia.org/wiki/Package_manager", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "lx-shell",
       "name": "Shell & Pipelines",
       "description": "Redirection, pipes, quoting and the tools that compose into one-liners.",
@@ -109,7 +191,7 @@
         {
           "id": "linux-processes-signals",
           "type": "flip",
-          "difficulty": 3,
+          "difficulty": 2,
           "tags": ["linux.processes", "os.signals"],
           "prompt": "What is the difference between `kill`, `kill -9` and `kill -HUP`?",
           "answer": "Plain `kill` sends SIGTERM — a polite request the process can handle. `-9` sends SIGKILL, which the kernel enforces and no process can catch or clean up after. `-HUP` traditionally means 'reload your configuration'.",
@@ -224,12 +306,12 @@
         {
           "id": "linux-disk-usage",
           "type": "scenario",
-          "difficulty": 2,
+          "difficulty": 3,
           "tags": ["linux.disk", "ops.troubleshooting"],
           "prompt": "`df -h` says the disk is 100% full, but `du -sh /*` adds up to far less. Where is the space?",
           "answer": "Most likely in deleted files still held open by a running process — their space is not freed until the descriptor closes. `lsof +L1` (or `lsof | grep deleted`) lists them; restart or signal the process, or truncate via `/proc/<pid>/fd/<n>`. Other causes: data hidden under a mount point, or reserved root blocks.",
           "explanation": "Also check inodes with `df -i` — millions of tiny files can exhaust inodes while bytes remain free. `ncdu` gives an interactive view of what uses space.",
-          "prerequisites": ["linux-links", "linux-diagnose-slow"],
+          "prerequisites": ["linux-links"],
           "resources": [
             { "title": "man7.org — lsof(8)", "url": "https://man7.org/linux/man-pages/man8/lsof.8.html", "kind": "docs" }
           ]
@@ -307,7 +389,6 @@
           "prompt": "What is each of `grep`, `sed`, `awk`, `cut`, `tr` and `xargs` best at?",
           "answer": "`grep` filters lines by pattern; `sed` edits streams (substitute, delete lines); `awk` processes columns and does arithmetic per line; `cut` extracts fields by delimiter; `tr` translates or deletes characters; `xargs` turns input lines into command arguments.",
           "explanation": "A few idioms go a long way: `grep -rn pattern dir`, `sed -i 's/old/new/g' file` (GNU; BSD sed needs `-i ''`), `awk '{sum += $3} END {print sum}'`. Modern replacements such as ripgrep and jq are faster or structure-aware, but the classics are on every server.",
-          "prerequisites": ["bash-text-tools"],
           "resources": [
             { "title": "The Linux Command Line (free book)", "url": "https://linuxcommand.org/tlcl.php", "kind": "book" }
           ]
@@ -315,7 +396,7 @@
         {
           "id": "linux-tar-compression",
           "type": "cloze",
-          "difficulty": 1,
+          "difficulty": 2,
           "tags": ["linux.archives"],
           "prompt": "To create a gzip-compressed archive of a directory, run `tar -___ backup.tar.gz dir/` (create, gzip, file).",
           "answer": "czf",

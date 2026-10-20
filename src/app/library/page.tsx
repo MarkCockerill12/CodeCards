@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, Play, Search } from 'lucide-react';
+import { Check, ChevronDown, Lock, Play, Search } from 'lucide-react';
 import { Badge, Button, Panel, Spinner } from '@/components/ui/primitives';
 import { useIndex } from '@/lib/useLibrary';
-import { loadTopic, CARD_TYPE_LABEL, DIFFICULTY_LABEL } from '@/lib/content';
+import { allCards, loadTopic, CARD_TYPE_LABEL } from '@/lib/content';
 import { useStore } from '@/lib/store';
 import { maturity } from '@/lib/scheduler';
+import { TIER_BLURB, TIER_COLOR, TIER_NAME, tierProgress } from '@/lib/tiers';
 import type { Topic } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -139,6 +140,13 @@ export default function LibraryPage() {
 function TopicDetail({ id }: { id: string }) {
   const [topic, setTopic] = useState<Topic>();
   const reviews = useStore((s) => s.reviews);
+  const testedOut = useStore((s) => s.testedOutTiers);
+
+  const tiers = useMemo(
+    () => (topic ? (tierProgress(allCards([topic]), reviews, testedOut).get(topic.id) ?? []) : []),
+    [topic, reviews, testedOut],
+  );
+  const moduleNames = useMemo(() => new Map(topic?.modules.map((m) => [m.id, m.name])), [topic]);
 
   useEffect(() => {
     let live = true;
@@ -159,28 +167,37 @@ function TopicDetail({ id }: { id: string }) {
         <Spinner />
       ) : (
         <div className="flex flex-col gap-4 p-4">
-          {topic.modules.map((mod) => (
-            <div key={mod.id}>
+          {tiers.map((tier) => (
+            <div key={tier.tier}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-sm font-medium">{mod.name}</h4>
-                  <p className="text-xs muted">{mod.description}</p>
+                  <h4 className="text-sm font-medium" style={{ color: TIER_COLOR[tier.tier] }}>
+                    Tier {tier.tier} · {TIER_NAME[tier.tier]}{' '}
+                    <span className="font-normal muted">({tier.cards.length})</span>
+                  </h4>
+                  <p className="text-xs muted">{TIER_BLURB[tier.tier]}</p>
                 </div>
-                <Link href={`/study?mode=module&topic=${topic.id}&module=${mod.id}`}>
-                  <Button size="sm" variant="ghost">
-                    <Play className="h-3 w-3" /> Study {mod.cards.length}
-                  </Button>
-                </Link>
+                {tier.unlocked ? (
+                  <Link href={`/study?mode=tier&topic=${topic.id}&tier=${tier.tier}`}>
+                    <Button size="sm" variant="ghost">
+                      <Play className="h-3 w-3" /> Study {TIER_NAME[tier.tier]}
+                    </Button>
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs muted">
+                    <Lock className="h-3 w-3" /> locked
+                  </span>
+                )}
               </div>
               <ul className="divide-y divide-white/5 rounded-xl border border-white/8">
-                {mod.cards.map((card) => (
+                {tier.cards.map((card) => (
                   <li key={card.id} className="flex items-center gap-3 px-3 py-2 text-sm">
                     <span className="w-24 shrink-0 text-[0.65rem] uppercase tracking-wide muted">
                       {CARD_TYPE_LABEL[card.type]}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{card.prompt}</span>
-                    <span className="hidden shrink-0 text-[0.65rem] muted sm:block">
-                      {DIFFICULTY_LABEL[card.difficulty]}
+                    <span className="hidden max-w-40 shrink-0 truncate text-[0.65rem] muted sm:block">
+                      {moduleNames.get(card.moduleId ?? '')}
                     </span>
                     <span className="w-16 shrink-0 text-right text-[0.65rem] uppercase muted">
                       {maturity(reviews[card.id])}

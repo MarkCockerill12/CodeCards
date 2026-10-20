@@ -7,6 +7,74 @@
   "description": "Syntax, greediness, groups, lookaround and the catastrophic backtracking that turns a regex into a denial of service.",
   "modules": [
     {
+      "id": "regex-big-picture",
+      "name": "The Big Picture",
+      "description": "What Regular Expressions is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "regex-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["regex.basics"],
+          "prompt": "What is a regular expression, and what is it used for?",
+          "answer": "A compact pattern language for describing text. Regexes find, validate, extract and replace text that matches a pattern — \"an email-like string\", \"lines starting with ERROR\", \"every date in this file\".",
+          "explanation": "Nearly every language and tool supports them: `grep`, editors' find-and-replace, Python's `re`, JavaScript's `/.../` literals. They are powerful but easy to make unreadable, so keep them short and tested.",
+          "resources": [
+            { "title": "Wikipedia — Regular expression", "url": "https://en.wikipedia.org/wiki/Regular_expression", "kind": "article" },
+            { "title": "MDN — Regular expressions", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions", "kind": "docs" }
+          ]
+        },
+        {
+          "id": "regex-intro-meta",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["regex.basics"],
+          "prompt": "Which characters are special (metacharacters) in a regex?",
+          "answer": "`.` (any character), `*` `+` `?` `{ }` (repetition), `^` `$` (anchors), `[ ]` (character sets), `( )` (groups), `|` (alternation) and `\\` (escape). Every other character matches itself literally.",
+          "explanation": "To match a metacharacter literally, escape it with a backslash: `\\.` matches a real full stop, while `.` matches any character. Forgetting this is the most common beginner bug — `file.txt` also matches `filextxt`.",
+          "resources": [
+            { "title": "regular-expressions.info — Literal characters and special characters", "url": "https://www.regular-expressions.info/characters.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "regex-intro-quantifiers",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["regex.basics"],
+          "prompt": "What do the quantifiers `*`, `+`, `?` and `{2,4}` mean?",
+          "answer": "`*` zero or more of the previous item, `+` one or more, `?` zero or one (optional), `{2,4}` between two and four. So `colou?r` matches \"color\" and \"colour\", and `\\d+` matches one or more digits.",
+          "explanation": "Quantifiers apply to the single item just before them; to repeat a group of characters, wrap it in parentheses: `(ab)+`.",
+          "resources": [
+            { "title": "regular-expressions.info — Repetition", "url": "https://www.regular-expressions.info/repeat.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "regex-intro-anchors",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["regex.basics"],
+          "prompt": "What do `^` and `$` do in a regex?",
+          "answer": "`^` anchors the match to the start of the string (or line) and `$` to the end. `^\\d+$` matches a string that is entirely digits; without the anchors, `\\d+` would also match the \"42\" inside \"abc42xyz\".",
+          "explanation": "Anchors are essential for validation: without them a pattern only checks that a matching piece exists *somewhere* in the input.",
+          "resources": [
+            { "title": "regular-expressions.info — Anchors", "url": "https://www.regular-expressions.info/anchors.html", "kind": "article" }
+          ]
+        },
+        {
+          "id": "regex-intro-where",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["regex.basics"],
+          "prompt": "Where do programmers use regexes day to day?",
+          "answer": "Searching code and logs (`grep -E`, ripgrep, IDE search), find-and-replace across files, validating input formats, extracting fields from text, and routing rules in web frameworks and config files.",
+          "explanation": "Regexes are the wrong tool for nested structures such as HTML or JSON, and for complex validation like full email addresses — use a real parser or library there.",
+          "resources": [
+            { "title": "ripgrep — User guide", "url": "https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md", "kind": "tool" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "re-core",
       "name": "Syntax & Semantics",
       "description": "The constructs that make up 95% of real regular expressions.",
@@ -105,7 +173,7 @@
         {
           "id": "re-engine-types",
           "type": "compare",
-          "difficulty": 5,
+          "difficulty": 4,
           "tags": ["regex.engines", "compilers.automata"],
           "prompt": "Backtracking engines vs finite-automata engines",
           "answer": "Backtracking engines (PCRE, Python re, JavaScript) support backreferences and lookaround but can go exponential; automata engines (RE2, Go regexp, rust regex) guarantee linear time by giving those features up.",
@@ -114,7 +182,6 @@
             "right": { "title": "NFA/DFA simulation", "points": ["Linear in input length, guaranteed", "No backreferences", "Safe for user-supplied patterns", "RE2, Go, Rust"] }
           },
           "explanation": "If untrusted input or untrusted patterns are involved, choose the linear engine or impose a hard timeout. Thompson's construction is the theory: a true regular language needs no backtracking.",
-          "prerequisites": ["re-redos"],
           "resources": [
             { "title": "Russ Cox — Regular expression matching can be simple and fast", "url": "https://swtch.com/~rsc/regexp/regexp1.html", "kind": "article" }
           ]
@@ -174,7 +241,6 @@
           "lang": "python",
           "answer": "`.` is a metacharacter matching any character. Escape it (`report\\.csv`) — and when building a pattern from user input, always escape it with `re.escape()` or its equivalent, otherwise the input can change the pattern's meaning or trigger catastrophic backtracking.",
           "explanation": "Metacharacters needing escapes: `. ^ $ * + ? { } [ ] \\ | ( )`. Use raw strings in Python (`r\"\\d+\"`) so backslashes reach the regex engine intact. Unescaped user input in a regex is an injection bug, just like unescaped input in SQL.",
-          "prerequisites": ["re-redos"],
           "resources": [
             { "title": "Python docs — re: re.escape", "url": "https://docs.python.org/3/library/re.html#re.escape", "kind": "docs" }
           ]
@@ -260,7 +326,6 @@
           "prompt": "How do you keep a non-trivial regex correct and maintainable?",
           "answer": "Write it in verbose mode with comments, give groups names, and unit-test it with a table of inputs that must match and inputs that must not — including edge cases such as empty strings, very long inputs and near-misses. Use an explainer tool (regex101) while developing.",
           "explanation": "Tests are what let you change a regex later without fear. Add a pathological long input to check it finishes quickly; if a pattern keeps growing, replace it with a small parser.",
-          "prerequisites": ["re-when-not"],
           "resources": [
             { "title": "regex101 — online regex tester and debugger", "url": "https://regex101.com/", "kind": "tool" }
           ]

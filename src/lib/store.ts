@@ -14,13 +14,13 @@ import type {
   SessionSummary,
   TagStat,
 } from './types';
-import { emptyReview, grade as applyGrade, seedKnown } from './scheduler';
+import { emptyReview, grade as applyGrade } from './scheduler';
 import { applyReview, medianByDifficulty } from './weakness';
 import {
   CHECKPOINT_COINS,
   CHECKPOINT_XP,
-  MODULE_COMPLETE_COINS,
-  MODULE_COMPLETE_XP,
+  TIER_CLEAR_COINS,
+  TIER_CLEAR_XP,
   SESSION_COMPLETE_XP,
   levelUpCoins,
   xpForReview,
@@ -119,10 +119,11 @@ export interface Settings {
 
 export interface RewardEvent {
   id: string;
-  kind: 'levelup' | 'chest' | 'module' | 'checkpoint';
+  kind: 'levelup' | 'chest' | 'tier' | 'checkpoint';
   level?: number;
   chest?: ChestReward;
-  moduleName?: string;
+  /** For tier and checkpoint events, e.g. "Python · Basics". */
+  label?: string;
   xp?: number;
   coins?: number;
 }
@@ -136,7 +137,6 @@ export interface AppState {
   coins: number;
 
   onboarded: boolean;
-  calibrated: boolean;
   selectedTopics: string[];
   settings: Settings;
 
@@ -151,8 +151,10 @@ export interface AppState {
   pendingChests: ChestTier[];
   chestHistory: ChestReward[];
 
-  completedModules: string[];
-  passedCheckpoints: string[];
+  /** `tierKey`s whose clear reward has been paid. */
+  clearedTiers: string[];
+  /** `tierKey`s passed by test-out; these count as complete for unlocking. */
+  testedOutTiers: string[];
   flagged: FlaggedCard[];
   sessions: SessionSummary[];
 
@@ -173,12 +175,9 @@ export interface AppState {
     ms: number,
     opts?: { allowRewards?: boolean },
   ) => { xp: number; next: ReviewState };
-  seedCalibration: (cardId: string, days: number) => void;
-  finishCalibration: () => void;
-
   finishSession: (summary: Omit<SessionSummary, 'xp' | 'coins'> & { xp: number; coins: number }) => void;
-  completeModule: (moduleId: string, moduleName: string) => void;
-  passCheckpoint: (moduleId: string) => void;
+  clearTier: (key: string, label: string) => void;
+  passTierTest: (key: string, label: string) => void;
 
   grantChest: (tier: ChestTier) => void;
   openPendingChest: () => ChestReward | null;
@@ -215,7 +214,6 @@ const initial = {
   xp: 0,
   coins: 0,
   onboarded: false,
-  calibrated: false,
   selectedTopics: [] as string[],
   settings: defaultSettings,
   reviews: {} as Record<string, ReviewState>,
@@ -226,12 +224,22 @@ const initial = {
   equipped: DEFAULT_EQUIPPED,
   pendingChests: [] as ChestTier[],
   chestHistory: [] as ChestReward[],
-  completedModules: [] as string[],
-  passedCheckpoints: [] as string[],
+  clearedTiers: [] as string[],
+  testedOutTiers: [] as string[],
   flagged: [] as FlaggedCard[],
   sessions: [] as SessionSummary[],
   rewardQueue: [] as RewardEvent[],
 };
+
+/** Card-level learning progress — what `resetProgress` and the v2 migration wipe. */
+const freshLearning = () => ({
+  reviews: {} as Record<string, ReviewState>,
+  tagStats: {} as Record<string, TagStat>,
+  timings: [] as { difficulty: number; ms: number }[],
+  clearedTiers: [] as string[],
+  testedOutTiers: [] as string[],
+  sessions: [] as SessionSummary[],
+});
 
 let rewardId = 0;
 const nextRewardId = () => `r${(rewardId += 1)}`;
@@ -334,48 +342,37 @@ export const useStore = create<AppState>()(
         return { xp: gained, next };
       },
 
-      seedCalibration: (cardId, days) =>
-        set((s) => ({ reviews: { ...s.reviews, [cardId]: seedKnown(cardId, days) } })),
-
-      finishCalibration: () => set({ calibrated: true }),
-
       finishSession: (summary) =>
         set((s) => ({
           xp: s.xp + SESSION_COMPLETE_XP,
           sessions: [...s.sessions, summary as SessionSummary].slice(-60),
         })),
 
-      completeModule: (moduleId, moduleName) => {
+      clearTier: (key, label) => {
         const s = get();
-        if (s.completedModules.includes(moduleId)) return;
+        if (s.clearedTiers.includes(key)) return;
         set({
-          completedModules: [...s.completedModules, moduleId],
-          xp: s.xp + MODULE_COMPLETE_XP,
-          coins: s.coins + MODULE_COMPLETE_COINS,
+          clearedTiers: [...s.clearedTiers, key],
+          xp: s.xp + TIER_CLEAR_XP,
+          coins: s.coins + TIER_CLEAR_COINS,
           pendingChests: [...s.pendingChests, 'epic'],
           rewardQueue: [
             ...s.rewardQueue,
-            {
-              id: nextRewardId(),
-              kind: 'module',
-              moduleName,
-              xp: MODULE_COMPLETE_XP,
-              coins: MODULE_COMPLETE_COINS,
-            },
+            { id: nextRewardId(), kind: 'tier', label, xp: TIER_CLEAR_XP, coins: TIER_CLEAR_COINS },
           ],
         });
       },
 
-      passCheckpoint: (moduleId) => {
+      passTierTest: (key, label) => {
         const s = get();
-        if (s.passedCheckpoints.includes(moduleId)) return;
+        if (s.testedOutTiers.includes(key)) return;
         set({
-          passedCheckpoints: [...s.passedCheckpoints, moduleId],
+          testedOutTiers: [...s.testedOutTiers, key],
           xp: s.xp + CHECKPOINT_XP,
           coins: s.coins + CHECKPOINT_COINS,
           rewardQueue: [
             ...s.rewardQueue,
-            { id: nextRewardId(), kind: 'checkpoint', xp: CHECKPOINT_XP, coins: CHECKPOINT_COINS },
+            { id: nextRewardId(), kind: 'checkpoint', label, xp: CHECKPOINT_XP, coins: CHECKPOINT_COINS },
           ],
         });
       },
@@ -441,7 +438,7 @@ export const useStore = create<AppState>()(
         const payload = Object.fromEntries(
           Object.entries(rest).filter(([, v]) => typeof v !== 'function'),
         );
-        return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), state: payload }, null, 2);
+        return JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), state: payload }, null, 2);
       },
 
       importData: (json) => {
@@ -472,19 +469,13 @@ export const useStore = create<AppState>()(
 
       resetProgress: () =>
         set({
+          ...freshLearning(),
           xp: 0,
           coins: 0,
-          reviews: {},
-          tagStats: {},
           dayStats: {},
-          timings: [],
           pendingChests: [],
           chestHistory: [],
-          completedModules: [],
-          passedCheckpoints: [],
-          sessions: [],
           flagged: [],
-          calibrated: false,
           rewardQueue: [],
         }),
 
@@ -501,10 +492,24 @@ export const useStore = create<AppState>()(
     {
       name: STATE_KEY,
       storage: createJSONStorage(() => consentAwareStorage),
-      version: 1,
+      version: 2,
       partialize: (s) => {
         const { rewardQueue: _rq, hydrated: _h, ...rest } = s;
         return rest as AppState;
+      },
+      // v1 → v2: tiered progression replaced random-order intake, the calibration quiz
+      // and module checkpoints. v1 card history was built in that random order (and
+      // calibration seeded unseen cards as "known"), so card progress starts over at
+      // Basics. XP, coins, chests, cosmetics, settings, topics and activity history stay.
+      migrate: (persisted, version) => {
+        const p = { ...(persisted as Record<string, unknown>) };
+        if (version < 2) {
+          delete p.calibrated;
+          delete p.completedModules;
+          delete p.passedCheckpoints;
+          Object.assign(p, freshLearning());
+        }
+        return p as unknown as AppState;
       },
       // The default merge is shallow, so a stored `settings` or `equipped` object would
       // replace the defaults wholesale and any key added in a later release would be

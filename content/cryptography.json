@@ -7,6 +7,92 @@
   "description": "Hashing vs encryption, symmetric and asymmetric primitives, signatures, PKI and the mistakes that break them.",
   "modules": [
     {
+      "id": "cryptography-big-picture",
+      "name": "The Big Picture",
+      "description": "What Cryptography is, what it is for, and the words everything else builds on.",
+      "cards": [
+        {
+          "id": "cryptography-intro-what",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["crypto.basics"],
+          "prompt": "What is cryptography, and what does it protect?",
+          "answer": "The science of protecting information with mathematics. It provides confidentiality (only intended readers can read it), integrity (tampering is detected) and authenticity (you know who sent it).",
+          "explanation": "You use it constantly: HTTPS, messaging apps, password storage, disk encryption, software updates and card payments all depend on it. The golden rule for programmers: use well-reviewed libraries, never invent your own crypto.",
+          "resources": [
+            { "title": "Wikipedia — Cryptography", "url": "https://en.wikipedia.org/wiki/Cryptography", "kind": "article" },
+            { "title": "Cloudflare — What is encryption?", "url": "https://www.cloudflare.com/learning/ssl/what-is-encryption/", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cryptography-intro-encryption",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["crypto.basics"],
+          "prompt": "What are encryption, plaintext, ciphertext and a key?",
+          "answer": "Encryption transforms readable plaintext into unreadable ciphertext using a key; decryption reverses it with the right key. Without the key, the ciphertext should reveal nothing useful.",
+          "explanation": "Modern ciphers are public — their security rests entirely on keeping the key secret (Kerckhoffs's principle), not on hiding how the algorithm works.",
+          "resources": [
+            { "title": "Wikipedia — Encryption", "url": "https://en.wikipedia.org/wiki/Encryption", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cryptography-intro-sym-asym",
+          "type": "compare",
+          "difficulty": 1,
+          "tags": ["crypto.basics"],
+          "prompt": "Symmetric vs asymmetric encryption",
+          "answer": "Symmetric encryption uses one shared secret key for both directions; asymmetric (public-key) encryption uses a key pair — a public key anyone may use and a private key only the owner holds.",
+          "columns": {
+            "left": { "title": "Symmetric", "points": ["One shared secret key", "Very fast", "Problem: how to share the key safely", "AES, ChaCha20"] },
+            "right": { "title": "Asymmetric", "points": ["Public key + private key", "Much slower", "Solves key exchange and signatures", "RSA, elliptic curves (ECDH, Ed25519)"] }
+          },
+          "explanation": "Real protocols such as TLS combine them: asymmetric cryptography to agree on a fresh symmetric key, then fast symmetric encryption for the actual data.",
+          "resources": [
+            { "title": "Wikipedia — Symmetric-key algorithm", "url": "https://en.wikipedia.org/wiki/Symmetric-key_algorithm", "kind": "article" },
+            { "title": "Wikipedia — Public-key cryptography", "url": "https://en.wikipedia.org/wiki/Public-key_cryptography", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cryptography-intro-hash",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["crypto.basics"],
+          "prompt": "What is a cryptographic hash function?",
+          "answer": "A function that turns any input into a fixed-size fingerprint (digest), such that it is infeasible to reverse it or to find two inputs with the same digest. Changing one bit of input changes the digest completely. SHA-256 is the common choice.",
+          "explanation": "Hashes verify integrity (file checksums, Git commit IDs) and underpin signatures. Hashing is not encryption — there is no key and no way back. Passwords need special slow hashes such as Argon2 or bcrypt, not plain SHA-256.",
+          "resources": [
+            { "title": "Wikipedia — Cryptographic hash function", "url": "https://en.wikipedia.org/wiki/Cryptographic_hash_function", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cryptography-intro-signature",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["crypto.basics"],
+          "prompt": "What is a digital signature?",
+          "answer": "Proof, made with a private key, that a specific message came from the key's owner and was not altered. Anyone with the matching public key can verify it, but only the private-key holder can create it.",
+          "explanation": "Signatures secure software updates, Git commits, TLS certificates and legal documents. They provide integrity and authenticity, not secrecy — a signed message is still readable by anyone.",
+          "resources": [
+            { "title": "Wikipedia — Digital signature", "url": "https://en.wikipedia.org/wiki/Digital_signature", "kind": "article" }
+          ]
+        },
+        {
+          "id": "cryptography-intro-tls",
+          "type": "flip",
+          "difficulty": 1,
+          "tags": ["crypto.basics"],
+          "prompt": "What does the padlock (HTTPS/TLS) in a browser actually guarantee?",
+          "answer": "That the connection to the site is encrypted and that the server proved it owns the domain in the address bar, using a certificate issued by a trusted certificate authority. It does not mean the site itself is honest or safe.",
+          "explanation": "Phishing sites routinely have valid certificates for their own look-alike domains. The padlock protects data in transit; whether to trust the site is still your judgement.",
+          "resources": [
+            { "title": "Cloudflare — What is TLS?", "url": "https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/", "kind": "article" },
+            { "title": "Wikipedia — Transport Layer Security", "url": "https://en.wikipedia.org/wiki/Transport_Layer_Security", "kind": "article" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "crypto-primitives",
       "name": "Primitives",
       "description": "The building blocks and what each one is actually for.",
@@ -78,7 +164,7 @@
         {
           "id": "crypto-pki",
           "type": "flip",
-          "difficulty": 4,
+          "difficulty": 3,
           "tags": ["crypto.pki", "networking.tls"],
           "prompt": "How does a certificate chain establish trust?",
           "answer": "A leaf certificate is signed by an intermediate CA, which is signed by a root CA already in the client's trust store. The client verifies each signature up the chain, plus validity dates, hostname match and revocation status.",
@@ -285,7 +371,7 @@
         {
           "id": "crypto-acme",
           "type": "flip",
-          "difficulty": 2,
+          "difficulty": 3,
           "tags": ["crypto.pki", "ops.tls"],
           "prompt": "How do Let's Encrypt and ACME automate TLS certificates?",
           "answer": "The ACME protocol lets a client prove control of a domain — by serving a token over HTTP (HTTP-01) or publishing a DNS record (DNS-01) — and then obtain a certificate automatically. Certificates are short-lived (90 days, trending shorter), so renewal must be automated.",
