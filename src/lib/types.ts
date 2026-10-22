@@ -1,10 +1,7 @@
 /**
  * Shared domain types. Mirrors scripts/content-schema.mjs — if you change one, change both.
  */
-import type EMOJI_ASSETS from '@/data/emoji-assets.json';
-
-/** Every glyph with a bundled SVG in public/emoji (see components/ui/Emoji.tsx). */
-export type EmojiChar = keyof typeof EMOJI_ASSETS;
+import type { SpriteName } from '@/data/sprites';
 
 export type CardType =
   | 'flip'
@@ -159,8 +156,8 @@ export interface Cosmetic {
    * item leaking in.
    */
   vars?: Record<string, string>;
-  /** Emoji glyph for mascots and chest skins, drawn with <Emoji>. */
-  icon?: EmojiChar;
+  /** Pixel-art sprite for mascots and chest skins (src/data/sprites.ts). */
+  sprite?: SpriteName;
   /** Cursor artwork shown in the shop preview box (CSS background value). */
   swatch?: string;
 }

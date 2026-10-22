@@ -16,6 +16,7 @@ import { levelFromXp, titleForLevel } from '@/data/levels';
 import { formatNumber } from '@/lib/economy';
 import { pct } from '@/lib/utils';
 import { Emoji } from '@/components/ui/Emoji';
+import { Sprite } from '@/components/ui/Sprite';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function Dashboard() {
 
   const weak = useMemo(() => weakTags(tagStats, 6), [tagStats]);
   const level = levelFromXp(xp);
-  const mascot = COSMETIC_BY_ID.get(mascotId)?.icon ?? '🦆';
+  const mascot = COSMETIC_BY_ID.get(mascotId)?.sprite ?? 'duck';
 
   if (!hydrated) return <Spinner label="Waking up…" />;
   if (!onboarded) return <Spinner label="Setting things up…" />;
@@ -56,8 +57,8 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-wrap items-center gap-4">
-        <span className="frame-ring grid h-14 w-14 place-items-center rounded-2xl bg-white/5 text-3xl">
-          <Emoji char={mascot} />
+        <span className="frame-ring grid h-14 w-14 place-items-center rounded-2xl bg-white/5">
+          <Sprite name={mascot} size={48} />
         </span>
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">

@@ -20,6 +20,7 @@ import { Progress } from '@/components/ui/primitives';
 import { formatNumber } from '@/lib/economy';
 import { cn } from '@/lib/utils';
 import { Emoji } from '@/components/ui/Emoji';
+import { Sprite } from '@/components/ui/Sprite';
 
 const LINKS = [
   { href: '/', label: 'Home', icon: Home },
@@ -40,7 +41,7 @@ export function Nav() {
   const hydrated = useStore((s) => s.hydrated);
 
   const level = levelFromXp(xp);
-  const mascot = COSMETIC_BY_ID.get(mascotId)?.icon ?? '🦆';
+  const mascot = COSMETIC_BY_ID.get(mascotId)?.sprite ?? 'duck';
   const isStudy = pathname?.startsWith('/study');
 
   if (isStudy) return null;
@@ -96,8 +97,8 @@ export function Nav() {
                   Lv {level.level} · {titleForLevel(level.level)}
                 </div>
               </div>
-              <span className="frame-ring grid h-9 w-9 place-items-center rounded-full bg-white/5 text-lg">
-                <Emoji char={mascot} />
+              <span className="frame-ring grid h-9 w-9 place-items-center rounded-full bg-white/5">
+                <Sprite name={mascot} size={24} />
               </span>
             </Link>
           </div>

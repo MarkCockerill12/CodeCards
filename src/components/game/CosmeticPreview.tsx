@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { CardFlip } from '@/components/cards/Flashcard';
-import { Emoji } from '@/components/ui/Emoji';
+import { Sprite } from '@/components/ui/Sprite';
 import { Progress } from '@/components/ui/primitives';
 import { COSMETIC_BY_ID } from '@/data/cosmetics';
 import { useStore } from '@/lib/store';
@@ -43,7 +43,7 @@ function Hint({ children }: { children: string }) {
 function PreviewBody({ item }: { item: Cosmetic }) {
   const name = useStore((s) => s.displayName);
   const mascotId = useStore((s) => s.equipped.mascot);
-  const mascot = COSMETIC_BY_ID.get(mascotId)?.icon ?? '🦆';
+  const mascot = COSMETIC_BY_ID.get(mascotId)?.sprite ?? 'duck';
 
   switch (item.category) {
     case 'cardSkin':
@@ -85,11 +85,11 @@ function PreviewBody({ item }: { item: Cosmetic }) {
       return <SoundPreview pack={item.id} />;
     case 'mascot':
     case 'chestSkin':
-      return <Emoji char={item.icon ?? '🦆'} className="text-5xl" />;
+      return item.sprite ? <Sprite name={item.sprite} size={72} /> : null;
     case 'frame':
       return (
-        <span className="frame-ring grid h-14 w-14 place-items-center rounded-full bg-white/5 text-3xl">
-          <Emoji char={mascot} />
+        <span className="frame-ring grid h-14 w-14 place-items-center rounded-full bg-white/5">
+          <Sprite name={mascot} size={48} />
         </span>
       );
     case 'xpBar':

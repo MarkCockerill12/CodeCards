@@ -1,4 +1,5 @@
 import type { Cosmetic, CosmeticCategory, Rarity } from '@/lib/types';
+import { spriteSvg } from './sprites';
 
 export const RARITY_PRICE: Record<Rarity, number> = {
   common: 250,
@@ -389,7 +390,7 @@ const backgrounds: Cosmetic[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* Cursors — inline SVG data URIs, or a bundled emoji SVG              */
+/* Cursors — inline SVG data URIs                                      */
 /* ------------------------------------------------------------------ */
 
 /** `x y` is the hotspot — the pixel of the image that actually clicks. */
@@ -398,10 +399,6 @@ const svgCursor = (svg: string, x = 4, y = 4) => `${svgUrl(svg)} ${x} ${y}, auto
 /** Shop preview: the cursor artwork itself, centred in the swatch box. */
 const cursorSwatch = (svg: string) =>
   `${svgUrl(svg)} center / 44px 44px no-repeat, rgba(255,255,255,0.04)`;
-
-const emojiCursor = (file: string, x: number, y: number) => `url("/emoji/${file}.svg") ${x} ${y}, auto`;
-const emojiSwatch = (file: string) =>
-  `url("/emoji/${file}.svg") center / 44px 44px no-repeat, rgba(255,255,255,0.04)`;
 
 /** Turns a bitmap (`#` outline, `o` fill) into 2px-per-cell SVG, inset by 1px. */
 const pixelArt = (rows: string[], size: number) => {
@@ -438,6 +435,9 @@ const CURSOR_ART = {
   pixel: pixelArt(PIXEL_ARROW, 24),
   terminal:
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="22" viewBox="0 0 16 22"><rect x="2" y="2" width="10" height="18" fill="#22c55e" opacity="0.85"/></svg>',
+  // Pinned top-left (not centred) so the hotspots below stay on the beak and the blade tip.
+  duck: spriteSvg('duck', 'top-left'),
+  sword: spriteSvg('sword', 'top-left'),
 };
 
 const cursors: Cosmetic[] = [
@@ -459,14 +459,12 @@ const cursors: Cosmetic[] = [
     vars: { '--app-cursor': svgCursor(CURSOR_ART.terminal, 7, 11) },
   }),
   c('cursor-duck', 'cursor', 'Rubber Duck', 'It will listen to your bug.', 'epic', {
-    swatch: emojiSwatch('duck'),
-    // Hotspot on the beak.
-    vars: { '--app-cursor': emojiCursor('duck', 2, 9) },
+    swatch: cursorSwatch(CURSOR_ART.duck),
+    vars: { '--app-cursor': svgCursor(CURSOR_ART.duck, 1, 6) },
   }),
   c('cursor-sword', 'cursor', 'Merge Sword', 'For resolving conflicts decisively.', 'legendary', {
-    // The dagger rotated to point up-left like an arrow; hotspot on the tip.
-    swatch: emojiSwatch('dagger-cursor'),
-    vars: { '--app-cursor': emojiCursor('dagger-cursor', 2, 2) },
+    swatch: cursorSwatch(CURSOR_ART.sword),
+    vars: { '--app-cursor': svgCursor(CURSOR_ART.sword, 1, 1) },
   }),
 ];
 
@@ -483,20 +481,20 @@ const sounds: Cosmetic[] = [
 
 /* ------------------------------------------------------------------ */
 /* Mascots, frames, xp bars, chests, name colours                      */
-/* Icons are bundled SVGs (see components/ui/Emoji.tsx), not OS emoji.  */
+/* Mascots and chests are CodeCards' own pixel art (data/sprites.ts).   */
 /* ------------------------------------------------------------------ */
 const mascots: Cosmetic[] = [
   c('mascot-duck', 'mascot', 'Rubber Duck', 'The original debugger.', 'common', {
     price: 0,
-    icon: '🦆',
+    sprite: 'duck',
   }),
-  c('mascot-gopher', 'mascot', 'Gopher', 'Small, fast, garbage collected.', 'common', { icon: '🐹' }),
-  c('mascot-crab', 'mascot', 'Ferris', 'Memory safe and pleased about it.', 'rare', { icon: '🦀' }),
-  c('mascot-snake', 'mascot', 'Serpent', 'Indentation enthusiast.', 'common', { icon: '🐍' }),
-  c('mascot-robot', 'mascot', 'Little Robot', 'Runs your CI in its head.', 'rare', { icon: '🤖' }),
-  c('mascot-cat', 'mascot', 'Terminal Cat', 'Sits on the keyboard. Always.', 'epic', { icon: '🐈‍⬛' }),
-  c('mascot-dragon', 'mascot', 'Compiler Dragon', 'Hoards optimisations.', 'epic', { icon: '🐉' }),
-  c('mascot-ghost', 'mascot', 'Null Pointer', 'It was never there.', 'legendary', { icon: '👻' }),
+  c('mascot-gopher', 'mascot', 'Gopher', 'Small, fast, garbage collected.', 'common', { sprite: 'gopher' }),
+  c('mascot-crab', 'mascot', 'Ferris', 'Memory safe and pleased about it.', 'rare', { sprite: 'crab' }),
+  c('mascot-snake', 'mascot', 'Serpent', 'Indentation enthusiast.', 'common', { sprite: 'snake' }),
+  c('mascot-robot', 'mascot', 'Little Robot', 'Runs your CI in its head.', 'rare', { sprite: 'robot' }),
+  c('mascot-cat', 'mascot', 'Terminal Cat', 'Sits on the keyboard. Always.', 'epic', { sprite: 'cat' }),
+  c('mascot-dragon', 'mascot', 'Compiler Dragon', 'Hoards optimisations.', 'epic', { sprite: 'dragon' }),
+  c('mascot-ghost', 'mascot', 'Null Pointer', 'It was never there.', 'legendary', { sprite: 'ghost' }),
 ];
 
 const frame = withBase({ '--frame-anim': 'none' });
@@ -564,11 +562,11 @@ const xpBars: Cosmetic[] = [
 const chestSkins: Cosmetic[] = [
   c('chest-wood', 'chestSkin', 'Wooden Chest', 'Standard issue.', 'common', {
     price: 0,
-    icon: '📦',
+    sprite: 'chest',
   }),
-  c('chest-crate', 'chestSkin', 'Supply Crate', 'Airdropped, mid-match.', 'rare', { icon: '🎁' }),
-  c('chest-vault', 'chestSkin', 'Bank Vault', 'Heavy door, satisfying spin.', 'epic', { icon: '🔐' }),
-  c('chest-cake', 'chestSkin', 'The Cake', 'It is, allegedly, a lie.', 'legendary', { icon: '🎂' }),
+  c('chest-crate', 'chestSkin', 'Supply Crate', 'Airdropped, mid-match.', 'rare', { sprite: 'crate' }),
+  c('chest-vault', 'chestSkin', 'Bank Vault', 'Heavy door, satisfying spin.', 'epic', { sprite: 'vault' }),
+  c('chest-cake', 'chestSkin', 'The Cake', 'It is, allegedly, a lie.', 'legendary', { sprite: 'cake' }),
 ];
 
 /**

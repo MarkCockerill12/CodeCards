@@ -104,7 +104,8 @@ Framer Motion · Zustand + persist · ts-fsrs · Shiki (build time) · Zod (buil
 
 Emoji are Microsoft's [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT), bundled as
 SVGs in `public/emoji` so they look the same on every OS. Add new topic icons there and to
-`src/data/emoji-assets.json`; the content build fails on an emoji without one.
+`src/data/emoji-assets.json`; the content build fails on an emoji without one. Mascots, chest
+skins and the duck/sword cursors are CodeCards' own pixel art in `src/data/sprites.ts`.
 
 ## Privacy
 

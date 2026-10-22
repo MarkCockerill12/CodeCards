@@ -11,6 +11,7 @@ import type { ChestReward } from '@/lib/types';
 import { play } from '@/lib/sound';
 import { formatNumber } from '@/lib/economy';
 import { Emoji } from '@/components/ui/Emoji';
+import { Sprite } from '@/components/ui/Sprite';
 import { CosmeticPreview } from './CosmeticPreview';
 
 /** The chest queue: one card per unopened chest, opened with a shake-and-burst. */
@@ -21,7 +22,7 @@ export function ChestOpener({ compact = false }: { compact?: boolean }) {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState<ChestReward | null>(null);
 
-  const skinIcon = COSMETIC_BY_ID.get(chestSkin)?.icon ?? '📦';
+  const skinSprite = COSMETIC_BY_ID.get(chestSkin)?.sprite ?? 'chest';
   const next = pending[0];
 
   const open = () => {
@@ -86,7 +87,6 @@ export function ChestOpener({ compact = false }: { compact?: boolean }) {
             <motion.button
               type="button"
               onClick={open}
-              className="text-6xl"
               aria-label={`Open ${meta?.name}`}
               animate={
                 opening
@@ -99,7 +99,7 @@ export function ChestOpener({ compact = false }: { compact?: boolean }) {
                   : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
               }
             >
-              <Emoji char={skinIcon} />
+              <Sprite name={skinSprite} size={72} />
             </motion.button>
             <div>
               <div className="font-medium" style={{ color: meta?.color }}>
