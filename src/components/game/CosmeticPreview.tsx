@@ -5,7 +5,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { CardFlip } from '@/components/cards/Flashcard';
 import { Sprite } from '@/components/ui/Sprite';
 import { Progress } from '@/components/ui/primitives';
-import { COSMETIC_BY_ID } from '@/data/cosmetics';
+import { PREVIEW_STAGE_VARS } from '@/data/cosmetics';
 import { useStore } from '@/lib/store';
 import { previewPack } from '@/lib/sound';
 import type { Cosmetic } from '@/lib/types';
@@ -13,19 +13,26 @@ import { cn } from '@/lib/utils';
 
 /**
  * What a cosmetic actually looks (or sounds) like, in a fixed-size box: used by the shop and by
- * chest rewards. The box carries the item's own CSS variables, which override the equipped
- * item's variables on <html> for everything inside it, so the preview is the real styling.
+ * chest rewards. The box is an opaque, neutral stage (every visual category at its default)
+ * plus the item's own CSS variables, so a preview looks the same whatever is equipped.
  */
 export function CosmeticPreview({ item, className }: { item: Cosmetic; className?: string }) {
   const cursor = item.category === 'cursor' ? item.vars?.['--app-cursor'] : undefined;
   return (
     <div
       className={cn(
-        'relative grid h-28 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]',
+        'relative grid h-28 place-items-center overflow-hidden rounded-xl border border-white/10',
         className,
       )}
-      style={{ ...(item.vars as CSSProperties), cursor, background: item.swatch }}
-      data-cursor-preview={cursor ? item.id : undefined}
+      style={{
+        ...(PREVIEW_STAGE_VARS as CSSProperties),
+        ...(item.vars as CSSProperties),
+        cursor,
+        background: item.swatch ? `${item.swatch}, var(--app-bg)` : 'var(--app-bg)',
+        // `color` inherits as the page's computed value, so re-resolve it from the stage.
+        color: 'var(--fg)',
+      }}
+      data-preview={item.id}
     >
       <PreviewBody item={item} />
     </div>
@@ -42,8 +49,6 @@ function Hint({ children }: { children: string }) {
 
 function PreviewBody({ item }: { item: Cosmetic }) {
   const name = useStore((s) => s.displayName);
-  const mascotId = useStore((s) => s.equipped.mascot);
-  const mascot = COSMETIC_BY_ID.get(mascotId)?.sprite ?? 'duck';
 
   switch (item.category) {
     case 'cardSkin':
@@ -59,7 +64,6 @@ function PreviewBody({ item }: { item: Cosmetic }) {
         </div>
       );
     case 'cardBack':
-      // Drawn over your equipped skin, the way you will see it after a flip.
       return (
         <div className="flashcard flashcard-face-back w-44 px-3 py-2.5 text-left">
           <div className="text-[0.55rem] font-semibold uppercase tracking-wider opacity-70">Answer</div>
@@ -89,7 +93,7 @@ function PreviewBody({ item }: { item: Cosmetic }) {
     case 'frame':
       return (
         <span className="frame-ring grid h-14 w-14 place-items-center rounded-full bg-white/5">
-          <Sprite name={mascot} size={48} />
+          <Sprite name="duck" size={48} />
         </span>
       );
     case 'xpBar':

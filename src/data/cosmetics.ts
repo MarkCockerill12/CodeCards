@@ -396,9 +396,8 @@ const backgrounds: Cosmetic[] = [
 /** `x y` is the hotspot — the pixel of the image that actually clicks. */
 const svgCursor = (svg: string, x = 4, y = 4) => `${svgUrl(svg)} ${x} ${y}, auto`;
 
-/** Shop preview: the cursor artwork itself, centred in the swatch box. */
-const cursorSwatch = (svg: string) =>
-  `${svgUrl(svg)} center / 44px 44px no-repeat, rgba(255,255,255,0.04)`;
+/** Shop preview: the cursor artwork itself, centred; the preview layers it over its stage. */
+const cursorSwatch = (svg: string) => `${svgUrl(svg)} center / 44px 44px no-repeat`;
 
 /** Turns a bitmap (`#` outline, `o` fill) into 2px-per-cell SVG, inset by 1px. */
 const pixelArt = (rows: string[], size: number) => {
@@ -648,6 +647,18 @@ export const DEFAULT_EQUIPPED: Record<CosmeticCategory, string> = {
   chestSkin: 'chest-wood',
   nameColor: 'name-default',
 };
+
+/**
+ * The neutral stage every preview starts from: each visual category's default item. A preview
+ * applies these and then the previewed item's own variables, so nothing equipped on <html> shows
+ * through. The cursor is left out on purpose: it is the viewer's own pointer.
+ */
+export const PREVIEW_STAGE_VARS: Record<string, string> = Object.assign(
+  {},
+  ...(['cardSkin', 'cardBack', 'background', 'frame', 'xpBar', 'nameColor'] as const).map(
+    (category) => COSMETIC_BY_ID.get(DEFAULT_EQUIPPED[category])?.vars ?? {},
+  ),
+);
 
 export const CATEGORY_ORDER: CosmeticCategory[] = [
   'cardSkin',

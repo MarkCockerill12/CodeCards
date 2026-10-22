@@ -53,13 +53,14 @@ export default function ShopPage() {
         <ChestOpener />
       </Panel>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* Wraps instead of scrolling sideways: a mouse wheel can't reach pills cut off on the right. */}
+      <div className="flex flex-wrap gap-2">
         {CATEGORY_ORDER.map((cat) => (
           <button
             key={cat}
             onClick={() => setCategory(cat)}
             className={cn(
-              'shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors',
+              'rounded-full border px-3 py-1.5 text-sm transition-colors',
               category === cat
                 ? 'border-sky-400/50 bg-sky-500/15'
                 : 'border-white/8 bg-white/4 hover:bg-white/8',

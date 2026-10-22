@@ -158,7 +158,7 @@ export interface Cosmetic {
   vars?: Record<string, string>;
   /** Pixel-art sprite for mascots and chest skins (src/data/sprites.ts). */
   sprite?: SpriteName;
-  /** Cursor artwork shown in the shop preview box (CSS background value). */
+  /** Cursor artwork for the preview box: one CSS background layer, drawn over the stage. */
   swatch?: string;
 }
 
