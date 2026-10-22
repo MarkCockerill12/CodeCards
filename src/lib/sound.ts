@@ -119,8 +119,15 @@ export function setMuted(value: boolean) {
 
 export function play(event: SoundEvent) {
   if (muted) return;
-  const pack = PACKS[currentPack];
-  const notes = pack?.[event];
+  playNotes(PACKS[currentPack]?.[event]);
+}
+
+/** Shop preview: plays a pack's level-up jingle, even while muted — the user asked for it. */
+export function previewPack(id: string) {
+  playNotes(PACKS[id]?.levelup);
+}
+
+function playNotes(notes: Note[] | undefined) {
   if (!notes || notes.length === 0) return;
 
   const context = audio();

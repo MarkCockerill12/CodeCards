@@ -15,6 +15,7 @@ import { COSMETIC_BY_ID } from '@/data/cosmetics';
 import { levelFromXp, titleForLevel } from '@/data/levels';
 import { formatNumber } from '@/lib/economy';
 import { pct } from '@/lib/utils';
+import { Emoji } from '@/components/ui/Emoji';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function Dashboard() {
 
   const weak = useMemo(() => weakTags(tagStats, 6), [tagStats]);
   const level = levelFromXp(xp);
-  const mascot = COSMETIC_BY_ID.get(mascotId)?.swatch ?? '🦆';
+  const mascot = COSMETIC_BY_ID.get(mascotId)?.icon ?? '🦆';
 
   if (!hydrated) return <Spinner label="Waking up…" />;
   if (!onboarded) return <Spinner label="Setting things up…" />;
@@ -56,7 +57,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <section className="flex flex-wrap items-center gap-4">
         <span className="frame-ring grid h-14 w-14 place-items-center rounded-2xl bg-white/5 text-3xl">
-          {mascot}
+          <Emoji char={mascot} />
         </span>
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">
@@ -120,7 +121,7 @@ export default function Dashboard() {
                       className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 p-3 transition-colors hover:bg-white/8"
                     >
                       <Ring value={mastery} size={44} stroke={5} color={topic.color}>
-                        <span className="text-base">{topic.icon}</span>
+                        <Emoji char={topic.icon} className="text-base" />
                       </Ring>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{topic.name}</div>

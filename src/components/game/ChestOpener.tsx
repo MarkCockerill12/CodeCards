@@ -10,6 +10,8 @@ import { COSMETIC_BY_ID, CATEGORY_LABEL, RARITY_COLOR } from '@/data/cosmetics';
 import type { ChestReward } from '@/lib/types';
 import { play } from '@/lib/sound';
 import { formatNumber } from '@/lib/economy';
+import { Emoji } from '@/components/ui/Emoji';
+import { CosmeticPreview } from './CosmeticPreview';
 
 /** The chest queue: one card per unopened chest, opened with a shake-and-burst. */
 export function ChestOpener({ compact = false }: { compact?: boolean }) {
@@ -19,7 +21,7 @@ export function ChestOpener({ compact = false }: { compact?: boolean }) {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState<ChestReward | null>(null);
 
-  const skinEmoji = COSMETIC_BY_ID.get(chestSkin)?.swatch ?? '📦';
+  const skinIcon = COSMETIC_BY_ID.get(chestSkin)?.icon ?? '📦';
   const next = pending[0];
 
   const open = () => {
@@ -56,7 +58,7 @@ export function ChestOpener({ compact = false }: { compact?: boolean }) {
             exit={{ opacity: 0 }}
             className="flex flex-col items-center gap-2"
           >
-            <div className="text-5xl">{CHEST_META[reward.tier].emoji}</div>
+            <Emoji char={CHEST_META[reward.tier].emoji} className="text-5xl" />
             <div className="text-xs uppercase tracking-widest muted">
               {CHEST_META[reward.tier].name}
             </div>
@@ -97,7 +99,7 @@ export function ChestOpener({ compact = false }: { compact?: boolean }) {
                   : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
               }
             >
-              {skinEmoji}
+              <Emoji char={skinIcon} />
             </motion.button>
             <div>
               <div className="font-medium" style={{ color: meta?.color }}>
@@ -137,6 +139,7 @@ function UnlockedCosmetic({ id }: { id: string }) {
       </div>
       <div className="mt-1 font-medium">{cosmetic.name}</div>
       <div className="text-xs muted">{cosmetic.description}</div>
+      <CosmeticPreview item={cosmetic} className="mt-2" />
       <Button size="sm" variant="ghost" className="mt-2" onClick={() => equip(cosmetic.id)}>
         Equip now
       </Button>

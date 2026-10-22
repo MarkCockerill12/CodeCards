@@ -102,6 +102,10 @@ and CI will keep it honest. Runtimes: `node`, `python`, `go`, `rust`, `java`, `c
 Next.js 15 (App Router, `output: 'export'`) · React 19 · TypeScript (strict) · Tailwind CSS v4 ·
 Framer Motion · Zustand + persist · ts-fsrs · Shiki (build time) · Zod (build time) · oxlint.
 
+Emoji are Microsoft's [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT), bundled as
+SVGs in `public/emoji` so they look the same on every OS. Add new topic icons there and to
+`src/data/emoji-assets.json`; the content build fails on an emoji without one.
+
 ## Privacy
 
 The app sets no cookies and makes no network requests beyond loading its own static content

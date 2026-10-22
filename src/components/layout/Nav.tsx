@@ -19,6 +19,7 @@ import { COSMETIC_BY_ID } from '@/data/cosmetics';
 import { Progress } from '@/components/ui/primitives';
 import { formatNumber } from '@/lib/economy';
 import { cn } from '@/lib/utils';
+import { Emoji } from '@/components/ui/Emoji';
 
 const LINKS = [
   { href: '/', label: 'Home', icon: Home },
@@ -39,17 +40,17 @@ export function Nav() {
   const hydrated = useStore((s) => s.hydrated);
 
   const level = levelFromXp(xp);
-  const mascot = COSMETIC_BY_ID.get(mascotId)?.swatch ?? '🦆';
+  const mascot = COSMETIC_BY_ID.get(mascotId)?.icon ?? '🦆';
   const isStudy = pathname?.startsWith('/study');
 
   if (isStudy) return null;
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-[var(--panel-border)] bg-slate-950/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-[var(--panel-border)] bg-[var(--nav-bg)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="text-xl">🃏</span>
+            <Emoji char="🃏" className="text-xl" />
             <span className="hidden sm:inline">CodeCards</span>
           </Link>
 
@@ -62,7 +63,7 @@ export function Nav() {
                   href={href}
                   className={cn(
                     'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors',
-                    active ? 'bg-white/10 text-white' : 'muted hover:bg-white/5',
+                    active ? 'bg-white/10 text-[var(--fg)]' : 'muted hover:bg-white/5',
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -96,7 +97,7 @@ export function Nav() {
                 </div>
               </div>
               <span className="frame-ring grid h-9 w-9 place-items-center rounded-full bg-white/5 text-lg">
-                {mascot}
+                <Emoji char={mascot} />
               </span>
             </Link>
           </div>
@@ -112,7 +113,7 @@ export function Nav() {
       </header>
 
       {/* Mobile tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--panel-border)] bg-slate-950/90 backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--panel-border)] bg-[var(--nav-bg-strong)] backdrop-blur-xl md:hidden">
         {LINKS.map(({ href, label, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname?.startsWith(href);
           return (

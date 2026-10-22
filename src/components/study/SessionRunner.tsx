@@ -16,6 +16,7 @@ import { TIER_NAME, tierKey, tierProgress, type Tier } from '@/lib/tiers';
 import { play } from '@/lib/sound';
 import { formatDuration } from '@/lib/utils';
 import { SessionSummaryView } from './SessionSummaryView';
+import { Emoji } from '@/components/ui/Emoji';
 
 interface Props {
   queue: Card[];
@@ -272,7 +273,7 @@ export function SessionRunner({
             animate={{ scale: 1 }}
             className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 px-2 py-0.5 text-orange-300"
           >
-            🔥 {combo} in a row
+            <Emoji char="🔥" /> {combo} in a row
           </motion.span>
         ) : null}
         {settings.showTimer ? <span className="ml-auto font-mono">{formatDuration(elapsed)}</span> : null}

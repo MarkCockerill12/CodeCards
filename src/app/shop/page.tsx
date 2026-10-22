@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Check, Coins, Gift, Lock } from 'lucide-react';
 import { Button, Panel } from '@/components/ui/primitives';
 import { ChestOpener } from '@/components/game/ChestOpener';
+import { CosmeticPreview } from '@/components/game/CosmeticPreview';
 import { useStore } from '@/lib/store';
 import {
   CATEGORY_LABEL,
@@ -104,31 +105,13 @@ function ShopItem({
   onEquip: () => void;
 }) {
   const rarity = RARITY_COLOR[item.rarity];
-  const isEmoji = item.swatch && item.swatch.length <= 4;
-  // A cursor is best judged by using it: hovering the preview box swaps it in.
-  const tryCursor = item.category === 'cursor' ? item.vars?.['--app-cursor'] : undefined;
-
   return (
     <motion.div
       layout
       className="panel flex flex-col gap-3 p-4"
       style={{ borderColor: equipped ? `${rarity}66` : undefined }}
     >
-      <div
-        className="relative grid h-20 place-items-center overflow-hidden rounded-xl border border-white/10"
-        data-cursor-preview={tryCursor ? item.id : undefined}
-        style={{
-          ...(isEmoji ? undefined : { background: item.swatch ?? 'rgba(255,255,255,0.04)' }),
-          cursor: tryCursor,
-        }}
-      >
-        {isEmoji ? <span className="text-4xl">{item.swatch}</span> : null}
-        {tryCursor ? (
-          <span className="absolute bottom-1 right-2 text-[0.6rem] uppercase tracking-wider muted">
-            Hover to try
-          </span>
-        ) : null}
-      </div>
+      <CosmeticPreview item={item} />
 
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -169,3 +152,4 @@ function ShopItem({
     </motion.div>
   );
 }
+

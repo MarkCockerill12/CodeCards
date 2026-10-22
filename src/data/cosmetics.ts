@@ -46,58 +46,79 @@ const c = (
   ...extra,
 });
 
+/**
+ * Each visual category starts from a full set of "off" values. Every look lives in these
+ * variables — none in classes — so the nearest element that sets them wins: a shop preview box
+ * shows exactly its own item even while a different one is equipped on <html>.
+ * Keep the values in sync with the :root defaults in globals.css (first paint, pre-hydration).
+ */
+const withBase =
+  (base: Record<string, string>) =>
+  (vars: Record<string, string>): Record<string, string> => ({ ...base, ...vars });
+
+const svgUrl = (svg: string) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+
 /* ------------------------------------------------------------------ */
 /* Card skins — the face of the flashcard                              */
 /* ------------------------------------------------------------------ */
+const skin = withBase({
+  '--card-font': 'var(--font-sans)',
+  '--card-bg-size': 'auto',
+  '--card-radius': '1.25rem',
+  '--card-transform': 'none',
+  '--card-backdrop': 'none',
+  '--card-anim': 'none',
+  '--card-overlay': 'none',
+  '--card-overlay-size': 'auto',
+  '--card-overlay-blend': 'normal',
+  '--card-overlay-anim': 'none',
+});
+
 const cardSkins: Cosmetic[] = [
   c('skin-slate', 'cardSkin', 'Slate', 'The clean default. Nothing to prove.', 'common', {
     price: 0,
-    swatch: 'linear-gradient(145deg,#1e293b,#0f172a)',
-    vars: {
+    vars: skin({
       '--card-bg': 'linear-gradient(145deg,#1e293b,#0f172a)',
       '--card-border': 'rgba(148,163,184,0.22)',
       '--card-fg': '#e2e8f0',
       '--card-accent': '#38bdf8',
       '--card-glow': '0 24px 60px -20px rgba(2,6,23,0.9)',
-    },
+    }),
   }),
   c('skin-paper', 'cardSkin', 'Index Card', 'Ruled paper, red margin, faint coffee ring.', 'common', {
-    swatch: 'repeating-linear-gradient(#fdfaf1,#fdfaf1 22px,#dce6f2 23px)',
-    vars: {
+    vars: skin({
       '--card-bg':
         'repeating-linear-gradient(#fdfaf1,#fdfaf1 26px,#dbe6f3 27px), #fdfaf1',
       '--card-border': 'rgba(120,90,60,0.35)',
       '--card-fg': '#1f2937',
       '--card-accent': '#b91c1c',
       '--card-glow': '0 18px 40px -18px rgba(60,40,20,0.55)',
-    },
+    }),
   }),
   c('skin-crt', 'cardSkin', 'CRT Terminal', 'Phosphor green on black, scanlines included.', 'rare', {
-    className: 'skin-crt',
-    swatch: 'linear-gradient(#001b0d,#012616)',
-    vars: {
+    vars: skin({
       '--card-bg': 'linear-gradient(#00170c,#012a18)',
       '--card-border': 'rgba(34,197,94,0.5)',
       '--card-fg': '#7CFFB2',
       '--card-accent': '#22c55e',
       '--card-font': 'var(--font-mono)',
       '--card-glow': '0 0 40px -6px rgba(34,197,94,0.45)',
-    },
+      '--card-overlay': 'repeating-linear-gradient(rgba(0,0,0,0.22) 0 1px, transparent 1px 3px)',
+      '--card-overlay-blend': 'multiply',
+    }),
   }),
   c('skin-glass', 'cardSkin', 'Frosted Glass', 'Translucent, blurred, weightless.', 'rare', {
-    className: 'skin-glass',
-    swatch: 'linear-gradient(135deg,rgba(255,255,255,.35),rgba(255,255,255,.08))',
-    vars: {
+    vars: skin({
       '--card-bg': 'linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.05))',
       '--card-border': 'rgba(255,255,255,0.35)',
       '--card-fg': '#f8fafc',
       '--card-accent': '#a5f3fc',
       '--card-glow': '0 20px 60px -18px rgba(56,189,248,0.35)',
-    },
+      '--card-backdrop': 'blur(18px) saturate(160%)',
+    }),
   }),
   c('skin-blueprint', 'cardSkin', 'Blueprint', 'Drafting grid and cyan ink.', 'rare', {
-    swatch: 'linear-gradient(#0b3d91,#082f6f)',
-    vars: {
+    vars: skin({
       '--card-bg':
         'linear-gradient(rgba(255,255,255,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.06) 1px,transparent 1px),#0b3d91',
       '--card-bg-size': '22px 22px, 22px 22px, auto',
@@ -105,123 +126,132 @@ const cardSkins: Cosmetic[] = [
       '--card-fg': '#dbeafe',
       '--card-accent': '#93c5fd',
       '--card-glow': '0 20px 50px -20px rgba(11,61,145,0.9)',
-    },
+    }),
   }),
   c('skin-sticky', 'cardSkin', 'Sticky Note', 'Highlighter yellow, slightly crooked.', 'common', {
-    className: 'skin-sticky',
-    swatch: 'linear-gradient(160deg,#fde68a,#fcd34d)',
-    vars: {
+    vars: skin({
       '--card-bg': 'linear-gradient(160deg,#fef3c7,#fcd34d)',
       '--card-border': 'rgba(180,120,20,0.35)',
       '--card-fg': '#3f3010',
       '--card-accent': '#b45309',
       '--card-glow': '0 16px 34px -16px rgba(120,80,10,0.6)',
-    },
+      '--card-radius': '0.25rem',
+      '--card-transform': 'rotate(-0.6deg)',
+    }),
   }),
   c('skin-holo', 'cardSkin', 'Holographic', 'Shifting foil that catches the light.', 'epic', {
-    className: 'skin-holo',
-    swatch: 'linear-gradient(120deg,#a78bfa,#67e8f9,#fca5a5,#a78bfa)',
-    vars: {
+    vars: skin({
       '--card-bg':
         'linear-gradient(120deg,#4c1d95,#0e7490,#831843,#4c1d95)',
+      '--card-bg-size': '300% 300%',
       '--card-border': 'rgba(233,213,255,0.6)',
       '--card-fg': '#f5f3ff',
       '--card-accent': '#e9d5ff',
       '--card-glow': '0 24px 70px -18px rgba(167,139,250,0.6)',
-    },
+      '--card-anim': 'holo-shift 9s ease-in-out infinite',
+    }),
   }),
   c('skin-carbon', 'cardSkin', 'Carbon Fibre', 'Woven matte black. Very fast, allegedly.', 'rare', {
-    swatch: 'repeating-conic-gradient(#1c1c1c 0 25%, #2a2a2a 0 50%) 0 0/10px 10px',
-    vars: {
-      '--card-bg': 'repeating-conic-gradient(#181818 0 25%, #262626 0 50%) 0 0/12px 12px',
+    vars: skin({
+      '--card-bg': 'repeating-conic-gradient(#181818 0 25%, #262626 0 50%)',
+      // Tile size must go here: .flashcard sets background-size after the shorthand.
+      '--card-bg-size': '12px 12px',
       '--card-border': 'rgba(255,255,255,0.16)',
       '--card-fg': '#f4f4f5',
       '--card-accent': '#ef4444',
       '--card-glow': '0 20px 46px -20px rgba(0,0,0,0.9)',
-    },
+    }),
   }),
   c('skin-vapor', 'cardSkin', 'Vaporwave', 'Sunset gradient, chrome edges, no regrets.', 'epic', {
-    swatch: 'linear-gradient(160deg,#f472b6,#a855f7,#38bdf8)',
-    vars: {
+    vars: skin({
       '--card-bg': 'linear-gradient(160deg,#831843,#5b21b6 55%,#0c4a6e)',
       '--card-border': 'rgba(244,114,182,0.55)',
       '--card-fg': '#fdf4ff',
       '--card-accent': '#f0abfc',
       '--card-glow': '0 26px 70px -22px rgba(168,85,247,0.7)',
-    },
+    }),
   }),
   c('skin-obsidian', 'cardSkin', 'Obsidian', 'Volcanic glass with a molten seam.', 'legendary', {
-    className: 'skin-obsidian',
-    swatch: 'linear-gradient(150deg,#0a0a0a,#1c1917 60%,#7c2d12)',
-    vars: {
+    vars: skin({
       '--card-bg': 'linear-gradient(150deg,#09090b,#18181b 55%,#3f1206)',
       '--card-border': 'rgba(249,115,22,0.5)',
       '--card-fg': '#fafaf9',
       '--card-accent': '#fb923c',
       '--card-glow': '0 30px 80px -24px rgba(249,115,22,0.45)',
-    },
+      '--card-overlay':
+        'linear-gradient(120deg, transparent 45%, rgba(249,115,22,0.35) 50%, transparent 55%)',
+      '--card-overlay-size': '250% 250%',
+      '--card-overlay-anim': 'holo-shift 7s linear infinite',
+    }),
   }),
 ];
 
 /* ------------------------------------------------------------------ */
-/* Card backs — what you stare at before the flip                      */
+/* Card backs — the pattern behind the answer side                     */
 /* ------------------------------------------------------------------ */
+const back = withBase({
+  '--card-back-pattern': 'none',
+  '--card-back-size': 'auto',
+  '--card-back-tint': 'transparent',
+  '--card-back-opacity': '0.9',
+  '--card-back-anim': 'none',
+});
+
+const BINARY_GLYPHS =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="60" height="55" font-family="monospace" font-size="12" fill="#34d399"><text x="4" y="12">1</text><text x="34" y="23" opacity=".5">0</text><text x="18" y="37" opacity=".7">0</text><text x="46" y="50">1</text></svg>';
+
 const cardBacks: Cosmetic[] = [
   c('back-plain', 'cardBack', 'Plain Back', 'Matches your card skin exactly.', 'common', {
     price: 0,
-    swatch: 'linear-gradient(145deg,#1e293b,#0f172a)',
-    vars: { '--card-back-pattern': 'none' },
+    vars: back({}),
   }),
   c('back-circuit', 'cardBack', 'Circuit Trace', 'PCB routing in soft copper.', 'common', {
-    swatch: 'radial-gradient(#f59e0b 1px,transparent 1px) 0 0/12px 12px, #0f172a',
-    vars: {
+    vars: back({
       '--card-back-pattern':
         'linear-gradient(90deg,rgba(245,158,11,0.18) 1px,transparent 1px),linear-gradient(rgba(245,158,11,0.18) 1px,transparent 1px)',
       '--card-back-size': '24px 24px',
-    },
+    }),
   }),
   c('back-binary', 'cardBack', 'Binary Rain', 'Ones and zeroes, drifting down.', 'rare', {
-    className: 'back-binary',
-    swatch: 'linear-gradient(#022c22,#064e3b)',
-    vars: { '--card-back-pattern': 'none', '--card-back-tint': 'rgba(16,185,129,0.14)' },
+    vars: back({
+      '--card-back-pattern': svgUrl(BINARY_GLYPHS),
+      // 55px tile: the 220px `rain` keyframe is exactly four tiles, so the loop is seamless.
+      '--card-back-size': '60px 55px',
+      '--card-back-tint': 'rgba(16,185,129,0.14)',
+      '--card-back-opacity': '0.55',
+      '--card-back-anim': 'rain 8s linear infinite',
+    }),
   }),
   c('back-hex', 'cardBack', 'Hex Dump', 'Offsets and bytes, all the way down.', 'common', {
-    swatch: 'linear-gradient(#111827,#1f2937)',
-    vars: {
-      '--card-back-pattern': 'repeating-linear-gradient(0deg,rgba(148,163,184,0.12) 0 1px,transparent 1px 18px)',
-      '--card-back-size': 'auto',
-    },
+    vars: back({
+      '--card-back-pattern':
+        'repeating-linear-gradient(0deg,rgba(148,163,184,0.12) 0 1px,transparent 1px 18px)',
+    }),
   }),
   c('back-tartan', 'cardBack', 'Tartan', 'Woven check, quietly smug.', 'rare', {
-    swatch: 'repeating-linear-gradient(45deg,#7f1d1d 0 8px,#111827 8px 16px)',
-    vars: {
+    vars: back({
       '--card-back-pattern':
         'repeating-linear-gradient(45deg,rgba(239,68,68,0.18) 0 10px,transparent 10px 20px),repeating-linear-gradient(-45deg,rgba(59,130,246,0.16) 0 10px,transparent 10px 20px)',
-      '--card-back-size': 'auto',
-    },
+    }),
   }),
   c('back-runes', 'cardBack', 'Compiler Runes', 'Ancient symbols. Probably lifetimes.', 'epic', {
-    swatch: 'radial-gradient(circle at 30% 30%,#7c3aed,#1e1b4b)',
-    vars: {
-      '--card-back-pattern': 'radial-gradient(circle at 30% 30%,rgba(167,139,250,0.35),transparent 60%)',
-      '--card-back-size': 'auto',
-    },
+    vars: back({
+      '--card-back-pattern':
+        'radial-gradient(circle at 30% 30%,rgba(167,139,250,0.35),transparent 60%)',
+    }),
   }),
   c('back-starfield', 'cardBack', 'Starfield', 'Deep space with a slow parallax drift.', 'epic', {
-    className: 'back-starfield',
-    swatch: 'radial-gradient(circle,#fff 1px,transparent 1px) 0 0/14px 14px,#020617',
-    vars: {
+    vars: back({
       '--card-back-pattern': 'radial-gradient(rgba(255,255,255,0.7) 1px,transparent 1px)',
       '--card-back-size': '26px 26px',
-    },
+      '--card-back-anim': 'drift 24s linear infinite',
+    }),
   }),
   c('back-gold', 'cardBack', 'Gilded', 'Gold leaf. Purely for intimidation.', 'legendary', {
-    swatch: 'linear-gradient(135deg,#fde68a,#b45309,#fde68a)',
-    vars: {
+    vars: back({
       '--card-back-pattern':
         'linear-gradient(135deg,rgba(253,230,138,0.35),rgba(180,83,9,0.35),rgba(253,230,138,0.35))',
-      '--card-back-size': 'auto',
-    },
+    }),
   }),
 ];
 
@@ -245,72 +275,91 @@ const flips: Cosmetic[] = [
 const syntax: Cosmetic[] = [
   c('default', 'syntaxTheme', 'GitHub Dark', 'The one everybody already knows.', 'common', {
     price: 0,
-    swatch: '#24292e',
   }),
-  c('nord', 'syntaxTheme', 'Nord', 'Arctic, muted, easy on the eyes.', 'common', { swatch: '#2e3440' }),
-  c('catppuccin', 'syntaxTheme', 'Catppuccin Mocha', 'Pastel warmth on a dark base.', 'common', {
-    swatch: '#1e1e2e',
-  }),
-  c('dracula', 'syntaxTheme', 'Dracula', 'Purple night, high contrast.', 'common', { swatch: '#282a36' }),
-  c('monokai', 'syntaxTheme', 'Monokai', 'The classic. Pink keywords forever.', 'rare', {
-    swatch: '#272822',
-  }),
-  c('onedark', 'syntaxTheme', 'One Dark Pro', 'Atom heritage, still undefeated.', 'rare', {
-    swatch: '#282c34',
-  }),
-  c('vitesse', 'syntaxTheme', 'Vitesse Dark', 'Low saturation, high focus.', 'rare', {
-    swatch: '#121212',
-  }),
-  c('tokyo', 'syntaxTheme', 'Tokyo Night', 'Neon signs reflected in wet asphalt.', 'epic', {
-    swatch: '#1a1b26',
-  }),
-  c('solarized', 'syntaxTheme', 'Solarized Dark', 'Scientifically fussed-over contrast.', 'epic', {
-    swatch: '#002b36',
-  }),
-  c('gruvbox', 'syntaxTheme', 'Vitesse Black', 'Pitch black with warm accents.', 'legendary', {
-    swatch: '#000000',
-  }),
+  c('nord', 'syntaxTheme', 'Nord', 'Arctic, muted, easy on the eyes.', 'common'),
+  c('catppuccin', 'syntaxTheme', 'Catppuccin Mocha', 'Pastel warmth on a dark base.', 'common'),
+  c('dracula', 'syntaxTheme', 'Dracula', 'Purple night, high contrast.', 'common'),
+  c('monokai', 'syntaxTheme', 'Monokai', 'The classic. Pink keywords forever.', 'rare'),
+  c('onedark', 'syntaxTheme', 'One Dark Pro', 'Atom heritage, still undefeated.', 'rare'),
+  c('vitesse', 'syntaxTheme', 'Vitesse Dark', 'Low saturation, high focus.', 'rare'),
+  c('tokyo', 'syntaxTheme', 'Tokyo Night', 'Neon signs reflected in wet asphalt.', 'epic'),
+  c('solarized', 'syntaxTheme', 'Solarized Dark', 'Scientifically fussed-over contrast.', 'epic'),
+  c('gruvbox', 'syntaxTheme', 'Vitesse Black', 'Pitch black with warm accents.', 'legendary'),
 ];
 
 /* ------------------------------------------------------------------ */
-/* Backgrounds                                                         */
+/* Backgrounds — the page fill plus an optional animated overlay layer  */
 /* ------------------------------------------------------------------ */
+const bg = withBase({
+  '--app-bg-size': 'auto',
+  '--fg': '#e2e8f0',
+  '--fg-muted': '#94a3b8',
+  '--panel': 'rgba(15,23,42,0.62)',
+  '--panel-border': 'rgba(148,163,184,0.16)',
+  '--nav-bg': 'rgba(2,6,23,0.7)',
+  '--nav-bg-strong': 'rgba(2,6,23,0.9)',
+  '--app-overlay': 'none',
+  '--app-overlay-size': 'auto',
+  '--app-overlay-position': '0 0',
+  '--app-overlay-opacity': '1',
+  '--app-overlay-transform': 'none',
+  '--app-overlay-origin': 'center',
+  '--app-overlay-anim': 'none',
+});
+
+const GRID_OVERLAY = {
+  '--app-overlay':
+    'linear-gradient(rgba(148,163,184,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.14) 1px, transparent 1px)',
+  '--app-overlay-size': '60px 60px',
+  '--app-overlay-opacity': '0.5',
+  '--app-overlay-transform': 'perspective(400px) rotateX(58deg) translateY(20%)',
+  '--app-overlay-origin': 'bottom',
+  '--app-overlay-anim': 'grid-run 14s linear infinite',
+};
+
 const backgrounds: Cosmetic[] = [
   c('bg-midnight', 'background', 'Midnight', 'Deep navy with a soft vignette.', 'common', {
     price: 0,
-    swatch: 'radial-gradient(circle at 50% 0%,#1e293b,#020617)',
-    vars: { '--app-bg': 'radial-gradient(120% 90% at 50% -10%,#16233b 0%,#020617 60%)' },
+    vars: bg({ '--app-bg': 'radial-gradient(120% 90% at 50% -10%,#16233b 0%,#020617 60%)' }),
   }),
   c('bg-aurora', 'background', 'Aurora', 'Slow northern lights.', 'rare', {
-    className: 'bg-anim-aurora',
-    swatch: 'linear-gradient(120deg,#065f46,#1e3a8a,#4c1d95)',
-    vars: {
+    vars: bg({
       '--app-bg':
         'linear-gradient(130deg,#031a2c 0%,#052e2b 35%,#1e1b4b 70%,#020617 100%)',
-    },
+      '--app-overlay':
+        'radial-gradient(40% 30% at 20% 20%, rgba(16,185,129,0.22), transparent 70%), radial-gradient(35% 28% at 75% 35%, rgba(99,102,241,0.22), transparent 70%)',
+      '--app-overlay-anim': 'aurora 22s ease-in-out infinite alternate',
+    }),
   }),
   c('bg-matrix', 'background', 'Matrix Rain', 'Falling glyphs, subtle enough to study over.', 'epic', {
-    className: 'bg-anim-matrix',
-    swatch: 'linear-gradient(#000,#022c22)',
-    vars: { '--app-bg': 'linear-gradient(#000000,#01130c)' },
+    vars: bg({
+      '--app-bg': 'linear-gradient(#000000,#01130c)',
+      '--app-overlay':
+        'repeating-linear-gradient(180deg, rgba(34,197,94,0.16) 0 2px, transparent 2px 14px)',
+      '--app-overlay-size': '100% 220px',
+      '--app-overlay-opacity': '0.35',
+      '--app-overlay-anim': 'rain 6s linear infinite',
+    }),
   }),
   c('bg-starfield', 'background', 'Deep Field', 'A quiet sky full of stars.', 'rare', {
-    className: 'bg-anim-stars',
-    swatch: 'radial-gradient(circle,#fff 1px,transparent 1px) 0 0/12px 12px,#000',
-    vars: { '--app-bg': 'radial-gradient(120% 100% at 50% 0%,#0b1020,#000000 70%)' },
+    vars: bg({
+      '--app-bg': 'radial-gradient(120% 100% at 50% 0%,#0b1020,#000000 70%)',
+      '--app-overlay':
+        'radial-gradient(rgba(255,255,255,0.75) 1px, transparent 1px), radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)',
+      '--app-overlay-size': '120px 120px, 60px 60px',
+      '--app-overlay-position': '0 0, 30px 30px',
+      '--app-overlay-opacity': '0.6',
+      '--app-overlay-anim': 'stars-drift 90s linear infinite',
+    }),
   }),
   c('bg-grid', 'background', 'Wireframe Grid', 'Perspective grid receding to the horizon.', 'common', {
-    className: 'bg-anim-grid',
-    swatch: 'linear-gradient(#0f172a,#1e1b4b)',
-    vars: { '--app-bg': 'linear-gradient(#05070f,#160f2e)' },
+    vars: bg({ '--app-bg': 'linear-gradient(#05070f,#160f2e)', ...GRID_OVERLAY }),
   }),
   c('bg-lofi', 'background', 'Lo-fi Room', 'Warm lamp light and a rainy window.', 'epic', {
-    swatch: 'linear-gradient(160deg,#7c2d12,#1c1917)',
-    vars: { '--app-bg': 'radial-gradient(90% 80% at 70% 10%,#3b1d0f 0%,#120d0b 65%)' },
+    vars: bg({ '--app-bg': 'radial-gradient(90% 80% at 70% 10%,#3b1d0f 0%,#120d0b 65%)' }),
   }),
   c('bg-paper', 'background', 'Graph Paper', 'Light mode, for the brave.', 'common', {
-    swatch: 'linear-gradient(#f8fafc,#e2e8f0)',
-    vars: {
+    vars: bg({
       '--app-bg':
         'linear-gradient(rgba(37,99,235,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.08) 1px,transparent 1px),#f8fafc',
       '--app-bg-size': '24px 24px,24px 24px,auto',
@@ -318,31 +367,30 @@ const backgrounds: Cosmetic[] = [
       '--fg-muted': '#475569',
       '--panel': 'rgba(255,255,255,0.75)',
       '--panel-border': 'rgba(15,23,42,0.12)',
-    },
+      '--nav-bg': 'rgba(248,250,252,0.8)',
+      '--nav-bg-strong': 'rgba(248,250,252,0.92)',
+    }),
   }),
   c('bg-synthwave', 'background', 'Synthwave Sunset', 'Chrome sun over a neon grid.', 'epic', {
-    className: 'bg-anim-grid',
-    swatch: 'linear-gradient(#4c1d95,#f472b6)',
-    vars: { '--app-bg': 'linear-gradient(#150b2e 0%,#3b0764 55%,#831843 100%)' },
+    vars: bg({ '--app-bg': 'linear-gradient(#150b2e 0%,#3b0764 55%,#831843 100%)', ...GRID_OVERLAY }),
   }),
   c('bg-nebula', 'background', 'Nebula', 'Clouds of gas, gently rotating.', 'legendary', {
-    className: 'bg-anim-nebula',
-    swatch: 'radial-gradient(circle at 30% 40%,#7c3aed,#0f172a)',
-    vars: {
+    vars: bg({
       '--app-bg':
         'radial-gradient(60% 50% at 25% 30%,rgba(124,58,237,0.35),transparent 60%),radial-gradient(50% 45% at 75% 60%,rgba(6,182,212,0.28),transparent 60%),#020617',
-    },
+      '--app-overlay':
+        'radial-gradient(35% 30% at 30% 40%, rgba(168,85,247,0.25), transparent 70%), radial-gradient(30% 25% at 70% 60%, rgba(34,211,238,0.2), transparent 70%)',
+      '--app-overlay-anim': 'aurora 30s ease-in-out infinite alternate',
+    }),
   }),
   c('bg-terminal', 'background', 'Bare Terminal', 'Black. Just black.', 'common', {
-    swatch: '#000000',
-    vars: { '--app-bg': '#000000' },
+    vars: bg({ '--app-bg': '#000000' }),
   }),
 ];
 
 /* ------------------------------------------------------------------ */
-/* Cursors — inline SVG data URIs, no asset files needed               */
+/* Cursors — inline SVG data URIs, or a bundled emoji SVG              */
 /* ------------------------------------------------------------------ */
-const svgUrl = (svg: string) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
 
 /** `x y` is the hotspot — the pixel of the image that actually clicks. */
 const svgCursor = (svg: string, x = 4, y = 4) => `${svgUrl(svg)} ${x} ${y}, auto`;
@@ -350,6 +398,10 @@ const svgCursor = (svg: string, x = 4, y = 4) => `${svgUrl(svg)} ${x} ${y}, auto
 /** Shop preview: the cursor artwork itself, centred in the swatch box. */
 const cursorSwatch = (svg: string) =>
   `${svgUrl(svg)} center / 44px 44px no-repeat, rgba(255,255,255,0.04)`;
+
+const emojiCursor = (file: string, x: number, y: number) => `url("/emoji/${file}.svg") ${x} ${y}, auto`;
+const emojiSwatch = (file: string) =>
+  `url("/emoji/${file}.svg") center / 44px 44px no-repeat, rgba(255,255,255,0.04)`;
 
 /** Turns a bitmap (`#` outline, `o` fill) into 2px-per-cell SVG, inset by 1px. */
 const pixelArt = (rows: string[], size: number) => {
@@ -386,9 +438,6 @@ const CURSOR_ART = {
   pixel: pixelArt(PIXEL_ARROW, 24),
   terminal:
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="22" viewBox="0 0 16 22"><rect x="2" y="2" width="10" height="18" fill="#22c55e" opacity="0.85"/></svg>',
-  duck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><text y="22" font-size="22">🦆</text></svg>',
-  sword:
-    '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><text y="22" font-size="22">🗡️</text></svg>',
 };
 
 const cursors: Cosmetic[] = [
@@ -410,12 +459,14 @@ const cursors: Cosmetic[] = [
     vars: { '--app-cursor': svgCursor(CURSOR_ART.terminal, 7, 11) },
   }),
   c('cursor-duck', 'cursor', 'Rubber Duck', 'It will listen to your bug.', 'epic', {
-    swatch: cursorSwatch(CURSOR_ART.duck),
-    vars: { '--app-cursor': svgCursor(CURSOR_ART.duck) },
+    swatch: emojiSwatch('duck'),
+    // Hotspot on the beak.
+    vars: { '--app-cursor': emojiCursor('duck', 2, 9) },
   }),
   c('cursor-sword', 'cursor', 'Merge Sword', 'For resolving conflicts decisively.', 'legendary', {
-    swatch: cursorSwatch(CURSOR_ART.sword),
-    vars: { '--app-cursor': svgCursor(CURSOR_ART.sword) },
+    // The dagger rotated to point up-left like an arrow; hotspot on the tip.
+    swatch: emojiSwatch('dagger-cursor'),
+    vars: { '--app-cursor': emojiCursor('dagger-cursor', 2, 2) },
   }),
 ];
 
@@ -432,120 +483,136 @@ const sounds: Cosmetic[] = [
 
 /* ------------------------------------------------------------------ */
 /* Mascots, frames, xp bars, chests, name colours                      */
+/* Icons are bundled SVGs (see components/ui/Emoji.tsx), not OS emoji.  */
 /* ------------------------------------------------------------------ */
 const mascots: Cosmetic[] = [
   c('mascot-duck', 'mascot', 'Rubber Duck', 'The original debugger.', 'common', {
     price: 0,
-    swatch: '🦆',
+    icon: '🦆',
   }),
-  c('mascot-gopher', 'mascot', 'Gopher', 'Small, fast, garbage collected.', 'common', { swatch: '🐹' }),
-  c('mascot-crab', 'mascot', 'Ferris', 'Memory safe and pleased about it.', 'rare', { swatch: '🦀' }),
-  c('mascot-snake', 'mascot', 'Serpent', 'Indentation enthusiast.', 'common', { swatch: '🐍' }),
-  c('mascot-robot', 'mascot', 'Little Robot', 'Runs your CI in its head.', 'rare', { swatch: '🤖' }),
-  c('mascot-cat', 'mascot', 'Terminal Cat', 'Sits on the keyboard. Always.', 'epic', { swatch: '🐈‍⬛' }),
-  c('mascot-dragon', 'mascot', 'Compiler Dragon', 'Hoards optimisations.', 'epic', { swatch: '🐉' }),
-  c('mascot-ghost', 'mascot', 'Null Pointer', 'It was never there.', 'legendary', { swatch: '👻' }),
+  c('mascot-gopher', 'mascot', 'Gopher', 'Small, fast, garbage collected.', 'common', { icon: '🐹' }),
+  c('mascot-crab', 'mascot', 'Ferris', 'Memory safe and pleased about it.', 'rare', { icon: '🦀' }),
+  c('mascot-snake', 'mascot', 'Serpent', 'Indentation enthusiast.', 'common', { icon: '🐍' }),
+  c('mascot-robot', 'mascot', 'Little Robot', 'Runs your CI in its head.', 'rare', { icon: '🤖' }),
+  c('mascot-cat', 'mascot', 'Terminal Cat', 'Sits on the keyboard. Always.', 'epic', { icon: '🐈‍⬛' }),
+  c('mascot-dragon', 'mascot', 'Compiler Dragon', 'Hoards optimisations.', 'epic', { icon: '🐉' }),
+  c('mascot-ghost', 'mascot', 'Null Pointer', 'It was never there.', 'legendary', { icon: '👻' }),
 ];
+
+const frame = withBase({ '--frame-anim': 'none' });
 
 const frames: Cosmetic[] = [
   c('frame-none', 'frame', 'No Frame', 'Unadorned.', 'common', {
     price: 0,
-    vars: { '--frame-ring': 'rgba(148,163,184,0.35)', '--frame-glow': 'none' },
+    vars: frame({ '--frame-ring': 'rgba(148,163,184,0.35)', '--frame-glow': 'none' }),
   }),
   c('frame-bronze', 'frame', 'Bronze Ring', 'A modest achievement.', 'common', {
-    vars: { '--frame-ring': '#b45309', '--frame-glow': '0 0 0 3px rgba(180,83,9,0.25)' },
+    vars: frame({ '--frame-ring': '#b45309', '--frame-glow': '0 0 0 3px rgba(180,83,9,0.25)' }),
   }),
   c('frame-silver', 'frame', 'Silver Ring', 'Polished.', 'rare', {
-    vars: { '--frame-ring': '#cbd5e1', '--frame-glow': '0 0 0 3px rgba(203,213,225,0.28)' },
+    vars: frame({ '--frame-ring': '#cbd5e1', '--frame-glow': '0 0 0 3px rgba(203,213,225,0.28)' }),
   }),
   c('frame-gold', 'frame', 'Gold Ring', 'Unsubtle by design.', 'epic', {
-    vars: { '--frame-ring': '#fbbf24', '--frame-glow': '0 0 18px rgba(251,191,36,0.45)' },
+    vars: frame({ '--frame-ring': '#fbbf24', '--frame-glow': '0 0 18px rgba(251,191,36,0.45)' }),
   }),
   c('frame-neon', 'frame', 'Neon Halo', 'Buzzing cyan.', 'epic', {
-    className: 'frame-pulse',
-    vars: { '--frame-ring': '#22d3ee', '--frame-glow': '0 0 22px rgba(34,211,238,0.6)' },
+    vars: frame({
+      '--frame-ring': '#22d3ee',
+      '--frame-glow': '0 0 22px rgba(34,211,238,0.6)',
+      '--frame-anim': 'pulse-ring 2.4s ease-in-out infinite',
+    }),
   }),
   c('frame-prism', 'frame', 'Prism', 'Rotating spectrum.', 'legendary', {
-    className: 'frame-prism',
-    vars: { '--frame-ring': '#a855f7', '--frame-glow': '0 0 26px rgba(168,85,247,0.55)' },
+    vars: frame({
+      '--frame-ring': '#a855f7',
+      '--frame-glow': '0 0 26px rgba(168,85,247,0.55)',
+      '--frame-anim': 'prism 4s linear infinite',
+    }),
   }),
 ];
+
+const xp = withBase({ '--xp-anim': 'none' });
 
 const xpBars: Cosmetic[] = [
   c('xp-default', 'xpBar', 'Sky', 'Clean cyan fill.', 'common', {
     price: 0,
-    swatch: 'linear-gradient(90deg,#0ea5e9,#22d3ee)',
-    vars: { '--xp-fill': 'linear-gradient(90deg,#0ea5e9,#22d3ee)' },
+    vars: xp({ '--xp-fill': 'linear-gradient(90deg,#0ea5e9,#22d3ee)' }),
   }),
   c('xp-ember', 'xpBar', 'Ember', 'Molten orange.', 'common', {
-    swatch: 'linear-gradient(90deg,#f97316,#facc15)',
-    vars: { '--xp-fill': 'linear-gradient(90deg,#ea580c,#facc15)' },
+    vars: xp({ '--xp-fill': 'linear-gradient(90deg,#ea580c,#facc15)' }),
   }),
   c('xp-forest', 'xpBar', 'Forest', 'Deep greens.', 'common', {
-    swatch: 'linear-gradient(90deg,#15803d,#4ade80)',
-    vars: { '--xp-fill': 'linear-gradient(90deg,#15803d,#4ade80)' },
+    vars: xp({ '--xp-fill': 'linear-gradient(90deg,#15803d,#4ade80)' }),
   }),
   c('xp-candy', 'xpBar', 'Candy', 'Pink to violet.', 'rare', {
-    swatch: 'linear-gradient(90deg,#ec4899,#8b5cf6)',
-    vars: { '--xp-fill': 'linear-gradient(90deg,#ec4899,#8b5cf6)' },
+    vars: xp({ '--xp-fill': 'linear-gradient(90deg,#ec4899,#8b5cf6)' }),
   }),
   c('xp-liquid', 'xpBar', 'Liquid Metal', 'Chrome with a moving sheen.', 'epic', {
-    className: 'xp-shimmer',
-    swatch: 'linear-gradient(90deg,#94a3b8,#f8fafc,#94a3b8)',
-    vars: { '--xp-fill': 'linear-gradient(90deg,#64748b,#f1f5f9,#64748b)' },
+    vars: xp({
+      '--xp-fill': 'linear-gradient(90deg,#64748b,#f1f5f9,#64748b)',
+      '--xp-anim': 'shimmer 2.6s linear infinite',
+    }),
   }),
   c('xp-rainbow', 'xpBar', 'Spectrum', 'All of them at once.', 'legendary', {
-    className: 'xp-shimmer',
-    swatch: 'linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7)',
-    vars: {
+    vars: xp({
       '--xp-fill': 'linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7)',
-    },
+      '--xp-anim': 'shimmer 2.6s linear infinite',
+    }),
   }),
 ];
 
 const chestSkins: Cosmetic[] = [
   c('chest-wood', 'chestSkin', 'Wooden Chest', 'Standard issue.', 'common', {
     price: 0,
-    swatch: '📦',
+    icon: '📦',
   }),
-  c('chest-crate', 'chestSkin', 'Supply Crate', 'Airdropped, mid-match.', 'rare', { swatch: '🎁' }),
-  c('chest-vault', 'chestSkin', 'Bank Vault', 'Heavy door, satisfying spin.', 'epic', { swatch: '🔐' }),
-  c('chest-cake', 'chestSkin', 'The Cake', 'It is, allegedly, a lie.', 'legendary', { swatch: '🎂' }),
+  c('chest-crate', 'chestSkin', 'Supply Crate', 'Airdropped, mid-match.', 'rare', { icon: '🎁' }),
+  c('chest-vault', 'chestSkin', 'Bank Vault', 'Heavy door, satisfying spin.', 'epic', { icon: '🔐' }),
+  c('chest-cake', 'chestSkin', 'The Cake', 'It is, allegedly, a lie.', 'legendary', { icon: '🎂' }),
 ];
+
+/**
+ * Solid names set `--name-fill`; gradient names set a transparent fill plus `--name-gradient`,
+ * which .display-name clips to the text.
+ */
+const name = withBase({
+  '--name-gradient': 'none',
+  '--name-size': 'auto',
+  '--name-shadow': 'none',
+  '--name-anim': 'none',
+});
 
 const nameColors: Cosmetic[] = [
   c('name-default', 'nameColor', 'Plain', 'Just your name.', 'common', {
     price: 0,
-    swatch: '#e2e8f0',
-    vars: { '--name-fill': '#e2e8f0' },
+    // Follows the text colour, so it stays readable on the light Graph Paper background.
+    vars: name({ '--name-fill': 'var(--fg)' }),
   }),
   c('name-cyan', 'nameColor', 'Cyan', 'Cool and readable.', 'common', {
-    swatch: '#22d3ee',
-    vars: { '--name-fill': '#22d3ee' },
+    vars: name({ '--name-fill': '#22d3ee' }),
   }),
   c('name-amber', 'nameColor', 'Amber', 'Warm highlight.', 'common', {
-    swatch: '#fbbf24',
-    vars: { '--name-fill': '#fbbf24' },
+    vars: name({ '--name-fill': '#fbbf24' }),
   }),
   c('name-sunset', 'nameColor', 'Sunset Gradient', 'Orange bleeding into pink.', 'rare', {
-    swatch: 'linear-gradient(90deg,#f97316,#ec4899)',
-    vars: { '--name-fill': 'linear-gradient(90deg,#f97316,#ec4899)', '--name-clip': 'text' },
+    vars: name({
+      '--name-fill': 'transparent',
+      '--name-gradient': 'linear-gradient(90deg,#f97316,#ec4899)',
+    }),
   }),
   c('name-matrix', 'nameColor', 'Matrix Green', 'Phosphor glow.', 'rare', {
-    swatch: '#22c55e',
-    vars: { '--name-fill': '#22c55e', '--name-shadow': '0 0 12px rgba(34,197,94,0.7)' },
+    vars: name({ '--name-fill': '#22c55e', '--name-shadow': '0 0 12px rgba(34,197,94,0.7)' }),
   }),
   c('name-holo', 'nameColor', 'Holo', 'Iridescent shifting text.', 'epic', {
-    className: 'name-holo',
-    swatch: 'linear-gradient(90deg,#a78bfa,#67e8f9,#fca5a5)',
-    vars: {
-      '--name-fill': 'linear-gradient(90deg,#a78bfa,#67e8f9,#fca5a5,#a78bfa)',
-      '--name-clip': 'text',
-    },
+    vars: name({
+      '--name-fill': 'transparent',
+      '--name-gradient': 'linear-gradient(90deg,#a78bfa,#67e8f9,#fca5a5,#a78bfa)',
+      '--name-size': '300% 100%',
+      '--name-anim': 'shimmer 5s linear infinite',
+    }),
   }),
   c('name-root', 'nameColor', 'root@localhost', 'Red, and slightly alarming.', 'legendary', {
-    swatch: '#ef4444',
-    vars: { '--name-fill': '#ef4444', '--name-shadow': '0 0 14px rgba(239,68,68,0.65)' },
+    vars: name({ '--name-fill': '#ef4444', '--name-shadow': '0 0 14px rgba(239,68,68,0.65)' }),
   }),
 ];
 

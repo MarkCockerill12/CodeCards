@@ -32,9 +32,6 @@ export function Flashcard({
   animation?: string;
   className?: string;
 }) {
-  const is3d = THREE_D.has(animation);
-  const axis = animation === 'flip-vertical' ? 'rotateX' : 'rotateY';
-
   return (
     <div
       className={cn('w-full select-none', className)}
@@ -50,51 +47,80 @@ export function Flashcard({
         }
       }}
     >
-      {is3d ? (
-        <motion.div
-          className="grid"
-          style={{ transformStyle: 'preserve-3d' }}
-          animate={{
-            [axis]: flipped ? 180 : 0,
-            ...(animation === 'flip-page' ? { skewY: flipped ? -1.5 : 0 } : {}),
-          }}
-          transition={animation === 'flip-page' ? { duration: 0.65, ease: [0.4, 0, 0.2, 1] } : SPRING}
-        >
-          <Face gridStacked hidden={flipped} style={{ backfaceVisibility: 'hidden' }} back={false}>
-            <CardFront card={card} />
-          </Face>
-          <Face
-            gridStacked
-            hidden={!flipped}
-            style={{
-              backfaceVisibility: 'hidden',
-              transform: axis === 'rotateX' ? 'rotateX(180deg)' : 'rotateY(180deg)',
-            }}
-            back
-          >
-            <CardBack card={card} showExplanation={showExplanation} />
-          </Face>
-        </motion.div>
-      ) : (
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={flipped ? 'back' : 'front'}
-            initial={enter(animation)}
-            animate={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
-            exit={exit(animation)}
-            transition={animation === 'flip-glitch' ? { duration: 0.22 } : { duration: 0.3 }}
-          >
-            <Face back={flipped}>
-              {flipped ? (
-                <CardBack card={card} showExplanation={showExplanation} />
-              ) : (
-                <CardFront card={card} />
-              )}
-            </Face>
-          </motion.div>
-        </AnimatePresence>
-      )}
+      <CardFlip
+        flipped={flipped}
+        animation={animation}
+        faceClassName="min-h-[22rem] p-6 sm:p-8"
+        front={<CardFront card={card} />}
+        back={<CardBack card={card} showExplanation={showExplanation} />}
+      />
     </div>
+  );
+}
+
+/** The flip itself, for any two faces — the shop previews flip animations with it. */
+export function CardFlip({
+  flipped,
+  animation = 'flip-standard',
+  front,
+  back,
+  faceClassName,
+}: {
+  flipped: boolean;
+  animation?: string;
+  front: React.ReactNode;
+  back: React.ReactNode;
+  faceClassName?: string;
+}) {
+  const is3d = THREE_D.has(animation);
+  const axis = animation === 'flip-vertical' ? 'rotateX' : 'rotateY';
+
+  return is3d ? (
+    <motion.div
+      className="grid"
+      style={{ transformStyle: 'preserve-3d' }}
+      animate={{
+        [axis]: flipped ? 180 : 0,
+        ...(animation === 'flip-page' ? { skewY: flipped ? -1.5 : 0 } : {}),
+      }}
+      transition={animation === 'flip-page' ? { duration: 0.65, ease: [0.4, 0, 0.2, 1] } : SPRING}
+    >
+      <Face
+        gridStacked
+        hidden={flipped}
+        className={faceClassName}
+        style={{ backfaceVisibility: 'hidden' }}
+        back={false}
+      >
+        {front}
+      </Face>
+      <Face
+        gridStacked
+        hidden={!flipped}
+        className={faceClassName}
+        style={{
+          backfaceVisibility: 'hidden',
+          transform: axis === 'rotateX' ? 'rotateX(180deg)' : 'rotateY(180deg)',
+        }}
+        back
+      >
+        {back}
+      </Face>
+    </motion.div>
+  ) : (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={flipped ? 'back' : 'front'}
+        initial={enter(animation)}
+        animate={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+        exit={exit(animation)}
+        transition={animation === 'flip-glitch' ? { duration: 0.22 } : { duration: 0.3 }}
+      >
+        <Face back={flipped} className={faceClassName}>
+          {flipped ? back : front}
+        </Face>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -128,19 +154,22 @@ function Face({
   children,
   back,
   hidden,
+  className,
   style,
   gridStacked,
 }: {
   children: React.ReactNode;
   back: boolean;
   hidden?: boolean;
+  className?: string;
   style?: React.CSSProperties;
   gridStacked?: boolean;
 }) {
   return (
     <div
       className={cn(
-        'flashcard min-h-[22rem] p-6 sm:p-8',
+        'flashcard',
+        className,
         !back && 'flashcard-face-front',
         back && 'flashcard-face-back',
         gridStacked && 'col-start-1 row-start-1',

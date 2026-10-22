@@ -1,6 +1,10 @@
 /**
  * Shared domain types. Mirrors scripts/content-schema.mjs — if you change one, change both.
  */
+import type EMOJI_ASSETS from '@/data/emoji-assets.json';
+
+/** Every glyph with a bundled SVG in public/emoji (see components/ui/Emoji.tsx). */
+export type EmojiChar = keyof typeof EMOJI_ASSETS;
 
 export type CardType =
   | 'flip'
@@ -149,11 +153,15 @@ export interface Cosmetic {
   price: number;
   /** Chest-only cosmetics cannot be bought outright. */
   chestOnly?: boolean;
-  /** CSS custom properties applied to <html> when equipped. */
+  /**
+   * CSS custom properties applied to <html> when equipped. Every item in a category sets the
+   * same full set of keys, so a shop preview can scope one item to a box without the equipped
+   * item leaking in.
+   */
   vars?: Record<string, string>;
-  /** Extra class toggled on <html> when equipped (for keyframe-driven looks). */
-  className?: string;
-  /** Small inline preview swatch (CSS background value). */
+  /** Emoji glyph for mascots and chest skins, drawn with <Emoji>. */
+  icon?: EmojiChar;
+  /** Cursor artwork shown in the shop preview box (CSS background value). */
   swatch?: string;
 }
 

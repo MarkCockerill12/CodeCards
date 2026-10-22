@@ -19,15 +19,25 @@
   --color-coin: #fbbf24;
 }
 
+/* First-paint defaults. CosmeticProvider overwrites them on <html> with the equipped items'
+   full variable sets (see the category bases in src/data/cosmetics.ts — keep them in sync). */
 :root {
-  /* Overwritten at runtime by CosmeticProvider */
   --app-bg: radial-gradient(120% 90% at 50% -10%, #16233b 0%, #020617 60%);
   --app-bg-size: auto;
   --app-cursor: auto;
+  --app-overlay: none;
+  --app-overlay-size: auto;
+  --app-overlay-position: 0 0;
+  --app-overlay-opacity: 1;
+  --app-overlay-transform: none;
+  --app-overlay-origin: center;
+  --app-overlay-anim: none;
   --fg: #e2e8f0;
   --fg-muted: #94a3b8;
   --panel: rgba(15, 23, 42, 0.62);
   --panel-border: rgba(148, 163, 184, 0.16);
+  --nav-bg: rgba(2, 6, 23, 0.7);
+  --nav-bg-strong: rgba(2, 6, 23, 0.9);
 
   --card-bg: linear-gradient(145deg, #1e293b, #0f172a);
   --card-bg-size: auto;
@@ -36,16 +46,30 @@
   --card-accent: #38bdf8;
   --card-font: var(--font-sans);
   --card-glow: 0 24px 60px -20px rgba(2, 6, 23, 0.9);
+  --card-radius: 1.25rem;
+  --card-transform: none;
+  --card-backdrop: none;
+  --card-anim: none;
+  --card-overlay: none;
+  --card-overlay-size: auto;
+  --card-overlay-blend: normal;
+  --card-overlay-anim: none;
   --card-back-pattern: none;
   --card-back-size: auto;
   --card-back-tint: transparent;
+  --card-back-opacity: 0.9;
+  --card-back-anim: none;
 
   --xp-fill: linear-gradient(90deg, #0ea5e9, #22d3ee);
+  --xp-anim: none;
   --frame-ring: rgba(148, 163, 184, 0.35);
   --frame-glow: none;
-  --name-fill: #e2e8f0;
-  --name-clip: border-box;
+  --frame-anim: none;
+  --name-fill: var(--fg);
+  --name-gradient: none;
+  --name-size: auto;
   --name-shadow: none;
+  --name-anim: none;
 }
 
 * {
@@ -193,69 +217,40 @@ html[data-syntax='gruvbox'] .shiki span {
   color: var(--card-fg);
   font-family: var(--card-font);
   box-shadow: var(--card-glow);
-  border-radius: 1.25rem;
+  border-radius: var(--card-radius);
+  transform: var(--card-transform);
+  backdrop-filter: var(--card-backdrop);
+  animation: var(--card-anim);
   position: relative;
   overflow: hidden;
+  /* Own stacking context, so the z-index:-1 back pattern sits between the skin and the text. */
+  isolation: isolate;
 }
 
-.flashcard-back-pattern::before {
+/* Skin overlay (CRT scanlines, Obsidian seam): above the text, never catches clicks. */
+.flashcard::after {
   content: '';
   position: absolute;
   inset: 0;
+  pointer-events: none;
+  background: var(--card-overlay);
+  background-size: var(--card-overlay-size);
+  mix-blend-mode: var(--card-overlay-blend);
+  animation: var(--card-overlay-anim);
+}
+
+/* Card back cosmetic: the pattern behind the answer side. */
+.flashcard-face-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background-image: var(--card-back-pattern);
   background-size: var(--card-back-size);
   background-color: var(--card-back-tint);
-  opacity: 0.9;
+  opacity: var(--card-back-opacity);
+  animation: var(--card-back-anim);
   pointer-events: none;
-}
-
-/* Card skin flourishes */
-.skin-crt .flashcard::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    rgba(0, 0, 0, 0.22) 0 1px,
-    transparent 1px 3px
-  );
-  mix-blend-mode: multiply;
-}
-
-.skin-glass .flashcard {
-  backdrop-filter: blur(18px) saturate(160%);
-}
-
-.skin-sticky .flashcard {
-  transform: rotate(-0.6deg);
-  border-radius: 0.25rem;
-}
-
-.skin-holo .flashcard {
-  background-size: 300% 300%;
-  animation: holo-shift 9s ease-in-out infinite;
-}
-
-.skin-obsidian .flashcard::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(120deg, transparent 45%, rgba(249, 115, 22, 0.35) 50%, transparent 55%);
-  background-size: 250% 250%;
-  animation: holo-shift 7s linear infinite;
-}
-
-.back-binary .flashcard-face-back::after,
-.back-starfield .flashcard-face-back::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.6) 1px, transparent 1px);
-  background-size: 26px 26px;
-  animation: drift 24s linear infinite;
 }
 
 @keyframes holo-shift {
@@ -279,59 +274,40 @@ html[data-syntax='gruvbox'] .shiki span {
 
 /* ------------------------------------------------------------------ */
 /* Animated backgrounds                                                */
+/* One overlay layer driven by --app-overlay-*; .bg-preview is the     */
+/* same layer scoped to a shop preview box.                            */
 /* ------------------------------------------------------------------ */
-.bg-anim-aurora body::before,
-.bg-anim-matrix body::before,
-.bg-anim-stars body::before,
-.bg-anim-grid body::before,
-.bg-anim-nebula body::before {
+body::before,
+.bg-preview::before {
   content: '';
-  position: fixed;
   inset: -20%;
   pointer-events: none;
   z-index: 0;
+  background: var(--app-overlay);
+  background-size: var(--app-overlay-size);
+  background-position: var(--app-overlay-position);
+  opacity: var(--app-overlay-opacity);
+  transform: var(--app-overlay-transform);
+  transform-origin: var(--app-overlay-origin);
+  animation: var(--app-overlay-anim);
 }
 
-.bg-anim-aurora body::before {
-  background: radial-gradient(40% 30% at 20% 20%, rgba(16, 185, 129, 0.22), transparent 70%),
-    radial-gradient(35% 28% at 75% 35%, rgba(99, 102, 241, 0.22), transparent 70%);
-  animation: aurora 22s ease-in-out infinite alternate;
+body::before {
+  position: fixed;
 }
 
-.bg-anim-stars body::before {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.75) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px);
-  background-size: 120px 120px, 60px 60px;
-  background-position: 0 0, 30px 30px;
-  animation: drift 90s linear infinite;
-  opacity: 0.6;
+/* Fills its preview box. Positioned here, not with utilities: unlayered CSS beats Tailwind's. */
+.bg-preview {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--app-bg);
+  background-size: var(--app-bg-size);
+  color: var(--fg);
 }
 
-.bg-anim-matrix body::before {
-  background-image: repeating-linear-gradient(
-    180deg,
-    rgba(34, 197, 94, 0.16) 0 2px,
-    transparent 2px 14px
-  );
-  background-size: 100% 220px;
-  animation: rain 6s linear infinite;
-  opacity: 0.35;
-}
-
-.bg-anim-grid body::before {
-  background-image: linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px);
-  background-size: 60px 60px;
-  transform: perspective(400px) rotateX(58deg) translateY(20%);
-  transform-origin: bottom;
-  animation: grid-run 14s linear infinite;
-  opacity: 0.5;
-}
-
-.bg-anim-nebula body::before {
-  background: radial-gradient(35% 30% at 30% 40%, rgba(168, 85, 247, 0.25), transparent 70%),
-    radial-gradient(30% 25% at 70% 60%, rgba(34, 211, 238, 0.2), transparent 70%);
-  animation: aurora 30s ease-in-out infinite alternate;
+.bg-preview::before {
+  position: absolute;
 }
 
 @keyframes aurora {
@@ -352,6 +328,16 @@ html[data-syntax='gruvbox'] .shiki span {
   }
 }
 
+/* Whole multiples of both star tiles (120px and 60px), so the loop has no jump. */
+@keyframes stars-drift {
+  from {
+    background-position: 0 0, 30px 30px;
+  }
+  to {
+    background-position: 0 240px, 30px 270px;
+  }
+}
+
 @keyframes grid-run {
   from {
     background-position: 0 0;
@@ -364,16 +350,19 @@ html[data-syntax='gruvbox'] .shiki span {
 /* ------------------------------------------------------------------ */
 /* Cosmetic flourishes: frames, xp bars, names                         */
 /* ------------------------------------------------------------------ */
+/* The ring is a pseudo-element so animations (e.g. Prism's hue-rotate) never touch the mascot. */
 .frame-ring {
+  position: relative;
+}
+
+.frame-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   box-shadow: 0 0 0 2px var(--frame-ring), var(--frame-glow);
-}
-
-.frame-pulse .frame-ring {
-  animation: pulse-ring 2.4s ease-in-out infinite;
-}
-
-.frame-prism .frame-ring {
-  animation: prism 4s linear infinite;
+  animation: var(--frame-anim);
+  pointer-events: none;
 }
 
 @keyframes pulse-ring {
@@ -398,10 +387,7 @@ html[data-syntax='gruvbox'] .shiki span {
 .xp-fill {
   background: var(--xp-fill);
   background-size: 200% 100%;
-}
-
-.xp-shimmer .xp-fill {
-  animation: shimmer 2.6s linear infinite;
+  animation: var(--xp-anim);
 }
 
 @keyframes shimmer {
@@ -413,27 +399,31 @@ html[data-syntax='gruvbox'] .shiki span {
   }
 }
 
+/* Solid names paint --name-fill; gradient names make the fill transparent and clip
+   --name-gradient to the glyphs. */
 .display-name {
-  background: var(--name-fill);
-  background-clip: var(--name-clip);
-  -webkit-background-clip: var(--name-clip);
-  text-shadow: var(--name-shadow);
-}
-
-/* When the cosmetic asks for text clipping we need a transparent foreground. */
-html[data-nameclip='text'] .display-name {
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-
-html:not([data-nameclip='text']) .display-name {
-  background: none;
   color: var(--name-fill);
+  -webkit-text-fill-color: var(--name-fill);
+  background: var(--name-gradient);
+  background-size: var(--name-size);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: var(--name-shadow);
+  animation: var(--name-anim);
 }
 
-.name-holo .display-name {
-  background-size: 300% 100%;
-  animation: shimmer 5s linear infinite;
+/* Syntax theme previews: single-theme Shiki output, deliberately not `.shiki`, so the
+   equipped theme's overrides above never recolour them. */
+.syntax-sample {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre;
+  overflow: hidden;
 }
 
 /* ------------------------------------------------------------------ */

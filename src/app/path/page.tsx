@@ -21,6 +21,7 @@ import {
 import { allCards } from '@/lib/content';
 import { cn, pct } from '@/lib/utils';
 import type { Topic } from '@/lib/types';
+import { Emoji } from '@/components/ui/Emoji';
 
 function PathInner() {
   const params = useSearchParams();
@@ -80,7 +81,7 @@ function PathInner() {
                   : 'border-white/8 bg-white/4 hover:bg-white/8',
               )}
             >
-              <span>{topic.icon}</span>
+              <Emoji char={topic.icon} />
               {topic.name}
               {tier ? (
                 <span className="text-[0.65rem] uppercase tracking-wide" style={{ color: TIER_COLOR[tier.tier] }}>

@@ -12,6 +12,7 @@ import { maturity } from '@/lib/scheduler';
 import { TIER_BLURB, TIER_COLOR, TIER_NAME, tierProgress } from '@/lib/tiers';
 import type { Topic } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Emoji } from '@/components/ui/Emoji';
 
 export default function LibraryPage() {
   const { index, error } = useIndex();
@@ -86,7 +87,7 @@ export default function LibraryPage() {
               .map((topic) => (
                 <div key={topic.id} className="panel overflow-hidden p-0">
                   <div className="flex items-center gap-3 p-4">
-                    <span className="text-2xl">{topic.icon}</span>
+                    <Emoji char={topic.icon} className="text-2xl" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-medium">{topic.name}</h3>

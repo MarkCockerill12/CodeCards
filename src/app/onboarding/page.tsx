@@ -8,6 +8,7 @@ import { Button, Panel, Spinner } from '@/components/ui/primitives';
 import { useIndex } from '@/lib/useLibrary';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { Emoji } from '@/components/ui/Emoji';
 
 const SESSION_SIZES = [10, 20, 30, 50];
 const NEW_CAPS = [5, 12, 20, 40];
@@ -46,7 +47,7 @@ export default function Onboarding() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <header className="text-center">
-        <div className="text-5xl">🃏</div>
+        <Emoji char="🃏" className="text-5xl" />
         <h1 className="mt-2 text-3xl font-semibold">CodeCards</h1>
         <p className="mt-1 text-sm muted">
           {index.totalCards} cards across {index.topics.length} topics — scheduled by FSRS so you
@@ -141,7 +142,7 @@ export default function Onboarding() {
                               : 'border-white/8 bg-white/4 hover:bg-white/8',
                           )}
                         >
-                          <span className="text-xl">{topic.icon}</span>
+                          <Emoji char={topic.icon} className="text-xl" />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">{topic.name}</span>
                             <span className="block text-xs muted">{topic.cardCount} cards</span>

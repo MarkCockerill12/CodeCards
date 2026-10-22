@@ -5,8 +5,8 @@
  *
  * Fails loudly on: schema violations, duplicate card ids, unresolvable prerequisite
  * ids, prerequisite cycles, a same-topic prerequisite in a higher tier than the card
- * needing it, a topic without a Basics tier, and unknown languages. Content is code;
- * it goes through a compiler.
+ * needing it, a topic without a Basics tier, unknown languages, and a topic icon emoji
+ * with no bundled SVG in public/emoji. Content is code; it goes through a compiler.
  */
 import { readdir, readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -18,6 +18,15 @@ import { topicSchema } from './content-schema.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = path.join(root, 'content');
 const OUT_DIR = path.join(root, 'public', 'content');
+/** Emoji glyph -> public/emoji/<slug>.svg, shared with components/ui/Emoji.tsx. */
+const EMOJI_ASSETS = path.join(root, 'src', 'data', 'emoji-assets.json');
+
+/** Shown in the shop's syntax theme previews, highlighted once per theme. */
+const SYNTAX_SAMPLE = `// cache results by key
+const memo = new Map<string, number>();
+export function score(word: string): number {
+  return memo.get(word) ?? word.length * 42;
+}`;
 
 /** Category display order on the topic picker. */
 const CATEGORY_ORDER = [
@@ -175,6 +184,15 @@ async function main() {
     }
   }
 
+  // Topic icons render as bundled SVGs, so the UI never falls back to the OS emoji font.
+  // Plain text glyphs (∑, λ) are fine; any pictographic emoji needs an asset.
+  const emojiAssets = JSON.parse(await readFile(EMOJI_ASSETS, 'utf8'));
+  for (const topic of topics) {
+    if (/\p{Extended_Pictographic}/u.test(topic.icon) && !emojiAssets[topic.icon]) {
+      fail(`${topic.id}: icon "${topic.icon}" has no SVG — add it to public/emoji and ${path.relative(root, EMOJI_ASSETS)}`);
+    }
+  }
+
   if (process.exitCode === 1) {
     console.error('\nbuild aborted — fix the errors above.');
     return;
@@ -242,6 +260,15 @@ async function main() {
     builtAt: new Date().toISOString(),
   };
   await writeFile(path.join(OUT_DIR, 'index.json'), JSON.stringify(index), 'utf8');
+
+  // One single-theme render per theme for the shop. Renamed off `.shiki` so the equipped
+  // theme's CSS overrides cannot recolour the samples.
+  const samples = {};
+  for (const [key, theme] of themeEntries) {
+    const html = await codeToHtml(SYNTAX_SAMPLE, { lang: 'ts', theme });
+    samples[key] = html.replace('class="shiki ', 'class="syntax-sample ');
+  }
+  await writeFile(path.join(OUT_DIR, 'syntax-samples.json'), JSON.stringify(samples), 'utf8');
   await writeFile(
     path.join(OUT_DIR, 'tags.json'),
     JSON.stringify([...allTags].sort()),

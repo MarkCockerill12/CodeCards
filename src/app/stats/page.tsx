@@ -14,6 +14,7 @@ import { levelFromXp, titleForLevel } from '@/data/levels';
 import { formatNumber } from '@/lib/economy';
 import { COSMETICS } from '@/data/cosmetics';
 import { formatDuration, pct } from '@/lib/utils';
+import { Emoji } from '@/components/ui/Emoji';
 
 export default function StatsPage() {
   const hydrated = useStore((s) => s.hydrated);
@@ -220,7 +221,7 @@ export default function StatsPage() {
               return (
                 <div key={topic.id} className="flex flex-col items-center gap-2 text-center">
                   <Ring value={moduleMastery(cards, reviews)} size={72} stroke={7} color={topic.color}>
-                    <span className="text-xl">{topic.icon}</span>
+                    <Emoji char={topic.icon} className="text-xl" />
                   </Ring>
                   <div className="text-xs">
                     <div className="truncate font-medium">{topic.name}</div>

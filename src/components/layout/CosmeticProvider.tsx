@@ -7,11 +7,12 @@ import { setMuted, setSoundPack } from '@/lib/sound';
 import type { Cosmetic } from '@/lib/types';
 
 /**
- * Applies every equipped cosmetic as CSS custom properties + marker classes on <html>.
+ * Applies every equipped cosmetic as CSS custom properties on <html>.
  *
  * Doing it at the document root (rather than threading props through components) means a
  * cosmetic can restyle anything — cards, backgrounds, the cursor — without any component
- * knowing cosmetics exist.
+ * knowing cosmetics exist. Because looks are variables rather than classes, a shop preview can
+ * set one item's variables on a box and override the equipped item inside it.
  */
 export function CosmeticProvider({ children }: { children: React.ReactNode }) {
   const equipped = useStore((s) => s.equipped);
@@ -26,28 +27,18 @@ export function CosmeticProvider({ children }: { children: React.ReactNode }) {
       .filter(Boolean) as Cosmetic[];
 
     const appliedVars: string[] = [];
-    const appliedClasses: string[] = [];
 
     for (const item of items) {
       for (const [key, value] of Object.entries(item.vars ?? {})) {
         root.style.setProperty(key, value);
         appliedVars.push(key);
       }
-      if (item.className) {
-        root.classList.add(item.className);
-        appliedClasses.push(item.className);
-      }
     }
 
     root.dataset.syntax = equipped.syntaxTheme ?? 'default';
 
-    const nameCosmetic = COSMETIC_BY_ID.get(equipped.nameColor);
-    if (nameCosmetic?.vars?.['--name-clip'] === 'text') root.dataset.nameclip = 'text';
-    else delete root.dataset.nameclip;
-
     return () => {
       for (const key of appliedVars) root.style.removeProperty(key);
-      for (const cls of appliedClasses) root.classList.remove(cls);
     };
   }, [equipped]);
 

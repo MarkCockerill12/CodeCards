@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { Emoji } from './Emoji';
 
 type Variant = 'primary' | 'ghost' | 'outline' | 'danger' | 'coin';
 type Size = 'sm' | 'md' | 'lg';
@@ -187,7 +188,7 @@ export function Kbd({ children }: { children: ReactNode }) {
 export function Empty({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
   return (
     <div className="panel flex flex-col items-center gap-3 px-6 py-14 text-center">
-      <div className="text-3xl opacity-70">🗂️</div>
+      <Emoji char="🗂️" className="text-3xl opacity-70" />
       <div className="text-lg font-medium">{title}</div>
       {hint ? <p className="max-w-md text-sm muted">{hint}</p> : null}
       {action}
