@@ -24,6 +24,7 @@
 :root {
   --app-bg: radial-gradient(120% 90% at 50% -10%, #16233b 0%, #020617 60%);
   --app-bg-size: auto;
+  --app-bg-position: 0 0;
   --app-cursor: auto;
   --app-overlay: none;
   --app-overlay-size: auto;
@@ -32,6 +33,8 @@
   --app-overlay-transform: none;
   --app-overlay-origin: center;
   --app-overlay-anim: none;
+  --app-overlay-inset: -20%;
+  --app-overlay-mask: none;
   --fg: #e2e8f0;
   --fg-muted: #94a3b8;
   --panel: rgba(15, 23, 42, 0.62);
@@ -84,8 +87,11 @@ body {
 }
 
 body {
-  background: var(--app-bg) fixed;
+  background: var(--app-bg);
   background-size: var(--app-bg-size);
+  background-position: var(--app-bg-position);
+  /* Longhand: in the shorthand, `fixed` would only reach the last of several layers. */
+  background-attachment: fixed;
   color: var(--fg);
   font-family: var(--font-sans);
   cursor: var(--app-cursor);
@@ -263,12 +269,13 @@ html[data-syntax='gruvbox'] .shiki span {
   }
 }
 
-@keyframes drift {
+/* Whole tiles of each starfield layer (130px and 87px tall), so the loop has no jump. */
+@keyframes parallax {
   from {
-    background-position: 0 0;
+    background-position: 0 0, 0 0;
   }
   to {
-    background-position: 0 260px;
+    background-position: 0 520px, 0 261px;
   }
 }
 
@@ -280,9 +287,11 @@ html[data-syntax='gruvbox'] .shiki span {
 body::before,
 .bg-preview::before {
   content: '';
-  inset: -20%;
+  inset: var(--app-overlay-inset);
   pointer-events: none;
   z-index: 0;
+  /* A mask lines up with a `cover` scene (same size and position), e.g. rain on a window. */
+  mask: var(--app-overlay-mask) var(--app-bg-position) / cover no-repeat;
   background: var(--app-overlay);
   background-size: var(--app-overlay-size);
   background-position: var(--app-overlay-position);
@@ -301,8 +310,11 @@ body::before {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* Overlay lengths in cq units size to this box (on the page they fall back to the viewport). */
+  container-type: size;
   background: var(--app-bg);
   background-size: var(--app-bg-size);
+  background-position: var(--app-bg-position);
   color: var(--fg);
 }
 
@@ -316,6 +328,15 @@ body::before {
   }
   to {
     transform: translate3d(4%, 3%, 0) scale(1.12);
+  }
+}
+
+@keyframes nebula-turn {
+  from {
+    transform: rotate(-6deg) scale(1.05);
+  }
+  to {
+    transform: rotate(6deg) scale(1.15);
   }
 }
 

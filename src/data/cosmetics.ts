@@ -1,4 +1,18 @@
 import type { Cosmetic, CosmeticCategory, Rarity } from '@/lib/types';
+import {
+  CIRCUIT_TRACES,
+  COMPILER_RUNES,
+  HEX_DUMP,
+  LOFI_POSITION,
+  LOFI_ROOM,
+  LOFI_WINDOW_MASK,
+  MATRIX_GLYPHS,
+  RAIN_STREAKS,
+  STARS_FAR,
+  STARS_NEAR,
+  SYNTHWAVE_SUN,
+  svgUrl,
+} from './backdrops';
 import { spriteSvg } from './sprites';
 
 export const RARITY_PRICE: Record<Rarity, number> = {
@@ -57,8 +71,6 @@ const withBase =
   (base: Record<string, string>) =>
   (vars: Record<string, string>): Record<string, string> => ({ ...base, ...vars });
 
-const svgUrl = (svg: string) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
-
 /* ------------------------------------------------------------------ */
 /* Card skins — the face of the flashcard                              */
 /* ------------------------------------------------------------------ */
@@ -89,7 +101,9 @@ const cardSkins: Cosmetic[] = [
   c('skin-paper', 'cardSkin', 'Index Card', 'Ruled paper, red margin, faint coffee ring.', 'common', {
     vars: skin({
       '--card-bg':
-        'repeating-linear-gradient(#fdfaf1,#fdfaf1 26px,#dbe6f3 27px), #fdfaf1',
+        'radial-gradient(circle at 86% 82%,transparent 0 46px,rgba(146,94,48,0.22) 47px 50px,rgba(146,94,48,0.08) 51px 53px,transparent 54px),' +
+        'linear-gradient(90deg,transparent 22px,rgba(220,38,38,0.5) 22px 24px,transparent 24px),' +
+        'repeating-linear-gradient(#fdfaf1 0 26px,#dbe6f3 26px 27px),#fdfaf1',
       '--card-border': 'rgba(120,90,60,0.35)',
       '--card-fg': '#1f2937',
       '--card-accent': '#b91c1c',
@@ -208,9 +222,10 @@ const cardBacks: Cosmetic[] = [
   }),
   c('back-circuit', 'cardBack', 'Circuit Trace', 'PCB routing in soft copper.', 'common', {
     vars: back({
-      '--card-back-pattern':
-        'linear-gradient(90deg,rgba(245,158,11,0.18) 1px,transparent 1px),linear-gradient(rgba(245,158,11,0.18) 1px,transparent 1px)',
-      '--card-back-size': '24px 24px',
+      '--card-back-pattern': svgUrl(CIRCUIT_TRACES),
+      '--card-back-size': '120px 120px',
+      '--card-back-tint': 'rgba(120,53,15,0.12)',
+      '--card-back-opacity': '0.45',
     }),
   }),
   c('back-binary', 'cardBack', 'Binary Rain', 'Ones and zeroes, drifting down.', 'rare', {
@@ -225,27 +240,36 @@ const cardBacks: Cosmetic[] = [
   }),
   c('back-hex', 'cardBack', 'Hex Dump', 'Offsets and bytes, all the way down.', 'common', {
     vars: back({
-      '--card-back-pattern':
-        'repeating-linear-gradient(0deg,rgba(148,163,184,0.12) 0 1px,transparent 1px 18px)',
+      '--card-back-pattern': svgUrl(HEX_DUMP),
+      '--card-back-size': '370px 160px',
+      '--card-back-opacity': '0.3',
     }),
   }),
   c('back-tartan', 'cardBack', 'Tartan', 'Woven check, quietly smug.', 'rare', {
     vars: back({
+      // A sett: the same bands run both ways and overlap into checks, with a thin gold line.
       '--card-back-pattern':
-        'repeating-linear-gradient(45deg,rgba(239,68,68,0.18) 0 10px,transparent 10px 20px),repeating-linear-gradient(-45deg,rgba(59,130,246,0.16) 0 10px,transparent 10px 20px)',
+        'repeating-linear-gradient(90deg,transparent 0 22px,rgba(250,204,21,0.35) 22px 24px,transparent 24px 34px,rgba(22,101,52,0.35) 34px 58px,transparent 58px 72px,rgba(30,64,175,0.3) 72px 84px,transparent 84px 96px),' +
+        'repeating-linear-gradient(0deg,transparent 0 22px,rgba(250,204,21,0.35) 22px 24px,transparent 24px 34px,rgba(22,101,52,0.35) 34px 58px,transparent 58px 72px,rgba(30,64,175,0.3) 72px 84px,transparent 84px 96px)',
+      '--card-back-tint': 'rgba(153,27,27,0.3)',
+      '--card-back-opacity': '0.6',
     }),
   }),
   c('back-runes', 'cardBack', 'Compiler Runes', 'Ancient symbols. Probably lifetimes.', 'epic', {
     vars: back({
       '--card-back-pattern':
-        'radial-gradient(circle at 30% 30%,rgba(167,139,250,0.35),transparent 60%)',
+        `${svgUrl(COMPILER_RUNES)},radial-gradient(circle at 30% 30%,rgba(167,139,250,0.3),transparent 60%)`,
+      '--card-back-size': '170px 170px,auto',
+      '--card-back-opacity': '0.75',
     }),
   }),
   c('back-starfield', 'cardBack', 'Starfield', 'Deep space with a slow parallax drift.', 'epic', {
     vars: back({
-      '--card-back-pattern': 'radial-gradient(rgba(255,255,255,0.7) 1px,transparent 1px)',
-      '--card-back-size': '26px 26px',
-      '--card-back-anim': 'drift 24s linear infinite',
+      // `parallax` moves the near layer about twice as fast as the far one.
+      '--card-back-pattern': `${svgUrl(STARS_NEAR)},${svgUrl(STARS_FAR)}`,
+      '--card-back-size': '170px 130px,110px 87px',
+      '--card-back-tint': 'rgba(2,6,23,0.35)',
+      '--card-back-anim': 'parallax 30s linear infinite',
     }),
   }),
   c('back-gold', 'cardBack', 'Gilded', 'Gold leaf. Purely for intimidation.', 'legendary', {
@@ -293,6 +317,7 @@ const syntax: Cosmetic[] = [
 /* ------------------------------------------------------------------ */
 const bg = withBase({
   '--app-bg-size': 'auto',
+  '--app-bg-position': '0 0',
   '--fg': '#e2e8f0',
   '--fg-muted': '#94a3b8',
   '--panel': 'rgba(15,23,42,0.62)',
@@ -306,17 +331,29 @@ const bg = withBase({
   '--app-overlay-transform': 'none',
   '--app-overlay-origin': 'center',
   '--app-overlay-anim': 'none',
+  '--app-overlay-inset': '-20%',
+  '--app-overlay-mask': 'none',
 });
 
-const GRID_OVERLAY = {
-  '--app-overlay':
-    'linear-gradient(rgba(148,163,184,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.14) 1px, transparent 1px)',
+/**
+ * A floor grid hinged at the horizon: the layer runs from `horizon` to the bottom edge and tilts
+ * towards the viewer about its top edge, so the lines fan out from the horizon. Lengths use
+ * container units — the viewport on the page, the box in a shop preview (.bg-preview) — so the
+ * floor fills the same share of both. `depth` must stay above the layer's height × sin 60°, or
+ * the near edge passes behind the camera.
+ */
+const gridOverlay = (line: string, horizon: string, depth: string) => ({
+  '--app-overlay': `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
   '--app-overlay-size': '60px 60px',
-  '--app-overlay-opacity': '0.5',
-  '--app-overlay-transform': 'perspective(400px) rotateX(58deg) translateY(20%)',
-  '--app-overlay-origin': 'bottom',
+  '--app-overlay-opacity': '0.6',
+  '--app-overlay-inset': `${horizon} -60% 0 -60%`,
+  '--app-overlay-transform': `perspective(${depth}) rotateX(60deg)`,
+  '--app-overlay-origin': 'top',
   '--app-overlay-anim': 'grid-run 14s linear infinite',
-};
+});
+
+// The synthwave horizon is the scene's (y = 600 of 900, cover-sized, bottom-aligned).
+const SUN_FLOOR = 'max(18.75cqw,33.33cqh)';
 
 const backgrounds: Cosmetic[] = [
   c('bg-midnight', 'background', 'Midnight', 'Deep navy with a soft vignette.', 'common', {
@@ -335,11 +372,10 @@ const backgrounds: Cosmetic[] = [
   c('bg-matrix', 'background', 'Matrix Rain', 'Falling glyphs, subtle enough to study over.', 'epic', {
     vars: bg({
       '--app-bg': 'linear-gradient(#000000,#01130c)',
-      '--app-overlay':
-        'repeating-linear-gradient(180deg, rgba(34,197,94,0.16) 0 2px, transparent 2px 14px)',
-      '--app-overlay-size': '100% 220px',
-      '--app-overlay-opacity': '0.35',
-      '--app-overlay-anim': 'rain 6s linear infinite',
+      '--app-overlay': MATRIX_GLYPHS.map(svgUrl).join(','),
+      '--app-overlay-size': '168px 220px,130px 220px',
+      '--app-overlay-opacity': '0.4',
+      '--app-overlay-anim': 'rain 7s linear infinite',
     }),
   }),
   c('bg-starfield', 'background', 'Deep Field', 'A quiet sky full of stars.', 'rare', {
@@ -354,10 +390,29 @@ const backgrounds: Cosmetic[] = [
     }),
   }),
   c('bg-grid', 'background', 'Wireframe Grid', 'Perspective grid receding to the horizon.', 'common', {
-    vars: bg({ '--app-bg': 'linear-gradient(#05070f,#160f2e)', ...GRID_OVERLAY }),
+    vars: bg({
+      '--app-bg': 'linear-gradient(#05070f,#160f2e)',
+      ...gridOverlay('rgba(148,163,184,0.22)', '55%', '52cqh'),
+    }),
   }),
   c('bg-lofi', 'background', 'Lo-fi Room', 'Warm lamp light and a rainy window.', 'epic', {
-    vars: bg({ '--app-bg': 'radial-gradient(90% 80% at 70% 10%,#3b1d0f 0%,#120d0b 65%)' }),
+    vars: bg({
+      '--app-bg': `${svgUrl(LOFI_ROOM)},#120d0b`,
+      '--app-bg-size': 'cover',
+      '--app-bg-position': LOFI_POSITION,
+      // Warm panels instead of the default navy, so the UI sits in the room.
+      '--panel': 'rgba(28,18,12,0.7)',
+      '--panel-border': 'rgba(251,191,36,0.14)',
+      '--nav-bg': 'rgba(18,11,8,0.75)',
+      '--nav-bg-strong': 'rgba(18,11,8,0.92)',
+      // Rain runs down the glass only: the overlay is masked to the window panes.
+      '--app-overlay': svgUrl(RAIN_STREAKS),
+      '--app-overlay-size': '110px 220px',
+      '--app-overlay-opacity': '0.75',
+      '--app-overlay-anim': 'rain 1.6s linear infinite',
+      '--app-overlay-inset': '0',
+      '--app-overlay-mask': svgUrl(LOFI_WINDOW_MASK),
+    }),
   }),
   c('bg-paper', 'background', 'Graph Paper', 'Light mode, for the brave.', 'common', {
     vars: bg({
@@ -373,7 +428,12 @@ const backgrounds: Cosmetic[] = [
     }),
   }),
   c('bg-synthwave', 'background', 'Synthwave Sunset', 'Chrome sun over a neon grid.', 'epic', {
-    vars: bg({ '--app-bg': 'linear-gradient(#150b2e 0%,#3b0764 55%,#831843 100%)', ...GRID_OVERLAY }),
+    vars: bg({
+      '--app-bg': `${svgUrl(SYNTHWAVE_SUN)},linear-gradient(#150b2e,#3b0764 45%,#831843)`,
+      '--app-bg-size': 'cover',
+      '--app-bg-position': '50% 100%',
+      ...gridOverlay('rgba(232,121,249,0.55)', `calc(100% - ${SUN_FLOOR})`, `calc(${SUN_FLOOR} * 1.12)`),
+    }),
   }),
   c('bg-nebula', 'background', 'Nebula', 'Clouds of gas, gently rotating.', 'legendary', {
     vars: bg({
@@ -381,7 +441,7 @@ const backgrounds: Cosmetic[] = [
         'radial-gradient(60% 50% at 25% 30%,rgba(124,58,237,0.35),transparent 60%),radial-gradient(50% 45% at 75% 60%,rgba(6,182,212,0.28),transparent 60%),#020617',
       '--app-overlay':
         'radial-gradient(35% 30% at 30% 40%, rgba(168,85,247,0.25), transparent 70%), radial-gradient(30% 25% at 70% 60%, rgba(34,211,238,0.2), transparent 70%)',
-      '--app-overlay-anim': 'aurora 30s ease-in-out infinite alternate',
+      '--app-overlay-anim': 'nebula-turn 40s ease-in-out infinite alternate',
     }),
   }),
   c('bg-terminal', 'background', 'Bare Terminal', 'Black. Just black.', 'common', {
@@ -564,7 +624,7 @@ const chestSkins: Cosmetic[] = [
     sprite: 'chest',
   }),
   c('chest-crate', 'chestSkin', 'Supply Crate', 'Airdropped, mid-match.', 'rare', { sprite: 'crate' }),
-  c('chest-vault', 'chestSkin', 'Bank Vault', 'Heavy door, satisfying spin.', 'epic', { sprite: 'vault' }),
+  c('chest-vault', 'chestSkin', 'Bank Vault', 'Heavy door, combination dial.', 'epic', { sprite: 'vault' }),
   c('chest-cake', 'chestSkin', 'The Cake', 'It is, allegedly, a lie.', 'legendary', { sprite: 'cake' }),
 ];
 
